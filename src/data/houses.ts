@@ -1,0 +1,336 @@
+import { HouseItem } from '../types';
+
+export const HOUSES: HouseItem[] = [
+  {
+    id: 'h1',
+    name: {
+      ru: 'Дачный домик',
+      en: 'Country Cottage',
+    },
+    price: 498,
+    style: 'gable',
+    area: 16,
+    dimensions: '4 × 4 м',
+    floors: 1,
+    highlight: {
+      ru: 'Хит продаж',
+      en: 'Bestseller',
+    },
+    description: {
+      ru: 'Компактный и уютный домик для загородного отдыха. Идеален для небольших участков.',
+      en: 'Compact and cozy house for weekend getaways. Perfect for small garden plots.',
+    },
+    specs: {
+      ru: ['Сборка за 1 день', 'Сухой брус 100×50', 'Окна ПВХ'],
+      en: ['1-day assembly', 'Kiln-dried timber 100×50', 'PVC windows'],
+    },
+  },
+  {
+    id: 'h2',
+    name: {
+      ru: 'Дом с панорамной верандой',
+      en: 'House with Panoramic Veranda',
+    },
+    price: 580,
+    style: 'glassv',
+    area: 24,
+    dimensions: '4 × 6 м',
+    floors: 1,
+    highlight: {
+      ru: 'Много света',
+      en: 'Sunlit',
+    },
+    description: {
+      ru: 'Дом со светлой остекленной верандой для вечерних чаепитий и созерцания сада.',
+      en: 'Country house featuring a bright glazed veranda for evening tea and garden views.',
+    },
+    specs: {
+      ru: ['Панорамное остекление', 'Утепление пола 150 мм', 'Металлочерепица'],
+      en: ['Panoramic glazing', '150mm floor insulation', 'Metal tile roof'],
+    },
+  },
+  {
+    id: 'h3',
+    name: {
+      ru: 'Дачный дом 6×6',
+      en: 'Country House 6×6',
+    },
+    price: 580,
+    style: 'gable',
+    area: 36,
+    dimensions: '6 × 6 м',
+    floors: 1,
+    highlight: {
+      ru: 'Оптимальный выбор',
+      en: 'Best Value',
+    },
+    description: {
+      ru: 'Классический квадратный контур с максимальной полезной площадью комнат.',
+      en: 'Classic square footprint providing maximized internal living space.',
+    },
+    specs: {
+      ru: ['2 спальни + кухня', 'Высота потолков 2.4 м', 'Ветрозащита Ондутис'],
+      en: ['2 bedrooms + kitchen', 'Ceiling height 2.4m', 'Vapor/wind barrier'],
+    },
+  },
+  {
+    id: 'h4',
+    name: {
+      ru: 'Каркасный дачный дом',
+      en: 'Framed Country House',
+    },
+    price: 680,
+    style: 'gable',
+    area: 40,
+    dimensions: '5 × 8 м',
+    floors: 1,
+    description: {
+      ru: 'Просторный одноэтажный дом с раздельной прихожей и просторной гостиной.',
+      en: 'Spacious single-story residence with an entrance foyer and ample living room.',
+    },
+    specs: {
+      ru: ['Брус камерной сушки', 'Дверь сейфового типа', 'Сборка за 2 дня'],
+      en: ['Kiln-dried framing', 'Heavy-duty steel door', '2-day assembly'],
+    },
+  },
+  {
+    id: 'h5',
+    name: {
+      ru: 'А-фрейм',
+      en: 'A-Frame Architectural',
+    },
+    price: 680,
+    style: 'aframe',
+    area: 32,
+    dimensions: '6 × 6 м',
+    floors: 1,
+    highlight: {
+      ru: 'Архитектурный тренд',
+      en: 'Architectural Trend',
+    },
+    description: {
+      ru: 'Трендовый дом-шалаш со скатной крышей до земли и эффектным вторым светом.',
+      en: 'Trendy triangular chalet reaching down to the ground with vaulted double height.',
+    },
+    specs: {
+      ru: ['Второй свет', 'Фронтальное остекление', 'Стильный силуэт'],
+      en: ['Vaulted double height', 'Full gable glazing', 'Iconic silhouette'],
+    },
+  },
+  {
+    id: 'h6',
+    name: {
+      ru: 'Дачный дом',
+      en: 'Classic Frame House',
+    },
+    price: 780,
+    style: 'gable',
+    area: 48,
+    dimensions: '6 × 8 м',
+    floors: 1,
+    description: {
+      ru: 'Полноразмерный загородный дом для большой семьи с возможностью круглогодичного отдыха.',
+      en: 'Full-size countryside home for a large family with year-round comfort options.',
+    },
+    specs: {
+      ru: ['Лаги пола 150×150', '3 изолированные зоны', 'Влагостойкая плита'],
+      en: ['Floor joists 150×150', '3 isolated zones', 'Moisture-resistant subfloor'],
+    },
+  },
+  {
+    id: 'h7',
+    name: {
+      ru: 'Дом 6×8 с верандой 2 м',
+      en: 'House 6×8 with 2m Veranda',
+    },
+    price: 880,
+    style: 'glassv',
+    area: 60,
+    dimensions: '6 × 10 м',
+    floors: 1,
+    highlight: {
+      ru: 'Большая веранда',
+      en: 'Extended Veranda',
+    },
+    description: {
+      ru: 'Прекрасный загородный проект с открытой двухметровой верандой для летних обедов.',
+      en: 'Delightful suburban design with an expansive 2-meter veranda for summer dining.',
+    },
+    specs: {
+      ru: ['Веранда 12 м²', 'Усиленный каркас', 'Свесы кровли 50 см'],
+      en: ['12m² veranda deck', 'Reinforced frame', '50cm roof overhangs'],
+    },
+  },
+  {
+    id: 'h8',
+    name: {
+      ru: 'Дом с вальмовой кровлей',
+      en: 'Hip Roof Residence',
+    },
+    price: 980,
+    style: 'hip',
+    area: 54,
+    dimensions: '6 × 9 м',
+    floors: 1,
+    description: {
+      ru: 'Четырехскатная вальмовая кровля обеспечивает высокую ветроустойчивость и благородный вид.',
+      en: 'Four-sided hip roof offers exceptional wind resistance and a distinguished stately look.',
+    },
+    specs: {
+      ru: ['Вальмовая кровля', 'Энергосберегающие окна', 'Огнебиозащита'],
+      en: ['Stately hip roof', 'Low-E energy windows', 'Fire/bio timber treatment'],
+    },
+  },
+  {
+    id: 'h9',
+    name: {
+      ru: 'Шале',
+      en: 'Alpine Chalet',
+    },
+    price: 1098,
+    style: 'chalet',
+    area: 64,
+    dimensions: '7 × 9 м',
+    floors: 1,
+    highlight: {
+      ru: 'Альпийский стиль',
+      en: 'Alpine Style',
+    },
+    description: {
+      ru: 'Широкие свесы крыши защищают стены от косого дождя. Атмосфера горного курорта.',
+      en: 'Wide overhanging eaves protect walls from rain, creating an authentic alpine ski-lodge feel.',
+    },
+    specs: {
+      ru: ['Свесы кровли 80 см', 'Террасная доска вельвет', 'Утепление 150 мм'],
+      en: ['80cm roof eaves', 'Velvet decking', '150mm insulation'],
+    },
+  },
+  {
+    id: 'h10',
+    name: {
+      ru: 'Дом с открытой террасой',
+      en: 'House with Open Terrace',
+    },
+    price: 1098,
+    style: 'chalet',
+    area: 68,
+    dimensions: '7 × 10 м',
+    floors: 1,
+    description: {
+      ru: 'Гармоничное сочетание закрытых жилых помещений и крытой деревянной террасы.',
+      en: 'Harmonious blend of sheltered living quarters and a covered timber terrace.',
+    },
+    specs: {
+      ru: ['Терраса 18 м²', 'Панорамная входная группа', 'Шпунтованный пол'],
+      en: ['18m² terrace', 'Panoramic entrance', 'Tongue & groove floors'],
+    },
+  },
+  {
+    id: 'h11',
+    name: {
+      ru: 'Шале с ломаной кровлей',
+      en: 'Chalet with Gambrel Roof',
+    },
+    price: 1148,
+    style: 'mans',
+    area: 72,
+    dimensions: '6 × 8 м',
+    floors: 2,
+    description: {
+      ru: 'Ломаная форма крыши высвобождает максимальный объем для полноценной жилой мансарды.',
+      en: 'Gambrel roof structure maximizes upstairs headspace for full-standing loft bedrooms.',
+    },
+    specs: {
+      ru: ['2 полноценных яруса', 'Утепленная мансарда', 'Деревянная лестница'],
+      en: ['2 full living tiers', 'Insulated attic loft', 'Solid pine staircase'],
+    },
+  },
+  {
+    id: 'h12',
+    name: {
+      ru: 'Двухскатный, 2 этажа',
+      en: 'Two-Story Gable House',
+    },
+    price: 1148,
+    style: 'two',
+    area: 72,
+    dimensions: '6 × 6 м',
+    floors: 2,
+    highlight: {
+      ru: 'Для всей семьи',
+      en: 'Family Sized',
+    },
+    description: {
+      ru: 'Двухэтажный дом с четким разделением: активная зона внизу, спальные комнаты наверху.',
+      en: 'Two-story family home with clear zoning: living & kitchen downstairs, bedrooms upstairs.',
+    },
+    specs: {
+      ru: ['4 спальни', 'Межэтажное перекрытие 150 мм', 'Металлочерепица в подарок'],
+      en: ['4 bedrooms', '150mm floor acoustic insulation', 'Free metal tile roofing'],
+    },
+  },
+  {
+    id: 'h13',
+    name: {
+      ru: 'Шале с террасой',
+      en: 'Luxury Chalet with Terrace',
+    },
+    price: 1250,
+    style: 'chalet',
+    area: 80,
+    dimensions: '8 × 10 м',
+    floors: 1,
+    description: {
+      ru: 'Просторный одноэтажный особняк с монументальной террасой и высокими окнами в пол.',
+      en: 'Expansive single-story retreat with a monumental timber terrace and floor-to-ceiling glass.',
+    },
+    specs: {
+      ru: ['Потолки до конька 3.2 м', 'Кровля Гранд Лайн', 'Утепление 200 мм'],
+      en: ['Cathedral ceiling 3.2m', 'Grand Line roofing', '200mm winter insulation'],
+    },
+  },
+  {
+    id: 'h14',
+    name: {
+      ru: 'Мансардный с верандой',
+      en: 'Attic House with Veranda',
+    },
+    price: 1440,
+    style: 'mans',
+    area: 96,
+    dimensions: '8 × 8 м',
+    floors: 2,
+    description: {
+      ru: 'Флагманский дом с широкой застекленной верандой и тремя спальнями на втором ярусе.',
+      en: 'Flagship cottage featuring an expansive enclosed veranda and three spacious upstairs bedrooms.',
+    },
+    specs: {
+      ru: ['Площадь 96 м²', 'Шумоизоляция перекрытий', 'Усиленный свайный фундамент'],
+      en: ['Area 96m²', 'Acoustic floor damping', 'Reinforced screw-pile foundation'],
+    },
+  },
+  {
+    id: 'h15',
+    name: {
+      ru: 'Барн',
+      en: 'Modern Barnhouse',
+    },
+    price: 1800,
+    style: 'barn',
+    area: 110,
+    dimensions: '8 × 12 м',
+    floors: 2,
+    highlight: {
+      ru: 'Премиум Барнхаус',
+      en: 'Premium Barnhouse',
+    },
+    description: {
+      ru: 'Стильный европейский барнхаус с фальцевой кровлей, переходящей на фасады, и панорамным торцом.',
+      en: 'Sleek European barnhouse with standing seam metal wrapping the facade and dramatic gable glass.',
+    },
+    specs: {
+      ru: ['Кликфальц Pro', 'Второй свет 5.4 м', 'Скрытый водосток'],
+      en: ['Standing seam cladding', 'Double height ceiling 5.4m', 'Concealed gutters'],
+    },
+  },
+];

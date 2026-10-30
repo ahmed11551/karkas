@@ -1,0 +1,6 @@
+{
+  "name": "Каркасник — Дачные дома в Москве и МО",
+  "description": "Премиальный интерактивный сервис и каталог каркасных дачных домов от 498 000 ₽ с живым калькулятором, 3D/SVG визуализатором, квизом и сезонными подарками.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
