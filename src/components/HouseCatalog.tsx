@@ -1,6 +1,17 @@
 import React, { useState, useRef } from 'react';
 import gsap from 'gsap';
-import { ArrowUpRight, Check, Maximize2, LayoutGrid, Eye, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Check,
+  Maximize2,
+  LayoutGrid,
+  Eye,
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import { HouseItem, Language } from '../types';
 import { HOUSES } from '../data/houses';
 import { TRANSLATIONS } from '../data/translations';
@@ -18,18 +29,20 @@ interface MagneticCardProps {
   className?: string;
 }
 
+type CardViewMode = 'facade' | 'plan' | 'webp';
+
 const MagneticBentoCard: React.FC<MagneticCardProps> = ({ children, className = '' }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+    // Skip 3D tilt on touch/mobile devices to save CPU/GPU on mobile 4G
+    if (!cardRef.current || window.matchMedia('(pointer: coarse)').matches) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    // Normalized -1 to +1
     const nx = (x - centerX) / centerX;
     const ny = (y - centerY) / centerY;
 
@@ -46,7 +59,7 @@ const MagneticBentoCard: React.FC<MagneticCardProps> = ({ children, className = 
   };
 
   const handleMouseLeave = () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || window.matchMedia('(pointer: coarse)').matches) return;
     gsap.to(cardRef.current, {
       rotateY: 0,
       rotateX: 0,
@@ -80,8 +93,9 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   const [budgetFilter, setBudgetFilter] = useState<number>(99999);
   const [showAll, setShowAll] = useState<boolean>(false);
   const [selectedSpecHouse, setSelectedSpecHouse] = useState<HouseItem | null>(null);
-  const [activeViewModes, setActiveViewModes] = useState<{ [id: string]: 'facade' | 'plan' }>({});
-  const [modalViewMode, setModalViewMode] = useState<'facade' | 'plan'>('facade');
+  const [activeViewModes, setActiveViewModes] = useState<{ [id: string]: CardViewMode }>({});
+  const [modalViewMode, setModalViewMode] = useState<CardViewMode>('facade');
+  const [failedWebpIds, setFailedWebpIds] = useState<{ [id: string]: boolean }>({});
 
   const filteredHouses = HOUSES.filter((h) => h.price <= budgetFilter);
   const displayedHouses = showAll ? filteredHouses : filteredHouses.slice(0, 6);
@@ -108,9 +122,15 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-            {lang === 'ru' ? 'Bento-каталог типовых проектов' : 'Bento Architectural Catalog'}
-          </span>
+          <div className="inline-flex items-center gap-2">
+            <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
+              {lang === 'ru' ? 'Bento-каталог типовых проектов' : 'Bento Architectural Catalog'}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-mono font-semibold">
+              <Zap className="w-2.5 h-2.5" />
+              <span>WebP Ultra-Light</span>
+            </span>
+          </div>
           <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
             {t.catalog.title}
           </h2>
@@ -164,12 +184,12 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
         </div>
       </div>
 
-      {/* Bento Grid of Houses with Magnetic Tilt Cards */}
+      {/* Bento Grid of Houses with Magnetic Tilt Cards & Optimized WebP Project Images */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayedHouses.map((house, idx) => {
           const isFeaturedBestSeller = idx === 0;
           const isWide = isBentoWide(idx);
-          const currentMode = activeViewModes[house.id] || 'facade';
+          const currentMode: CardViewMode = activeViewModes[house.id] || 'facade';
 
           return (
             <MagneticBentoCard
@@ -182,9 +202,9 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                   : 'glass-card border border-neutral-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl'
               } transition-shadow duration-300 group`}
             >
-              {/* SVG Architectural Visualizer Area */}
+              {/* Architectural Visualizer + Optimized WebP Render Area */}
               <div
-                className={`relative pt-8 pb-4 px-6 flex items-center justify-center ${
+                className={`relative pt-11 pb-4 px-5 flex flex-col items-center justify-center overflow-hidden ${
                   isWide ? 'lg:w-1/2 lg:py-8' : 'w-full'
                 } ${
                   isFeaturedBestSeller
@@ -192,9 +212,35 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                     : 'bg-gradient-to-b from-neutral-100 dark:from-neutral-900/60 to-transparent'
                 }`}
               >
+                {/* Optional WebP Project Image Layer with graceful fallback to HouseSvg */}
+                {house.imageWebp && !failedWebpIds[house.id] && (
+                  <picture
+                    className={`absolute inset-0 w-full h-full transition-opacity duration-500 pointer-events-none ${
+                      currentMode === 'webp' ? 'opacity-100 z-[5]' : 'opacity-0 z-0'
+                    }`}
+                  >
+                    <source srcSet={house.imageWebp} type="image/webp" />
+                    <img
+                      src={house.imageWebp}
+                      alt={`${house.name[lang]} — проект каркасного дома ${house.dimensions} (${house.area} м²)`}
+                      width={800}
+                      height={480}
+                      loading="lazy"
+                      decoding="async"
+                      onError={() => {
+                        setFailedWebpIds((prev) => ({ ...prev, [house.id]: true }));
+                        setActiveViewModes((prev) =>
+                          prev[house.id] === 'webp' ? { ...prev, [house.id]: 'facade' } : prev
+                        );
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  </picture>
+                )}
+
                 {house.highlight && (
                   <div
-                    className={`absolute top-4 left-4 inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold ${
+                    className={`absolute top-3.5 left-4 z-10 inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold ${
                       isFeaturedBestSeller
                         ? 'bg-[#E6B860] text-[#1E1705] shadow-md'
                         : 'bg-[#E6B860]/20 border border-[#E6B860]/40 text-[#8C5E0A] dark:text-[#F5C46B]'
@@ -205,8 +251,8 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                   </div>
                 )}
 
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 z-10">
-                  {/* Smooth Cross-Fade Facade -> Plan switch button */}
+                <div className="absolute top-3.5 right-4 flex items-center gap-1 z-10">
+                  {/* Smooth Cross-Fade Facade <-> Plan Switch Button */}
                   <button
                     onClick={() => {
                       playUiClick('tap');
@@ -216,8 +262,8 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       }));
                     }}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shadow-sm flex items-center gap-1 ${
-                      isFeaturedBestSeller
-                        ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                      isFeaturedBestSeller || currentMode === 'webp'
+                        ? 'bg-black/45 hover:bg-black/65 text-white border border-white/20 backdrop-blur-md'
                         : 'bg-white/85 dark:bg-neutral-800/85 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
                     }`}
                     title="Переключить фасад / план"
@@ -235,6 +281,28 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                     )}
                   </button>
 
+                  {/* Toggle WebP Photo Render */}
+                  <button
+                    onClick={() => {
+                      playUiClick('tap');
+                      setActiveViewModes((prev) => ({
+                        ...prev,
+                        [house.id]: prev[house.id] === 'webp' ? 'facade' : 'webp',
+                      }));
+                    }}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-mono font-semibold transition-all shadow-sm flex items-center gap-1 ${
+                      currentMode === 'webp'
+                        ? 'bg-[#E6B860] text-[#1E1705]'
+                        : isFeaturedBestSeller
+                          ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                          : 'bg-white/85 dark:bg-neutral-800/85 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                    }`}
+                    title="Рендер проекта в формате .webp"
+                  >
+                    <ImageIcon className="w-3 h-3" />
+                    <span>.webp</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       playUiClick('tick');
@@ -242,8 +310,8 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       setSelectedSpecHouse(house);
                     }}
                     className={`p-1.5 rounded-full transition-colors ${
-                      isFeaturedBestSeller
-                        ? 'bg-white/15 hover:bg-white/25 text-white'
+                      isFeaturedBestSeller || currentMode === 'webp'
+                        ? 'bg-black/45 hover:bg-black/65 text-white'
                         : 'bg-white/75 dark:bg-neutral-800/75 hover:bg-white dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                     }`}
                     title={t.catalog.viewSpecs}
@@ -252,19 +320,29 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                   </button>
                 </div>
 
-                <div className={`w-full ${isWide ? 'max-w-[290px]' : 'max-w-[240px]'} aspect-[200/120] py-2`}>
+                <div
+                  className={`w-full ${
+                    isWide ? 'max-w-[290px]' : 'max-w-[240px]'
+                  } aspect-[200/120] py-2 transition-opacity duration-500 ${
+                    currentMode === 'webp' ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}
+                >
                   <HouseSvg
                     styleType={house.style}
                     isNight={isNightScene}
                     hasPiles={true}
-                    viewMode={currentMode}
+                    viewMode={currentMode === 'plan' ? 'plan' : 'facade'}
                     className="w-full h-full drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               </div>
 
               {/* Card Details Area */}
-              <div className={`p-6 flex flex-col flex-1 justify-between ${isWide ? 'lg:w-1/2 lg:p-8' : ''}`}>
+              <div
+                className={`p-6 flex flex-col flex-1 justify-between ${
+                  isWide ? 'lg:w-1/2 lg:p-8' : ''
+                }`}
+              >
                 <div>
                   {/* Meta details unboxed */}
                   <div
@@ -284,8 +362,8 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                           ? '1 этаж'
                           : '1 story'
                         : lang === 'ru'
-                        ? '2 этажа'
-                        : '2 stories'}
+                          ? '2 этажа'
+                          : '2 stories'}
                     </span>
                   </div>
 
@@ -413,6 +491,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
         <div
           role="dialog"
           aria-modal="true"
+          data-lenis-prevent
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => setSelectedSpecHouse(null)}
         >
@@ -430,12 +509,25 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
             <span className="text-xs font-semibold text-[#B27D18] dark:text-[#E6B860] uppercase">
               {t.catalog.viewSpecs}
             </span>
-            <div className="flex items-center justify-between mt-1 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-1 mb-4">
               <h3 className="font-display font-bold text-2xl text-neutral-900 dark:text-neutral-100">
                 {selectedSpecHouse.name[lang]}
               </h3>
 
               <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-200/80 dark:bg-neutral-800">
+                <button
+                  onClick={() => {
+                    playUiClick('tap');
+                    setModalViewMode('webp');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    modalViewMode === 'webp'
+                      ? 'bg-white dark:bg-[#183B30] text-[#142E25] dark:text-[#E6B860] shadow-sm'
+                      : 'text-neutral-600 dark:text-neutral-400'
+                  }`}
+                >
+                  Фото (.webp)
+                </button>
                 <button
                   onClick={() => {
                     playUiClick('tap');
@@ -447,7 +539,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       : 'text-neutral-600 dark:text-neutral-400'
                   }`}
                 >
-                  {lang === 'ru' ? 'Фасад' : 'Facade'}
+                  {lang === 'ru' ? '3D Схема' : '3D Facade'}
                 </button>
                 <button
                   onClick={() => {
@@ -460,18 +552,40 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       : 'text-neutral-600 dark:text-neutral-400'
                   }`}
                 >
-                  {lang === 'ru' ? 'Планировка' : 'Floor Plan'}
+                  {lang === 'ru' ? 'План' : 'Plan'}
                 </button>
               </div>
             </div>
 
-            <div className="my-5 max-w-xs mx-auto aspect-[200/120]">
-              <HouseSvg
-                styleType={selectedSpecHouse.style}
-                isNight={isNightScene}
-                viewMode={modalViewMode}
-                className="w-full h-full"
-              />
+            <div className="my-5 w-full rounded-2xl overflow-hidden aspect-[800/480] bg-neutral-900/20 flex items-center justify-center relative">
+              {modalViewMode === 'webp' &&
+              selectedSpecHouse.imageWebp &&
+              !failedWebpIds[selectedSpecHouse.id] ? (
+                <picture className="w-full h-full">
+                  <source srcSet={selectedSpecHouse.imageWebp} type="image/webp" />
+                  <img
+                    src={selectedSpecHouse.imageWebp}
+                    alt={selectedSpecHouse.name[lang]}
+                    width={800}
+                    height={480}
+                    decoding="async"
+                    onError={() => {
+                      setFailedWebpIds((prev) => ({ ...prev, [selectedSpecHouse.id]: true }));
+                      setModalViewMode('facade');
+                    }}
+                    className="w-full h-full object-cover"
+                  />
+                </picture>
+              ) : (
+                <div className="w-full max-w-xs mx-auto aspect-[200/120]">
+                  <HouseSvg
+                    styleType={selectedSpecHouse.style}
+                    isNight={isNightScene}
+                    viewMode={modalViewMode === 'plan' ? 'plan' : 'facade'}
+                    className="w-full h-full"
+                  />
+                </div>
+              )}
             </div>
 
             <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-6">
@@ -504,7 +618,10 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                 {lang === 'ru' ? 'В комплектацию включено:' : 'Included package:'}
               </span>
               {selectedSpecHouse.specs[lang].map((sp, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300"
+                >
                   <Check className="w-3.5 h-3.5 text-[#B27D18] dark:text-[#E6B860]" />
                   <span>{sp}</span>
                 </div>

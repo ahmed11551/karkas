@@ -1,15 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { CreditCard, ShieldCheck, Truck, Share2, CheckCheck, FileDown } from 'lucide-react';
+import { CreditCard, ShieldCheck, Truck, Share2, CheckCheck, FileDown, AlertCircle, CheckCircle2, MessageCircle, Send } from 'lucide-react';
 import { Language, CalculatorConfig } from '../types';
 import { TRANSLATIONS } from '../data/translations';
+import { CALCULATOR_CONSTANTS, buildMessengerUrl } from '../config/company';
 import { HouseSvg } from './HouseSvg';
 import { RollingNumber } from './RollingNumber';
 import { EstimateDocumentModal } from './EstimateDocumentModal';
 import { playUiClick } from '../utils/sound';
+import { saveLead, LeadCalculatorParams } from '../utils/leads';
+import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
+
+const {
+  BASE_PRICE_THOUSANDS,
+  PRICE_PER_SQM_THOUSANDS,
+  PILES_FOUNDATION_PRICE_THOUSANDS,
+  VERANDA_PRICE_THOUSANDS,
+  FREE_DELIVERY_RADIUS_KM,
+  EXTRA_DELIVERY_RUB_PER_KM,
+  ANNUAL_MORTGAGE_RATE,
+} = CALCULATOR_CONSTANTS;
 
 interface InteractiveCalculatorProps {
   lang: Language;
-  onOpenQuiz: (prefilledPrice?: number) => void;
+  onOpenQuiz: (prefilledPrice?: number, calcParams?: LeadCalculatorParams, houseTitle?: string) => void;
   isNightScene: boolean;
 }
 
@@ -33,20 +46,23 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   const [distanceKm, setDistanceKm] = useState<number>(45); // Plot distance from MKAD
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
   const [isEstimateModalOpen, setIsEstimateModalOpen] = useState<boolean>(false);
+  const [calcPhone, setCalcPhone] = useState<string>('');
+  const [calcPhoneError, setCalcPhoneError] = useState<string>('');
+  const [calcLockedSuccess, setCalcLockedSuccess] = useState<boolean>(false);
 
   // Delivery cost calculation (Free up to 100km, then 50₽/km)
   const deliveryExtraCost = useMemo(() => {
-    if (distanceKm <= 100) return 0;
-    return (distanceKm - 100) * 50;
+    if (distanceKm <= FREE_DELIVERY_RADIUS_KM) return 0;
+    return (distanceKm - FREE_DELIVERY_RADIUS_KM) * EXTRA_DELIVERY_RUB_PER_KM;
   }, [distanceKm]);
 
   // Calculate total price using the original exact math formula + delivery
   const totalPriceInThousands = useMemo(() => {
-    const base = 420;
-    const sizePart = 4.5 * config.size;
+    const base = BASE_PRICE_THOUSANDS;
+    const sizePart = PRICE_PER_SQM_THOUSANDS * config.size;
     const insulationPart = config.insulation;
-    const foundationPart = config.foundation ? 90 : 0;
-    const verandaPart = config.veranda ? 60 : 0;
+    const foundationPart = config.foundation ? PILES_FOUNDATION_PRICE_THOUSANDS : 0;
+    const verandaPart = config.veranda ? VERANDA_PRICE_THOUSANDS : 0;
     return Math.round(base + sizePart + insulationPart + foundationPart + verandaPart);
   }, [config.size, config.insulation, config.foundation, config.veranda]);
 
@@ -55,7 +71,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   // Mortgage calculations
   const downPaymentAmount = Math.round((totalPrice * config.downPaymentPercent) / 100);
   const loanPrincipal = totalPrice - downPaymentAmount;
-  const annualInterestRate = 0.06; // 6% preferential mortgage
+  const annualInterestRate = ANNUAL_MORTGAGE_RATE;
   const monthlyInterestRate = annualInterestRate / 12;
   const totalMonths = config.mortgageYears * 12;
 
@@ -424,12 +440,152 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 : t.calculator.saveTextWithoutPiles}
             </div>
 
-            {/* Buttons: Lock In, Download PDF Estimate, Share */}
+            {/* Strictly Validated Phone Input + Buttons: Lock In, Download PDF Estimate, Share */}
             <div className="space-y-2.5 pt-1">
+              {calcLockedSuccess ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 space-y-2.5 text-xs text-emerald-100">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-[#E6B860] shrink-0" />
+                      <span>
+                        {lang === 'ru'
+                          ? `Цена ${totalPrice.toLocaleString('ru-RU')} ₽ закреплена за ${calcPhone}!`
+                          : `Price locked for ${calcPhone}!`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCalcLockedSuccess(false)}
+                      className="text-[11px] underline text-[#E6B860]"
+                    >
+                      Изменить
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <a
+                      href={buildMessengerUrl(
+                        'whatsapp',
+                        `Здравствуйте! Зафиксировал в калькуляторе дом ${config.size} м² на сумму ${totalPrice.toLocaleString('ru-RU')} ₽ (тел. ${calcPhone}). Пришлите детальную смету.`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-[11px] transition-all"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                    <a
+                      href={buildMessengerUrl(
+                        'telegram',
+                        `Здравствуйте! Зафиксировал в калькуляторе дом ${config.size} м² на сумму ${totalPrice.toLocaleString('ru-RU')} ₽ (тел. ${calcPhone}).`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-[11px] transition-all"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Telegram</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={18}
+                    value={calcPhone}
+                    onChange={(e) => {
+                      setCalcPhone(formatRussianPhoneInput(e.target.value));
+                      if (calcPhoneError) setCalcPhoneError('');
+                    }}
+                    placeholder={
+                      lang === 'ru'
+                        ? 'Ваш телефон: +7 (9__) ___-__-__'
+                        : 'Your phone: +7 (9__) ___-__-__'
+                    }
+                    aria-label="Номер телефона для фиксации сметы"
+                    aria-invalid={Boolean(calcPhoneError)}
+                    className={`w-full px-4 py-3 rounded-full bg-white/95 text-neutral-900 placeholder-neutral-400 font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
+                      calcPhoneError ? 'ring-2 ring-rose-400 bg-rose-50' : 'focus:ring-[#E6B860]'
+                    }`}
+                  />
+                  {calcPhoneError && (
+                    <p
+                      role="alert"
+                      className="text-[11px] text-rose-300 px-3 font-medium flex items-center gap-1.5"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <span>{calcPhoneError}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={() => {
-                  playUiClick('tap');
-                  onOpenQuiz(totalPrice);
+                  const calcParams: LeadCalculatorParams = {
+                    size: config.size,
+                    insulation:
+                      config.insulation === 0
+                        ? '100 мм (Лето)'
+                        : config.insulation === 35
+                          ? '150 мм (Осень-Зима)'
+                          : '200 мм (Арктика ПМЖ)',
+                    foundation:
+                      config.foundation === 1
+                        ? 'Свайно-винтовой (−50% акция)'
+                        : 'На готовый фундамент (0 ₽)',
+                    veranda:
+                      config.veranda === 1
+                        ? 'С террасой / верандой (+60 000 ₽)'
+                        : 'Без веранды',
+                    distanceKm,
+                    mortgageMode: config.mortgageMode,
+                    monthlyPayment: config.mortgageMode ? monthlyPayment : undefined,
+                  };
+                  const title = `Каркасный дом ${config.size} м²${config.veranda ? ' с верандой' : ''}`;
+
+                  // If user typed anything in the calculator phone box (or clicked lock), validate strictly
+                  if (calcPhone.trim().length > 0) {
+                    const validation = validateRussianPhone(calcPhone, lang);
+                    if (!validation.isValid) {
+                      playUiClick('tick');
+                      setCalcPhoneError(
+                        validation.error ||
+                          (lang === 'ru'
+                            ? 'Введите корректный номер телефона для фиксации сметы.'
+                            : 'Enter a valid phone number to lock the estimate.')
+                      );
+                      return;
+                    }
+
+                    saveLead({
+                      source: 'calculator',
+                      clientName: 'Онлайн-расчет (Калькулятор)',
+                      phone: validation.normalized || calcPhone,
+                      houseTitle: title,
+                      calculatedPrice: totalPrice,
+                      calculatorParams: calcParams,
+                      giftsSelected: [
+                        'Металлочерепица 0 ₽',
+                        config.foundation === 1 ? 'Сваи −50%' : 'Доставка до 100 км 0 ₽',
+                      ],
+                    });
+                    playUiClick('success');
+                    setCalcLockedSuccess(true);
+                    setCalcPhoneError('');
+                    return;
+                  }
+
+                  // If phone input is empty, show validation prompt or let them pass quiz
+                  playUiClick('tick');
+                  setCalcPhoneError(
+                    lang === 'ru'
+                      ? 'Укажите реальный номер телефона выше, чтобы закрепить расчёт в смете.'
+                      : 'Please enter a valid phone number above to lock this price.'
+                  );
                 }}
                 className="w-full py-3.5 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-display font-semibold text-sm transition-all gold-glow text-center active:scale-95"
               >

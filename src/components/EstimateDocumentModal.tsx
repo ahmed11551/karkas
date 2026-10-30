@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Printer, CheckCircle2, ShieldCheck, FileText, Gift } from 'lucide-react';
 import { CalculatorConfig, Language } from '../types';
+import { COMPANY_CONFIG, CALCULATOR_CONSTANTS } from '../config/company';
 import { HouseSvg } from './HouseSvg';
 import { playUiClick } from '../utils/sound';
 
@@ -37,10 +38,17 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
   });
 
   const insulationMm = config.insulation === 0 ? 100 : config.insulation === 35 ? 150 : 200;
-  const baseKitPrice = (420 + 4.5 * config.size) * 1000;
+  const baseKitPrice =
+    (CALCULATOR_CONSTANTS.BASE_PRICE_THOUSANDS +
+      CALCULATOR_CONSTANTS.PRICE_PER_SQM_THOUSANDS * config.size) *
+    1000;
   const insulationCost = config.insulation * 1000;
-  const foundationCost = config.foundation ? 90000 : 0;
-  const verandaCost = config.veranda ? 60000 : 0;
+  const foundationCost = config.foundation
+    ? CALCULATOR_CONSTANTS.PILES_FOUNDATION_PRICE_THOUSANDS * 1000
+    : 0;
+  const verandaCost = config.veranda
+    ? CALCULATOR_CONSTANTS.VERANDA_PRICE_THOUSANDS * 1000
+    : 0;
 
   const handlePrintPdf = () => {
     playUiClick('tap');
@@ -97,13 +105,13 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
             <div>
               <div className="flex items-center gap-2 font-display font-bold text-xl text-[#142E25] dark:text-[#E6B860]">
                 <span className="w-3.5 h-3.5 rounded-sm bg-[#E6B860]" />
-                <span>СК «КАРКАСНИК»</span>
+                <span>{COMPANY_CONFIG.shortBrand[lang]}</span>
               </div>
               <p className="text-xs text-neutral-500 mt-1">
-                ООО «ТЕСТ-ДОМ» · Собственное производство с 2010 года (38 000+ домов)
+                {COMPANY_CONFIG.legalName[lang]} · {COMPANY_CONFIG.regDetails[lang]} · Собственное производство с {COMPANY_CONFIG.foundedYear} года ({COMPANY_CONFIG.builtHousesCount} домов)
               </p>
               <p className="text-xs text-neutral-500">
-                г. Москва и МО · Тел.: +7 (495) 152-02-42 · Без предоплаты
+                {COMPANY_CONFIG.address[lang]} · Тел.: {COMPANY_CONFIG.phoneDisplay} · Без предоплаты
               </p>
             </div>
 
@@ -112,7 +120,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
                 Оплата 100% после сборки
               </span>
               <p className="text-xs text-neutral-500 mt-1.5">
-                Гарантия по договору: 12 месяцев
+                Гарантия по договору: {COMPANY_CONFIG.warrantyMonths} месяцев
               </p>
             </div>
           </div>

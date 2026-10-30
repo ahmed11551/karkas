@@ -1,11 +1,12 @@
 import { QuizQuestion } from '../types';
+import { COMPANY_CONFIG } from '../config/company';
 
 export const TRANSLATIONS = {
   ru: {
-    brandName: 'Каркасник',
+    brandName: COMPANY_CONFIG.brandName.ru,
     brandTagline: 'Дачные дома в Москве и МО',
-    phone: '+7 (495) 152-02-42',
-    phoneSchedule: 'ежедневно 9:00–20:00',
+    phone: COMPANY_CONFIG.phoneDisplay,
+    phoneSchedule: COMPANY_CONFIG.scheduleShort.ru,
     nav: {
       projects: 'Проекты',
       calculator: 'Калькулятор',
@@ -277,10 +278,10 @@ export const TRANSLATIONS = {
       disclaimer: 'Предложение ограничено объемом производственных слотов на текущий месяц.',
     },
     footer: {
-      company: 'ООО «ТЕСТ-ДОМ» (тестовые данные)',
-      regDetails: 'ИНН 7701234567, ОГРН 1157746123456',
-      address: 'г. Москва, ул. Тестовая, д. 1',
-      schedule: '9:00–20:00 без выходных',
+      company: COMPANY_CONFIG.legalName.ru,
+      regDetails: COMPANY_CONFIG.regDetails.ru,
+      address: COMPANY_CONFIG.address.ru,
+      schedule: COMPANY_CONFIG.schedule.ru,
       privacy: 'Политика обработки персональных данных',
       terms: 'Пользовательское соглашение',
       rights: 'Все права защищены.',
@@ -291,10 +292,10 @@ export const TRANSLATIONS = {
     },
   },
   en: {
-    brandName: 'Karkasnik',
+    brandName: COMPANY_CONFIG.brandName.en,
     brandTagline: 'Frame Country Houses in Moscow & Region',
-    phone: '+7 (495) 152-02-42',
-    phoneSchedule: 'Daily 9:00 AM – 8:00 PM',
+    phone: COMPANY_CONFIG.phoneDisplay,
+    phoneSchedule: COMPANY_CONFIG.scheduleShort.en,
     nav: {
       projects: 'Projects',
       calculator: 'Calculator',
@@ -566,10 +567,10 @@ export const TRANSLATIONS = {
       disclaimer: 'Offer subject to monthly factory manufacturing allocation slots.',
     },
     footer: {
-      company: 'TEST-DOM LLC (Test Data)',
-      regDetails: 'TIN 7701234567, PSRN 1157746123456',
-      address: 'Moscow, Testovaya St., 1',
-      schedule: '9:00 AM – 8:00 PM 7 days a week',
+      company: COMPANY_CONFIG.legalName.en,
+      regDetails: COMPANY_CONFIG.regDetails.en,
+      address: COMPANY_CONFIG.address.en,
+      schedule: COMPANY_CONFIG.schedule.en,
       privacy: 'Privacy & Data Processing Policy',
       terms: 'Terms of Service',
       rights: 'All rights reserved.',

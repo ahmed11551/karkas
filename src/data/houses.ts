@@ -12,6 +12,8 @@ export const HOUSES: HouseItem[] = [
     area: 16,
     dimensions: '4 × 4 м',
     floors: 1,
+    imageWebp: '/images/projects/h1.webp',
+    webpSizeKb: 14,
     highlight: {
       ru: 'Хит продаж',
       en: 'Bestseller',
@@ -36,6 +38,8 @@ export const HOUSES: HouseItem[] = [
     area: 24,
     dimensions: '4 × 6 м',
     floors: 1,
+    imageWebp: '/images/projects/h2.webp',
+    webpSizeKb: 16,
     highlight: {
       ru: 'Много света',
       en: 'Sunlit',
@@ -60,6 +64,8 @@ export const HOUSES: HouseItem[] = [
     area: 36,
     dimensions: '6 × 6 м',
     floors: 1,
+    imageWebp: '/images/projects/h3.webp',
+    webpSizeKb: 15,
     highlight: {
       ru: 'Оптимальный выбор',
       en: 'Best Value',
@@ -84,6 +90,8 @@ export const HOUSES: HouseItem[] = [
     area: 40,
     dimensions: '5 × 8 м',
     floors: 1,
+    imageWebp: '/images/projects/h4.webp',
+    webpSizeKb: 15,
     description: {
       ru: 'Просторный одноэтажный дом с раздельной прихожей и просторной гостиной.',
       en: 'Spacious single-story residence with an entrance foyer and ample living room.',
@@ -104,6 +112,8 @@ export const HOUSES: HouseItem[] = [
     area: 32,
     dimensions: '6 × 6 м',
     floors: 1,
+    imageWebp: '/images/projects/h5.webp',
+    webpSizeKb: 16,
     highlight: {
       ru: 'Архитектурный тренд',
       en: 'Architectural Trend',
@@ -128,6 +138,8 @@ export const HOUSES: HouseItem[] = [
     area: 48,
     dimensions: '6 × 8 м',
     floors: 1,
+    imageWebp: '/images/projects/h6.webp',
+    webpSizeKb: 15,
     description: {
       ru: 'Полноразмерный загородный дом для большой семьи с возможностью круглогодичного отдыха.',
       en: 'Full-size countryside home for a large family with year-round comfort options.',
@@ -148,6 +160,8 @@ export const HOUSES: HouseItem[] = [
     area: 60,
     dimensions: '6 × 10 м',
     floors: 1,
+    imageWebp: '/images/projects/h7.webp',
+    webpSizeKb: 17,
     highlight: {
       ru: 'Большая веранда',
       en: 'Extended Veranda',
@@ -172,6 +186,8 @@ export const HOUSES: HouseItem[] = [
     area: 54,
     dimensions: '6 × 9 м',
     floors: 1,
+    imageWebp: '/images/projects/h8.webp',
+    webpSizeKb: 15,
     description: {
       ru: 'Четырехскатная вальмовая кровля обеспечивает высокую ветроустойчивость и благородный вид.',
       en: 'Four-sided hip roof offers exceptional wind resistance and a distinguished stately look.',
@@ -192,6 +208,8 @@ export const HOUSES: HouseItem[] = [
     area: 64,
     dimensions: '7 × 9 м',
     floors: 1,
+    imageWebp: '/images/projects/h9.webp',
+    webpSizeKb: 16,
     highlight: {
       ru: 'Альпийский стиль',
       en: 'Alpine Style',
@@ -216,6 +234,8 @@ export const HOUSES: HouseItem[] = [
     area: 68,
     dimensions: '7 × 10 м',
     floors: 1,
+    imageWebp: '/images/projects/h10.webp',
+    webpSizeKb: 16,
     description: {
       ru: 'Гармоничное сочетание закрытых жилых помещений и крытой деревянной террасы.',
       en: 'Harmonious blend of sheltered living quarters and a covered timber terrace.',
@@ -236,6 +256,8 @@ export const HOUSES: HouseItem[] = [
     area: 72,
     dimensions: '6 × 8 м',
     floors: 2,
+    imageWebp: '/images/projects/h11.webp',
+    webpSizeKb: 17,
     description: {
       ru: 'Ломаная форма крыши высвобождает максимальный объем для полноценной жилой мансарды.',
       en: 'Gambrel roof structure maximizes upstairs headspace for full-standing loft bedrooms.',
@@ -256,6 +278,8 @@ export const HOUSES: HouseItem[] = [
     area: 72,
     dimensions: '6 × 6 м',
     floors: 2,
+    imageWebp: '/images/projects/h12.webp',
+    webpSizeKb: 17,
     highlight: {
       ru: 'Для всей семьи',
       en: 'Family Sized',
@@ -280,6 +304,8 @@ export const HOUSES: HouseItem[] = [
     area: 80,
     dimensions: '8 × 10 м',
     floors: 1,
+    imageWebp: '/images/projects/h13.webp',
+    webpSizeKb: 16,
     description: {
       ru: 'Просторный одноэтажный особняк с монументальной террасой и высокими окнами в пол.',
       en: 'Expansive single-story retreat with a monumental timber terrace and floor-to-ceiling glass.',
@@ -300,6 +326,8 @@ export const HOUSES: HouseItem[] = [
     area: 96,
     dimensions: '8 × 8 м',
     floors: 2,
+    imageWebp: '/images/projects/h14.webp',
+    webpSizeKb: 17,
     description: {
       ru: 'Флагманский дом с широкой застекленной верандой и тремя спальнями на втором ярусе.',
       en: 'Flagship cottage featuring an expansive enclosed veranda and three spacious upstairs bedrooms.',
@@ -320,6 +348,8 @@ export const HOUSES: HouseItem[] = [
     area: 110,
     dimensions: '8 × 12 м',
     floors: 2,
+    imageWebp: '/images/projects/h15.webp',
+    webpSizeKb: 18,
     highlight: {
       ru: 'Премиум Барнхаус',
       en: 'Premium Barnhouse',

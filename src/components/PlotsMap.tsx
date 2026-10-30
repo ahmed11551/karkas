@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, CheckCircle2, Star, Calendar, Clock, Home } from 'lucide-react';
 import { Language } from '../types';
+import { COMPANY_CONFIG } from '../config/company';
 import { playUiClick } from '../utils/sound';
 
 interface PlotsMapProps {
@@ -241,7 +242,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
           <div className="text-xs text-neutral-500 flex items-center justify-between pt-2">
             <span>Хотите посмотреть готовый дом вживую?</span>
             <a
-              href="tel:+74951520242"
+              href={COMPANY_CONFIG.phoneHref}
               className="font-semibold text-[#B27D18] dark:text-[#E6B860] hover:underline"
             >
               Записаться на экскурсию

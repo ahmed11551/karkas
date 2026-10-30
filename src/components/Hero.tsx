@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import gsap from 'gsap';
-import { Sparkles, ArrowRight, CheckCircle2, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { Sparkles, ArrowRight, CheckCircle2, ShieldCheck, Sun, Moon, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
+import { buildMessengerUrl } from '../config/company';
 import { saveLead } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
+import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
 
 interface HeroProps {
   lang: Language;
@@ -26,6 +28,7 @@ export const Hero: React.FC<HeroProps> = ({
 
   // Refs for 60fps GSAP Mouse-Parallax Layers
   const heroSectionRef = useRef<HTMLElement | null>(null);
+  const sceneCardRef = useRef<HTMLDivElement | null>(null);
   const sunRef = useRef<SVGCircleElement | null>(null);
   const cloudsRef = useRef<SVGGElement | null>(null);
   const starsRef = useRef<SVGGElement | null>(null);
@@ -36,17 +39,30 @@ export const Hero: React.FC<HeroProps> = ({
   const badgeRef = useRef<HTMLDivElement | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (!heroSectionRef.current) return;
+    // Skip expensive parallax recalculations on mobile touch screens for <2s 4G responsiveness
+    if (!heroSectionRef.current || window.matchMedia('(pointer: coarse)').matches) return;
     const rect = heroSectionRef.current.getBoundingClientRect();
     // Normalized coordinates from -1 to +1
     const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
     const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
 
+    // 3D Frame Tilt
+    if (sceneCardRef.current) {
+      gsap.to(sceneCardRef.current, {
+        rotateY: nx * 5,
+        rotateX: -ny * 4,
+        transformPerspective: 1000,
+        duration: 0.65,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
     // Sun / Moon moves opposite to cursor
     if (sunRef.current) {
       gsap.to(sunRef.current, {
-        x: -nx * 20,
-        y: -ny * 14,
+        x: -nx * 24,
+        y: -ny * 16,
         duration: 0.7,
         ease: 'power2.out',
         overwrite: 'auto',
@@ -56,29 +72,29 @@ export const Hero: React.FC<HeroProps> = ({
     // Clouds drift in opposite direction
     if (cloudsRef.current) {
       gsap.to(cloudsRef.current, {
-        x: -nx * 28,
-        y: -ny * 10,
+        x: -nx * 34,
+        y: -ny * 12,
         duration: 0.85,
         ease: 'power2.out',
         overwrite: 'auto',
       });
     }
 
-    // Night stars subtle parallax
+    // Night stars subtle opposite parallax
     if (starsRef.current) {
       gsap.to(starsRef.current, {
-        x: -nx * 10,
-        y: -ny * 8,
+        x: -nx * 12,
+        y: -ny * 9,
         duration: 0.9,
         ease: 'power2.out',
         overwrite: 'auto',
       });
     }
 
-    // Far hill layer
+    // Far hill layer (moves slightly opposite)
     if (farHillRef.current) {
       gsap.to(farHillRef.current, {
-        x: -nx * 8,
+        x: -nx * 9,
         y: -ny * 4,
         duration: 0.7,
         ease: 'power2.out',
@@ -86,10 +102,10 @@ export const Hero: React.FC<HeroProps> = ({
       });
     }
 
-    // Near hill layer
+    // Near hill layer (moves with cursor)
     if (nearHillRef.current) {
       gsap.to(nearHillRef.current, {
-        x: nx * 6,
+        x: nx * 8,
         y: ny * 4,
         duration: 0.65,
         ease: 'power2.out',
@@ -97,23 +113,23 @@ export const Hero: React.FC<HeroProps> = ({
       });
     }
 
-    // Main House moves gently with depth
+    // Main House moves in foreground direction (opposite to Sun & Clouds for 3D depth)
     if (houseRef.current) {
       gsap.to(houseRef.current, {
-        x: 50 + nx * 14,
-        y: 120 + ny * 8,
-        duration: 0.6,
+        x: nx * 16,
+        y: ny * 9,
+        duration: 0.55,
         ease: 'power2.out',
         overwrite: 'auto',
       });
     }
 
-    // Foreground trees move faster for depth separation
+    // Foreground trees move faster for deep parallax separation
     if (treesRef.current) {
       gsap.to(treesRef.current, {
-        x: nx * 22,
-        y: ny * 10,
-        duration: 0.55,
+        x: nx * 26,
+        y: ny * 12,
+        duration: 0.5,
         ease: 'power2.out',
         overwrite: 'auto',
       });
@@ -122,9 +138,9 @@ export const Hero: React.FC<HeroProps> = ({
     // Floating milestone badge
     if (badgeRef.current) {
       gsap.to(badgeRef.current, {
-        x: nx * 10,
-        y: ny * 6,
-        duration: 0.55,
+        x: nx * 12,
+        y: ny * 7,
+        duration: 0.5,
         ease: 'power2.out',
         overwrite: 'auto',
       });
@@ -132,44 +148,36 @@ export const Hero: React.FC<HeroProps> = ({
   };
 
   const handleMouseLeave = () => {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    if (sceneCardRef.current)
+      gsap.to(sceneCardRef.current, { rotateX: 0, rotateY: 0, duration: 0.9, ease: 'power3.out' });
     if (sunRef.current) gsap.to(sunRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (cloudsRef.current) gsap.to(cloudsRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (starsRef.current) gsap.to(starsRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (farHillRef.current) gsap.to(farHillRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (nearHillRef.current) gsap.to(nearHillRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
-    if (houseRef.current) gsap.to(houseRef.current, { x: 50, y: 120, duration: 0.9, ease: 'power3.out' });
+    if (houseRef.current) gsap.to(houseRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (treesRef.current) gsap.to(treesRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
     if (badgeRef.current) gsap.to(badgeRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val.startsWith('7') || val.startsWith('8')) {
-      val = val.substring(1);
-    }
-    val = val.substring(0, 10);
-
-    let formatted = '+7';
-    if (val.length > 0) formatted += ` (${val.substring(0, 3)}`;
-    if (val.length >= 3) formatted += `) ${val.substring(3, 6)}`;
-    if (val.length >= 6) formatted += `-${val.substring(6, 8)}`;
-    if (val.length >= 8) formatted += `-${val.substring(8, 10)}`;
-
+    const formatted = formatRussianPhoneInput(e.target.value);
     setPhoneInput(formatted);
     if (formError) setFormError('');
   };
 
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const digitsOnly = phoneInput.replace(/\D/g, '');
-    if (digitsOnly.length < 11) {
+    const validation = validateRussianPhone(phoneInput, lang);
+    if (!validation.isValid) {
       playUiClick('tick');
-      setFormError(t.hero.quickCallError);
+      setFormError(validation.error || t.hero.quickCallError);
       return;
     }
     saveLead({
       source: 'hero_quick',
-      phone: phoneInput,
+      phone: validation.normalized || phoneInput,
       giftsSelected: ['Кровля из металлочерепицы', 'Бесплатная доставка 100 км'],
     });
     playUiClick('success');
@@ -236,26 +244,63 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Quick Consultation Form or Success Card */}
             <div className="w-full max-w-lg mt-2">
               {formSubmitted ? (
-                <div className="p-4 rounded-2xl bg-white/10 border border-emerald-500/30 backdrop-blur-md flex items-center gap-3 text-emerald-300">
-                  <ShieldCheck className="w-6 h-6 text-[#E6B860] shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-semibold text-white">{t.hero.quickCallSuccess}</p>
-                    <p className="text-xs text-emerald-200/80 mt-0.5">
-                      {lang === 'ru'
-                        ? 'Мы закрепили за вами подарки по акции.'
-                        : 'Your promotional gifts are reserved.'}
-                    </p>
+                <div className="p-4 rounded-2xl bg-white/10 border border-emerald-500/30 backdrop-blur-md space-y-3 text-emerald-300">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-6 h-6 text-[#E6B860] shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-semibold text-white">{t.hero.quickCallSuccess}</p>
+                      <p className="text-xs text-emerald-200/80 mt-0.5">
+                        {lang === 'ru'
+                          ? 'Мы закрепили за вами подарки по акции. Можете сразу написать инженеру:'
+                          : 'Your promotional gifts are reserved. Message our engineer directly:'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <a
+                      href={buildMessengerUrl(
+                        'whatsapp',
+                        `Здравствуйте! Оставил заявку на сайте (${phoneInput}). Хочу получить расчёт дома и закрепить подарки по акции.`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-semibold transition-all"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Написать в WhatsApp</span>
+                    </a>
+                    <a
+                      href={buildMessengerUrl(
+                        'telegram',
+                        `Здравствуйте! Оставил заявку на сайте (${phoneInput}). Хочу получить расчёт дома.`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#229ED9] hover:bg-[#1C88BD] text-white text-xs font-semibold transition-all"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Написать в Telegram</span>
+                    </a>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleQuickSubmit} className="space-y-2">
+                <form onSubmit={handleQuickSubmit} noValidate className="space-y-2">
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <input
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      maxLength={18}
+                      required
                       value={phoneInput}
                       onChange={handlePhoneChange}
                       placeholder={t.hero.quickCallPlaceholder}
-                      className="flex-1 px-5 py-3.5 rounded-full bg-white text-neutral-900 placeholder-neutral-400 font-medium text-base focus:outline-none focus:ring-2 focus:ring-[#E6B860] transition-shadow shadow-md"
+                      aria-invalid={Boolean(formError)}
+                      className={`flex-1 px-5 py-3.5 rounded-full bg-white text-neutral-900 placeholder-neutral-400 font-medium text-base focus:outline-none focus:ring-2 transition-shadow shadow-md ${
+                        formError
+                          ? 'ring-2 ring-rose-400 bg-rose-50'
+                          : 'focus:ring-[#E6B860]'
+                      }`}
                       aria-label="Номер телефона для звонка"
                     />
                     <button
@@ -266,7 +311,13 @@ export const Hero: React.FC<HeroProps> = ({
                     </button>
                   </div>
                   {formError && (
-                    <p className="text-xs text-rose-300 px-3 font-medium">{formError}</p>
+                    <p
+                      role="alert"
+                      className="text-xs text-rose-300 px-3 font-medium flex items-center gap-1.5"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <span>{formError}</span>
+                    </p>
                   )}
                 </form>
               )}
@@ -311,7 +362,9 @@ export const Hero: React.FC<HeroProps> = ({
           {/* Right Column: Layered Interactive Mouse-Parallax Architectural Scene */}
           <div className="lg:col-span-5 relative flex items-center justify-center">
             <div
-              className={`relative w-full max-w-[420px] aspect-[1/1.06] rounded-[2.5rem] rounded-tl-[10rem] overflow-hidden border border-white/20 shadow-2xl transition-colors duration-700 ${
+              ref={sceneCardRef}
+              style={{ transformStyle: 'preserve-3d' }}
+              className={`relative w-full max-w-[420px] aspect-[1/1.06] rounded-[2.5rem] rounded-tl-[10rem] overflow-hidden border border-white/20 shadow-2xl transition-colors duration-700 will-change-transform ${
                 isNightScene
                   ? 'bg-gradient-to-b from-[#091522] via-[#152E38] to-[#11241C]'
                   : 'bg-gradient-to-b from-[#D2E7ED] via-[#EDF5F0] 60% to-[#7CAE8F]'
@@ -393,90 +446,92 @@ export const Hero: React.FC<HeroProps> = ({
                   className="transition-colors duration-700"
                 />
 
-                {/* Architectural Frame House (Parallax Layer 6) */}
-                <g ref={houseRef} transform="translate(50, 120)">
-                  {/* Gable Roof */}
-                  <path
-                    d="M0 150 L 150 6 L 300 150 Z"
-                    fill={isNightScene ? '#183B30' : '#2F5A4B'}
-                    className="transition-colors duration-700"
-                  />
-                  <path
-                    d="M0 150 L 150 6 L 154 8 L 8 152 Z"
-                    fill={isNightScene ? '#0F261E' : '#214237'}
-                  />
+                {/* Architectural Frame House (Parallax Layer 6 — moves opposite to Sun & Clouds) */}
+                <g ref={houseRef}>
+                  <g transform="translate(50, 120)">
+                    {/* Gable Roof */}
+                    <path
+                      d="M0 150 L 150 6 L 300 150 Z"
+                      fill={isNightScene ? '#183B30' : '#2F5A4B'}
+                      className="transition-colors duration-700"
+                    />
+                    <path
+                      d="M0 150 L 150 6 L 154 8 L 8 152 Z"
+                      fill={isNightScene ? '#0F261E' : '#214237'}
+                    />
 
-                  {/* Wall Enclosure */}
-                  <rect
-                    x="22"
-                    y="150"
-                    width="256"
-                    height="142"
-                    fill={isNightScene ? '#D4B889' : '#F6E3C0'}
-                    className="transition-colors duration-700"
-                  />
+                    {/* Wall Enclosure */}
+                    <rect
+                      x="22"
+                      y="150"
+                      width="256"
+                      height="142"
+                      fill={isNightScene ? '#D4B889' : '#F6E3C0'}
+                      className="transition-colors duration-700"
+                    />
 
-                  {/* Vertical Framing Stud Lines */}
-                  <g stroke="#C99A52" strokeWidth="2.5" opacity="0.65">
-                    <line x1="64" y1="150" x2="64" y2="292" />
-                    <line x1="106" y1="150" x2="106" y2="292" />
-                    <line x1="148" y1="150" x2="148" y2="292" />
-                    <line x1="190" y1="150" x2="190" y2="292" />
-                    <line x1="232" y1="150" x2="232" y2="292" />
+                    {/* Vertical Framing Stud Lines */}
+                    <g stroke="#C99A52" strokeWidth="2.5" opacity="0.65">
+                      <line x1="64" y1="150" x2="64" y2="292" />
+                      <line x1="106" y1="150" x2="106" y2="292" />
+                      <line x1="148" y1="150" x2="148" y2="292" />
+                      <line x1="190" y1="150" x2="190" y2="292" />
+                      <line x1="232" y1="150" x2="232" y2="292" />
+                    </g>
+
+                    {/* Main Window */}
+                    <rect
+                      x="60"
+                      y="190"
+                      width="62"
+                      height="64"
+                      rx="4"
+                      fill={isNightScene ? '#FFD37A' : '#A9CFD8'}
+                      stroke={isNightScene ? '#183B30' : '#2F5A4B'}
+                      strokeWidth="5"
+                      style={{
+                        filter: isNightScene
+                          ? 'drop-shadow(0 0 14px rgba(255, 211, 122, 0.9))'
+                          : 'none',
+                      }}
+                      className="transition-all duration-500"
+                    />
+                    <path
+                      d="M91 190 V 254 M 60 222 H 122"
+                      stroke={isNightScene ? '#183B30' : '#2F5A4B'}
+                      strokeWidth="3"
+                    />
+
+                    {/* Entrance Door */}
+                    <rect
+                      x="182"
+                      y="188"
+                      width="56"
+                      height="104"
+                      rx="4"
+                      fill={isNightScene ? '#183B30' : '#2F5A4B'}
+                      className="transition-colors duration-700"
+                    />
+                    <circle cx="226" cy="242" r="3.5" fill="#F0B44C" />
+
+                    {/* Attic Circle Window */}
+                    <rect
+                      x="130"
+                      y="82"
+                      width="40"
+                      height="40"
+                      rx="20"
+                      fill={isNightScene ? '#FFD37A' : '#A9CFD8'}
+                      stroke={isNightScene ? '#C5A069' : '#F6E3C0'}
+                      strokeWidth="5"
+                      style={{
+                        filter: isNightScene
+                          ? 'drop-shadow(0 0 12px rgba(255, 211, 122, 0.85))'
+                          : 'none',
+                      }}
+                      className="transition-all duration-500"
+                    />
                   </g>
-
-                  {/* Main Window */}
-                  <rect
-                    x="60"
-                    y="190"
-                    width="62"
-                    height="64"
-                    rx="4"
-                    fill={isNightScene ? '#FFD37A' : '#A9CFD8'}
-                    stroke={isNightScene ? '#183B30' : '#2F5A4B'}
-                    strokeWidth="5"
-                    style={{
-                      filter: isNightScene
-                        ? 'drop-shadow(0 0 14px rgba(255, 211, 122, 0.9))'
-                        : 'none',
-                    }}
-                    className="transition-all duration-500"
-                  />
-                  <path
-                    d="M91 190 V 254 M 60 222 H 122"
-                    stroke={isNightScene ? '#183B30' : '#2F5A4B'}
-                    strokeWidth="3"
-                  />
-
-                  {/* Entrance Door */}
-                  <rect
-                    x="182"
-                    y="188"
-                    width="56"
-                    height="104"
-                    rx="4"
-                    fill={isNightScene ? '#183B30' : '#2F5A4B'}
-                    className="transition-colors duration-700"
-                  />
-                  <circle cx="226" cy="242" r="3.5" fill="#F0B44C" />
-
-                  {/* Attic Circle Window */}
-                  <rect
-                    x="130"
-                    y="82"
-                    width="40"
-                    height="40"
-                    rx="20"
-                    fill={isNightScene ? '#FFD37A' : '#A9CFD8'}
-                    stroke={isNightScene ? '#C5A069' : '#F6E3C0'}
-                    strokeWidth="5"
-                    style={{
-                      filter: isNightScene
-                        ? 'drop-shadow(0 0 12px rgba(255, 211, 122, 0.85))'
-                        : 'none',
-                    }}
-                    className="transition-all duration-500"
-                  />
                 </g>
 
                 {/* Coniferous Forest Trees (Foreground Parallax Layer 7) */}

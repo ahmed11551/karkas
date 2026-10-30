@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Send, X, PhoneCall } from 'lucide-react';
+import { COMPANY_CONFIG, buildMessengerUrl } from '../config/company';
 import { playUiClick } from '../utils/sound';
 
 export const MessengerFloating: React.FC = () => {
@@ -20,7 +21,7 @@ export const MessengerFloating: React.FC = () => {
           </div>
 
           <a
-            href="https://t.me/telegram"
+            href={buildMessengerUrl('telegram')}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => playUiClick('tap')}
@@ -31,7 +32,7 @@ export const MessengerFloating: React.FC = () => {
           </a>
 
           <a
-            href="https://wa.me/74951520242"
+            href={buildMessengerUrl('whatsapp')}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => playUiClick('tap')}
@@ -42,12 +43,12 @@ export const MessengerFloating: React.FC = () => {
           </a>
 
           <a
-            href="tel:+74951520242"
+            href={COMPANY_CONFIG.phoneHref}
             onClick={() => playUiClick('tap')}
             className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#E6B860]/15 hover:bg-[#E6B860]/25 text-[#B27D18] dark:text-[#E6B860] text-xs font-semibold transition-colors"
           >
             <PhoneCall className="w-4 h-4 shrink-0" />
-            <span>+7 (495) 152-02-42</span>
+            <span>{COMPANY_CONFIG.phoneDisplay}</span>
           </a>
         </div>
       )}

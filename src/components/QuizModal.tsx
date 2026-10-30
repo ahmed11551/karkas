@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, ArrowRight, ShieldCheck, Gift } from 'lucide-react';
+import { X, Check, ArrowRight, ShieldCheck, Gift, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language } from '../types';
 import { QUIZ_QUESTIONS, TRANSLATIONS } from '../data/translations';
-import { saveLead } from '../utils/leads';
+import { buildMessengerUrl } from '../config/company';
+import { saveLead, LeadCalculatorParams } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
+import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
 
 interface QuizModalProps {
   isOpen: boolean;
   onClose: () => void;
   lang: Language;
   prefilledPrice?: number;
+  prefilledCalcParams?: LeadCalculatorParams;
+  prefilledHouseTitle?: string;
 }
 
 export const QuizModal: React.FC<QuizModalProps> = ({
@@ -17,10 +21,13 @@ export const QuizModal: React.FC<QuizModalProps> = ({
   onClose,
   lang,
   prefilledPrice,
+  prefilledCalcParams,
+  prefilledHouseTitle,
 }) => {
   const t = TRANSLATIONS[lang];
   const [step, setStep] = useState<number>(0);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [clientName, setClientName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [phoneError, setPhoneError] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
@@ -29,6 +36,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
     if (isOpen) {
       setStep(0);
       setAnswers({});
+      setClientName('');
       setPhone('');
       setPhoneError('');
       setIsSuccess(false);
@@ -62,37 +70,36 @@ export const QuizModal: React.FC<QuizModalProps> = ({
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val.startsWith('7') || val.startsWith('8')) {
-      val = val.substring(1);
-    }
-    val = val.substring(0, 10);
-
-    let formatted = '+7';
-    if (val.length > 0) formatted += ` (${val.substring(0, 3)}`;
-    if (val.length >= 3) formatted += `) ${val.substring(3, 6)}`;
-    if (val.length >= 6) formatted += `-${val.substring(6, 8)}`;
-    if (val.length >= 8) formatted += `-${val.substring(8, 10)}`;
-
+    const formatted = formatRussianPhoneInput(e.target.value);
     setPhone(formatted);
     if (phoneError) setPhoneError('');
   };
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const digitsOnly = phone.replace(/\D/g, '');
-    if (digitsOnly.length < 11) {
+    const validation = validateRussianPhone(phone, lang);
+    if (!validation.isValid) {
+      playUiClick('tick');
       setPhoneError(
-        lang === 'ru'
-          ? 'Введите номер полностью, например +7 900 123-45-67.'
-          : 'Please enter a complete phone number.'
+        validation.error ||
+          (lang === 'ru'
+            ? 'Введите корректный номер телефона, например +7 (916) 482-19-40.'
+            : 'Please enter a valid phone number.')
       );
       return;
     }
     saveLead({
       source: 'quiz_modal',
-      phone: phone,
-      calculatedPrice: prefilledPrice,
+      clientName: clientName.trim() || 'Клиент Квиза',
+      phone: validation.normalized || phone,
+      houseTitle: prefilledHouseTitle || answers[1] || 'Индивидуальный проект по квизу',
+      calculatedPrice: prefilledPrice || 707000,
+      calculatorParams: prefilledCalcParams || {
+        size: 36,
+        insulation: answers[2] || '150 мм (Осень-Зима)',
+        foundation: 'Свайно-винтовой (−50% акция)',
+        veranda: 'По выбору проекта',
+      },
       quizAnswers: answers,
       giftsSelected: [
         'Металлочерепица 0 ₽',
@@ -109,6 +116,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
+      data-lenis-prevent
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
@@ -194,17 +202,39 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                   </p>
                 </div>
 
-                <div>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder={lang === 'ru' ? 'Ваше имя (необязательно)' : 'Your name (optional)'}
+                    className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#E6B860]"
+                  />
                   <input
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={18}
+                    required
                     value={phone}
                     onChange={handlePhoneChange}
-                    placeholder="+7 (___) ___-__-__"
-                    className="w-full px-5 py-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 font-display font-medium text-lg focus:outline-none focus:ring-2 focus:ring-[#E6B860] shadow-inner"
+                    placeholder="+7 (9__) ___-__-__"
+                    aria-invalid={Boolean(phoneError)}
+                    className={`w-full px-5 py-4 rounded-2xl bg-white dark:bg-neutral-900 border text-neutral-900 dark:text-neutral-100 font-display font-medium text-lg focus:outline-none focus:ring-2 shadow-inner ${
+                      phoneError
+                        ? 'border-rose-500 focus:ring-rose-500'
+                        : 'border-neutral-300 dark:border-neutral-700 focus:ring-[#E6B860]'
+                    }`}
                     autoFocus
                   />
                   {phoneError && (
-                    <p className="mt-2 text-xs text-rose-500 font-medium">{phoneError}</p>
+                    <p
+                      role="alert"
+                      className="mt-2 text-xs text-rose-500 font-medium flex items-center gap-1.5"
+                    >
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{phoneError}</span>
+                    </p>
                   )}
                 </div>
 
@@ -264,12 +294,40 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               )}
             </div>
 
-            <button
-              onClick={onClose}
-              className="px-6 py-3 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-semibold text-xs transition-all gold-glow"
-            >
-              {lang === 'ru' ? 'Вернуться к сайту' : 'Close'}
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+              <a
+                href={buildMessengerUrl(
+                  'whatsapp',
+                  `Здравствуйте! Прошёл квиз на сайте (${phone}). Проект: ${prefilledHouseTitle || answers[1] || 'Каркасный дом'}. Пришлите, пожалуйста, расчёт сметы.`
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Получить в WhatsApp</span>
+              </a>
+
+              <a
+                href={buildMessengerUrl(
+                  'telegram',
+                  `Здравствуйте! Прошёл квиз на сайте (${phone}). Хочу получить расчёт сметы.`
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Написать в Telegram</span>
+              </a>
+
+              <button
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-semibold text-xs transition-all gold-glow"
+              >
+                {lang === 'ru' ? 'Вернуться к сайту' : 'Close'}
+              </button>
+            </div>
           </div>
         )}
       </div>

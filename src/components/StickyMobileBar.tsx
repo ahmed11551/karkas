@@ -2,6 +2,7 @@ import React from 'react';
 import { Phone, Calculator } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
+import { COMPANY_CONFIG } from '../config/company';
 
 interface StickyMobileBarProps {
   lang: Language;
@@ -22,7 +23,7 @@ export const StickyMobileBar: React.FC<StickyMobileBarProps> = ({
     <div className="md:hidden fixed bottom-3 left-3 right-3 z-40 transition-all duration-300">
       <div className="glass-panel p-2 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2">
         <a
-          href="tel:+74951520242"
+          href={COMPANY_CONFIG.phoneHref}
           className="p-3 rounded-xl bg-neutral-200/80 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center shrink-0"
           aria-label={t.sticky.call}
         >

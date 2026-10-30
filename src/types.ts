@@ -22,6 +22,8 @@ export interface HouseItem {
   area: number; // m²
   dimensions: string;
   floors: number;
+  imageWebp: string; // Optimized .webp asset path
+  webpSizeKb?: number;
   highlight?: {
     ru: string;
     en: string;

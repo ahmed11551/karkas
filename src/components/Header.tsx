@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sun, Moon, Globe, Phone, Volume2, VolumeX, Shield } from 'lucide-react';
 import { Language, Theme } from '../types';
 import { TRANSLATIONS } from '../data/translations';
+import { COMPANY_CONFIG } from '../config/company';
 import { toggleSoundMute, playUiClick } from '../utils/sound';
 
 interface HeaderProps {
@@ -11,6 +12,8 @@ interface HeaderProps {
   onToggleTheme: () => void;
   onOpenQuiz: () => void;
   onOpenCrm: () => void;
+  isAdminAuthenticated: boolean;
+  newLeadsCount?: number;
   isScrolled: boolean;
 }
 
@@ -21,6 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   onOpenQuiz,
   onOpenCrm,
+  isAdminAuthenticated,
+  newLeadsCount = 0,
   isScrolled,
 }) => {
   const t = TRANSLATIONS[lang];
@@ -36,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-[#F7F9F6]/90 dark:bg-[#0B1512]/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 shadow-sm py-3.5'
+          ? 'bg-[#F4F2EC]/90 dark:bg-[#0B1512]/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 shadow-sm py-3.5'
           : 'bg-transparent py-5'
       }`}
     >
@@ -95,11 +100,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-3 shrink-0">
             {/* Direct Phone link */}
             <a
-              href="tel:+74951520242"
+              href={COMPANY_CONFIG.phoneHref}
               className="hidden sm:flex flex-col items-end text-xs font-semibold text-neutral-800 dark:text-neutral-200 hover:text-[#184534] dark:hover:text-[#E6B860] transition-colors mr-1"
             >
               <span className="font-sans text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                +7 (495) 152-02-42
+                {COMPANY_CONFIG.phoneDisplay}
               </span>
               <span className="text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
                 {t.phoneSchedule}
@@ -149,17 +154,25 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* CRM Lead Board Trigger */}
-            <button
-              onClick={() => {
-                playUiClick('tap');
-                onOpenCrm();
-              }}
-              className="p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
-              title="Открыть CRM-панель заявок"
-            >
-              <Shield className="w-4 h-4 text-[#B27D18] dark:text-[#E6B860]" />
-            </button>
+            {/* STRICT DOM SECURITY: CRM Button exists in DOM ONLY when Admin is authenticated with valid admin_token */}
+            {isAdminAuthenticated && (
+              <button
+                onClick={() => {
+                  playUiClick('tap');
+                  onOpenCrm();
+                }}
+                className="relative px-3 py-1.5 rounded-lg border border-[#E6B860] bg-[#183B30] text-[#E6B860] hover:bg-[#1E4739] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                title="Открыть защищенную CRM-панель заявок"
+              >
+                <Shield className="w-3.5 h-3.5 text-[#E6B860]" />
+                <span className="hidden md:inline">Открыть CRM</span>
+                {newLeadsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#E6B860] text-[#1E1705] font-mono text-[10px] font-bold">
+                    {newLeadsCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Primary Action Button */}
             <button

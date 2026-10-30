@@ -8,8 +8,35 @@
 }
 
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: 5rem;
+  background-color: #F4F2EC;
+}
+
+html.dark {
+  background-color: #0B1512;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Content-visibility optimization for below-the-fold sections (<2s mobile 4G load) */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 650px;
 }
 
 /* Custom subtle scrollbar */
@@ -33,34 +60,45 @@ html {
 
 /* Awwwards-style SVG Film Grain Texture Overlay */
 .bg-grain-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.055'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E");
 }
 
-/* Smooth glassmorphism helper */
+/* Smooth organic off-white glassmorphism helpers */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(250, 248, 243, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(230, 224, 210, 0.85);
 }
 
 .dark .glass-panel {
-  background: rgba(18, 36, 29, 0.75);
+  background: rgba(18, 36, 29, 0.82);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(251, 249, 245, 0.94);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(20, 46, 37, 0.08);
 }
 
 .dark .glass-card {
-  background: rgba(20, 42, 33, 0.8);
+  background: rgba(20, 42, 33, 0.86);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Reduce expensive GPU backdrop-filter cost on mobile 4G devices */
+@media (max-width: 768px) {
+  .glass-panel,
+  .dark .glass-panel,
+  .glass-card,
+  .dark .glass-card {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
 }
 
 /* Subtle glow utility */
