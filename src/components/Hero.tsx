@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import gsap from 'gsap';
 import { Sparkles, ArrowRight, CheckCircle2, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
@@ -23,6 +24,124 @@ export const Hero: React.FC<HeroProps> = ({
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Refs for 60fps GSAP Mouse-Parallax Layers
+  const heroSectionRef = useRef<HTMLElement | null>(null);
+  const sunRef = useRef<SVGCircleElement | null>(null);
+  const cloudsRef = useRef<SVGGElement | null>(null);
+  const starsRef = useRef<SVGGElement | null>(null);
+  const farHillRef = useRef<SVGPathElement | null>(null);
+  const nearHillRef = useRef<SVGPathElement | null>(null);
+  const houseRef = useRef<SVGGElement | null>(null);
+  const treesRef = useRef<SVGGElement | null>(null);
+  const badgeRef = useRef<HTMLDivElement | null>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (!heroSectionRef.current) return;
+    const rect = heroSectionRef.current.getBoundingClientRect();
+    // Normalized coordinates from -1 to +1
+    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+
+    // Sun / Moon moves opposite to cursor
+    if (sunRef.current) {
+      gsap.to(sunRef.current, {
+        x: -nx * 20,
+        y: -ny * 14,
+        duration: 0.7,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Clouds drift in opposite direction
+    if (cloudsRef.current) {
+      gsap.to(cloudsRef.current, {
+        x: -nx * 28,
+        y: -ny * 10,
+        duration: 0.85,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Night stars subtle parallax
+    if (starsRef.current) {
+      gsap.to(starsRef.current, {
+        x: -nx * 10,
+        y: -ny * 8,
+        duration: 0.9,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Far hill layer
+    if (farHillRef.current) {
+      gsap.to(farHillRef.current, {
+        x: -nx * 8,
+        y: -ny * 4,
+        duration: 0.7,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Near hill layer
+    if (nearHillRef.current) {
+      gsap.to(nearHillRef.current, {
+        x: nx * 6,
+        y: ny * 4,
+        duration: 0.65,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Main House moves gently with depth
+    if (houseRef.current) {
+      gsap.to(houseRef.current, {
+        x: 50 + nx * 14,
+        y: 120 + ny * 8,
+        duration: 0.6,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Foreground trees move faster for depth separation
+    if (treesRef.current) {
+      gsap.to(treesRef.current, {
+        x: nx * 22,
+        y: ny * 10,
+        duration: 0.55,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Floating milestone badge
+    if (badgeRef.current) {
+      gsap.to(badgeRef.current, {
+        x: nx * 10,
+        y: ny * 6,
+        duration: 0.55,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (sunRef.current) gsap.to(sunRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (cloudsRef.current) gsap.to(cloudsRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (starsRef.current) gsap.to(starsRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (farHillRef.current) gsap.to(farHillRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (nearHillRef.current) gsap.to(nearHillRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (houseRef.current) gsap.to(houseRef.current, { x: 50, y: 120, duration: 0.9, ease: 'power3.out' });
+    if (treesRef.current) gsap.to(treesRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+    if (badgeRef.current) gsap.to(badgeRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });
+  };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val.startsWith('7') || val.startsWith('8')) {
@@ -44,6 +163,7 @@ export const Hero: React.FC<HeroProps> = ({
     e.preventDefault();
     const digitsOnly = phoneInput.replace(/\D/g, '');
     if (digitsOnly.length < 11) {
+      playUiClick('tick');
       setFormError(t.hero.quickCallError);
       return;
     }
@@ -58,7 +178,15 @@ export const Hero: React.FC<HeroProps> = ({
   };
 
   return (
-    <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24 bg-gradient-to-b from-[#142E25] via-[#10241D] to-[#0A1813] text-white">
+    <section
+      ref={heroSectionRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24 bg-gradient-to-b from-[#142E25] via-[#10241D] to-[#0A1813] text-white"
+    >
+      {/* Awwwards-Style Film Grain Noise Texture Overlay */}
+      <div className="absolute inset-0 bg-grain-overlay pointer-events-none z-[1]" />
+
       {/* Background ambient architectural grid lines */}
       <div className="absolute inset-0 bg-[radial-gradient(#E6B860_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.04] pointer-events-none" />
 
@@ -66,7 +194,7 @@ export const Hero: React.FC<HeroProps> = ({
       <div className="absolute top-1/4 left-1/3 -translate-x-1/2 w-96 h-96 bg-[#E6B860]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-[#2F5A4B]/30 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Left Column: Value Proposition & Interactive Controls */}
           <div className="lg:col-span-7 flex flex-col items-start z-10">
@@ -147,7 +275,10 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Secondary Actions: Quiz Trigger & Day/Night Scene Toggle */}
             <div className="flex flex-wrap items-center gap-4 mt-8 pt-4 border-t border-white/10 w-full max-w-lg">
               <button
-                onClick={onOpenQuiz}
+                onClick={() => {
+                  playUiClick('tap');
+                  onOpenQuiz();
+                }}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/30 hover:border-white/60 bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-all group"
               >
                 <span>{t.hero.quizBtn}</span>
@@ -155,7 +286,10 @@ export const Hero: React.FC<HeroProps> = ({
               </button>
 
               <button
-                onClick={onToggleScene}
+                onClick={() => {
+                  playUiClick('tap');
+                  onToggleScene();
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-medium text-emerald-100 transition-colors"
                 title="Переключить атмосферное освещение сцены"
               >
@@ -174,23 +308,27 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Layered Interactive Architectural Scene */}
+          {/* Right Column: Layered Interactive Mouse-Parallax Architectural Scene */}
           <div className="lg:col-span-5 relative flex items-center justify-center">
             <div
-              className={`relative w-full max-w-[420px] aspect-[1/1.06] rounded-[2.5rem] rounded-tl-[10rem] overflow-hidden border border-white/20 shadow-2xl transition-all duration-700 ${
+              className={`relative w-full max-w-[420px] aspect-[1/1.06] rounded-[2.5rem] rounded-tl-[10rem] overflow-hidden border border-white/20 shadow-2xl transition-colors duration-700 ${
                 isNightScene
                   ? 'bg-gradient-to-b from-[#091522] via-[#152E38] to-[#11241C]'
                   : 'bg-gradient-to-b from-[#D2E7ED] via-[#EDF5F0] 60% to-[#7CAE8F]'
               }`}
             >
+              {/* Subtle Grain Overlay inside the scene */}
+              <div className="absolute inset-0 bg-grain-overlay pointer-events-none z-20" />
+
               <svg
-                viewBox="0 0 400 420"
+                viewBox="-20 -10 440 430"
                 preserveAspectRatio="xMidYMax slice"
                 className="absolute inset-0 w-full h-full"
                 aria-hidden="true"
               >
-                {/* Celestial Body: Sun or Moon */}
+                {/* Celestial Body: Sun or Moon (Parallax Layer 1) */}
                 <circle
+                  ref={sunRef}
                   cx="318"
                   cy="96"
                   r="34"
@@ -203,34 +341,60 @@ export const Hero: React.FC<HeroProps> = ({
                   }}
                 />
 
-                {/* Night Stars */}
-                {isNightScene && (
-                  <g fill="#FFFFFF" opacity="0.9" className="transition-opacity duration-700">
-                    <circle cx="60" cy="50" r="2" />
-                    <circle cx="140" cy="90" r="1.5" />
-                    <circle cx="220" cy="40" r="2" />
-                    <circle cx="270" cy="150" r="1.5" />
-                    <circle cx="90" cy="160" r="1.5" />
-                    <circle cx="180" cy="20" r="1.5" />
-                    <circle cx="45" cy="110" r="1" />
-                    <circle cx="115" cy="45" r="1.5" />
-                  </g>
-                )}
+                {/* Night Stars (Parallax Layer 2) */}
+                <g
+                  ref={starsRef}
+                  fill="#FFFFFF"
+                  opacity={isNightScene ? 0.9 : 0}
+                  className="transition-opacity duration-700"
+                >
+                  <circle cx="60" cy="50" r="2" />
+                  <circle cx="140" cy="90" r="1.5" />
+                  <circle cx="220" cy="40" r="2" />
+                  <circle cx="270" cy="150" r="1.5" />
+                  <circle cx="90" cy="160" r="1.5" />
+                  <circle cx="180" cy="20" r="1.5" />
+                  <circle cx="45" cy="110" r="1" />
+                  <circle cx="115" cy="45" r="1.5" />
+                </g>
 
-                {/* Layered Gentle Hills */}
+                {/* Layered Atmospheric Clouds (Parallax Layer 3 — moves opposite to cursor) */}
+                <g
+                  ref={cloudsRef}
+                  fill={isNightScene ? '#334E68' : '#FFFFFF'}
+                  opacity={isNightScene ? 0.35 : 0.75}
+                  className="transition-all duration-700"
+                >
+                  {/* Left High Cloud */}
+                  <g transform="translate(38, 66)">
+                    <rect x="0" y="10" width="68" height="16" rx="8" />
+                    <circle cx="22" cy="12" r="12" />
+                    <circle cx="42" cy="9" r="15" />
+                  </g>
+                  {/* Right Mid Cloud */}
+                  <g transform="translate(215, 118)">
+                    <rect x="0" y="8" width="54" height="13" rx="6.5" />
+                    <circle cx="18" cy="10" r="10" />
+                    <circle cx="34" cy="8" r="12" />
+                  </g>
+                </g>
+
+                {/* Far & Near Gentle Hills (Parallax Layers 4 & 5) */}
                 <path
-                  d="M0 262 Q 70 228 140 254 T 290 242 T 400 256 V 420 H 0 Z"
+                  ref={farHillRef}
+                  d="M-40 262 Q 70 228 140 254 T 290 242 T 440 256 V 430 H -40 Z"
                   fill={isNightScene ? '#1C3A2E' : '#98C2A3'}
                   className="transition-colors duration-700"
                 />
                 <path
-                  d="M0 290 Q 90 270 180 290 T 360 280 T 400 295 V 420 H 0 Z"
+                  ref={nearHillRef}
+                  d="M-40 290 Q 90 270 180 290 T 360 280 T 440 295 V 430 H -40 Z"
                   fill={isNightScene ? '#142B22' : '#77A785'}
                   className="transition-colors duration-700"
                 />
 
-                {/* Architectural Frame House */}
-                <g transform="translate(50, 120)">
+                {/* Architectural Frame House (Parallax Layer 6) */}
+                <g ref={houseRef} transform="translate(50, 120)">
                   {/* Gable Roof */}
                   <path
                     d="M0 150 L 150 6 L 300 150 Z"
@@ -315,15 +479,22 @@ export const Hero: React.FC<HeroProps> = ({
                   />
                 </g>
 
-                {/* Coniferous Forest Trees */}
-                <g fill={isNightScene ? '#163328' : '#2F5A4B'} className="transition-colors duration-700">
-                  <path d="M20 340 L 42 270 L 64 340 Z" />
-                  <path d="M350 350 L 368 292 L 386 350 Z" />
+                {/* Coniferous Forest Trees (Foreground Parallax Layer 7) */}
+                <g
+                  ref={treesRef}
+                  fill={isNightScene ? '#163328' : '#2F5A4B'}
+                  className="transition-colors duration-700"
+                >
+                  <path d="M16 344 L 40 268 L 64 344 Z" />
+                  <path d="M348 352 L 368 288 L 388 352 Z" />
                 </g>
               </svg>
 
               {/* Floating Verified Milestone Badge */}
-              <div className="absolute left-5 bottom-5 glass-panel p-3.5 sm:p-4 rounded-2xl shadow-xl text-neutral-900 dark:text-neutral-50 flex items-center gap-3">
+              <div
+                ref={badgeRef}
+                className="absolute left-5 bottom-5 z-30 glass-panel p-3.5 sm:p-4 rounded-2xl shadow-xl text-neutral-900 dark:text-neutral-50 flex items-center gap-3"
+              >
                 <div className="w-2.5 h-10 rounded-full bg-[#E6B860]" />
                 <div>
                   <span className="block font-display font-bold text-xl sm:text-2xl tracking-tight leading-none text-[#142E25] dark:text-[#E6B860]">

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowUpRight, Check, Maximize2, LayoutGrid, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import gsap from 'gsap';
+import { ArrowUpRight, Check, Maximize2, LayoutGrid, Eye, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { HouseItem, Language } from '../types';
 import { HOUSES } from '../data/houses';
 import { TRANSLATIONS } from '../data/translations';
@@ -11,6 +12,64 @@ interface HouseCatalogProps {
   onSelectHouse: (house: HouseItem) => void;
   isNightScene: boolean;
 }
+
+interface MagneticCardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const MagneticBentoCard: React.FC<MagneticCardProps> = ({ children, className = '' }) => {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    // Normalized -1 to +1
+    const nx = (x - centerX) / centerX;
+    const ny = (y - centerY) / centerY;
+
+    gsap.to(cardRef.current, {
+      rotateY: nx * 5.5,
+      rotateX: -ny * 5.5,
+      x: nx * 6,
+      y: ny * 6 - 4,
+      transformPerspective: 1000,
+      duration: 0.4,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+    gsap.to(cardRef.current, {
+      rotateY: 0,
+      rotateX: 0,
+      x: 0,
+      y: 0,
+      duration: 0.65,
+      ease: 'elastic.out(1, 0.6)',
+      overwrite: 'auto',
+    });
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ transformStyle: 'preserve-3d' }}
+      className={className}
+    >
+      {children}
+    </div>
+  );
+};
 
 export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   lang,
@@ -37,13 +96,20 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
     setBudgetFilter(val);
   };
 
+  // Asymmetric Bento Grid span pattern:
+  // Index 0 ("Дачный домик" - Best Seller) is featured wide (lg:col-span-2),
+  // alternating 2:1 / 1:2 / 2:1 rhythm so every 3-column row is 100% filled.
+  const isBentoWide = (idx: number): boolean => {
+    return idx === 0 || idx === 3 || idx === 4 || idx === 8 || idx === 11 || idx === 14;
+  };
+
   return (
     <section id="catalog" className="pt-10 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
           <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-            {lang === 'ru' ? 'Каталог типовых проектов' : 'Standard Architectural Catalog'}
+            {lang === 'ru' ? 'Bento-каталог типовых проектов' : 'Bento Architectural Catalog'}
           </span>
           <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
             {t.catalog.title}
@@ -98,138 +164,215 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
         </div>
       </div>
 
-      {/* Houses Grid */}
+      {/* Bento Grid of Houses with Magnetic Tilt Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayedHouses.map((house) => (
-          <div
-            key={house.id}
-            className="glass-card rounded-3xl border border-neutral-200/90 dark:border-neutral-800 overflow-hidden flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl group"
-          >
-            {/* Top SVG Graphic Area */}
-            <div className="relative pt-6 pb-2 px-6 bg-gradient-to-b from-neutral-100 dark:from-neutral-900/60 to-transparent flex items-center justify-center">
-              {house.highlight && (
-                <div className="absolute top-4 left-4 px-2.5 py-1 rounded-full bg-[#E6B860]/20 border border-[#E6B860]/40 text-[11px] font-semibold text-[#8C5E0A] dark:text-[#F5C46B]">
-                  {house.highlight[lang]}
+        {displayedHouses.map((house, idx) => {
+          const isFeaturedBestSeller = idx === 0;
+          const isWide = isBentoWide(idx);
+          const currentMode = activeViewModes[house.id] || 'facade';
+
+          return (
+            <MagneticBentoCard
+              key={house.id}
+              className={`rounded-3xl overflow-hidden flex flex-col ${
+                isWide ? 'sm:col-span-2 lg:col-span-2 lg:flex-row' : 'col-span-1'
+              } ${
+                isFeaturedBestSeller
+                  ? 'bg-gradient-to-br from-[#183B30] via-[#122A21] to-[#0B1A14] text-white border-2 border-[#E6B860]/60 shadow-2xl'
+                  : 'glass-card border border-neutral-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl'
+              } transition-shadow duration-300 group`}
+            >
+              {/* SVG Architectural Visualizer Area */}
+              <div
+                className={`relative pt-8 pb-4 px-6 flex items-center justify-center ${
+                  isWide ? 'lg:w-1/2 lg:py-8' : 'w-full'
+                } ${
+                  isFeaturedBestSeller
+                    ? 'bg-gradient-to-br from-white/10 via-white/5 to-transparent'
+                    : 'bg-gradient-to-b from-neutral-100 dark:from-neutral-900/60 to-transparent'
+                }`}
+              >
+                {house.highlight && (
+                  <div
+                    className={`absolute top-4 left-4 inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold ${
+                      isFeaturedBestSeller
+                        ? 'bg-[#E6B860] text-[#1E1705] shadow-md'
+                        : 'bg-[#E6B860]/20 border border-[#E6B860]/40 text-[#8C5E0A] dark:text-[#F5C46B]'
+                    }`}
+                  >
+                    {isFeaturedBestSeller && <Sparkles className="w-3 h-3" />}
+                    <span>{house.highlight[lang]}</span>
+                  </div>
+                )}
+
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 z-10">
+                  {/* Smooth Cross-Fade Facade -> Plan switch button */}
+                  <button
+                    onClick={() => {
+                      playUiClick('tap');
+                      setActiveViewModes((prev) => ({
+                        ...prev,
+                        [house.id]: prev[house.id] === 'plan' ? 'facade' : 'plan',
+                      }));
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shadow-sm flex items-center gap-1 ${
+                      isFeaturedBestSeller
+                        ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                        : 'bg-white/85 dark:bg-neutral-800/85 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                    }`}
+                    title="Переключить фасад / план"
+                  >
+                    {currentMode === 'plan' ? (
+                      <>
+                        <Eye className="w-3 h-3 text-[#E6B860]" />
+                        <span>{lang === 'ru' ? 'Фасад' : 'Facade'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <LayoutGrid className="w-3 h-3 text-[#E6B860]" />
+                        <span>{lang === 'ru' ? 'План' : 'Plan'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      playUiClick('tick');
+                      setModalViewMode('facade');
+                      setSelectedSpecHouse(house);
+                    }}
+                    className={`p-1.5 rounded-full transition-colors ${
+                      isFeaturedBestSeller
+                        ? 'bg-white/15 hover:bg-white/25 text-white'
+                        : 'bg-white/75 dark:bg-neutral-800/75 hover:bg-white dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                    }`}
+                    title={t.catalog.viewSpecs}
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              )}
 
-              <div className="absolute top-4 right-4 flex items-center gap-1.5">
-                {/* Facade / Plan switch button */}
-                <button
-                  onClick={() => {
-                    playUiClick('tap');
-                    setActiveViewModes((prev) => ({
-                      ...prev,
-                      [house.id]: prev[house.id] === 'plan' ? 'facade' : 'plan',
-                    }));
-                  }}
-                  className="px-2 py-1 rounded-lg bg-white/80 dark:bg-neutral-800/80 hover:bg-white dark:hover:bg-neutral-800 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 transition-colors shadow-sm flex items-center gap-1"
-                  title="Переключить фасад / план"
-                >
-                  {activeViewModes[house.id] === 'plan' ? (
-                    <>
-                      <Eye className="w-3 h-3 text-[#B27D18] dark:text-[#E6B860]" />
-                      <span>{lang === 'ru' ? 'Фасад' : 'Facade'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <LayoutGrid className="w-3 h-3 text-[#B27D18] dark:text-[#E6B860]" />
-                      <span>{lang === 'ru' ? 'План' : 'Plan'}</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    playUiClick('tick');
-                    setModalViewMode('facade');
-                    setSelectedSpecHouse(house);
-                  }}
-                  className="p-1.5 rounded-full bg-white/70 dark:bg-neutral-800/70 hover:bg-white dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition-colors"
-                  title={t.catalog.viewSpecs}
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="w-full max-w-[240px] aspect-[200/120] py-2">
-                <HouseSvg
-                  styleType={house.style}
-                  isNight={isNightScene}
-                  hasPiles={true}
-                  viewMode={activeViewModes[house.id] || 'facade'}
-                  className="w-full h-full drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            </div>
-
-            {/* Body Info */}
-            <div className="p-6 flex flex-col flex-1 justify-between">
-              <div>
-                {/* Meta details unboxed */}
-                <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-2 font-medium">
-                  <span>{house.dimensions}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{house.area} м²</span>
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    {house.floors === 1
-                      ? lang === 'ru'
-                        ? '1 этаж'
-                        : '1 story'
-                      : lang === 'ru'
-                      ? '2 этажа'
-                      : '2 stories'}
-                  </span>
-                </div>
-
-                <h3 className="font-display font-semibold text-lg text-neutral-900 dark:text-neutral-100 group-hover:text-[#184534] dark:group-hover:text-[#E6B860] transition-colors">
-                  {house.name[lang]}
-                </h3>
-
-                <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
-                  {house.description[lang]}
-                </p>
-
-                {/* Key feature specs */}
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {house.specs[lang].map((spec, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300"
-                    >
-                      <Check className="w-2.5 h-2.5 text-[#B27D18] dark:text-[#E6B860]" />
-                      <span>{spec}</span>
-                    </span>
-                  ))}
+                <div className={`w-full ${isWide ? 'max-w-[290px]' : 'max-w-[240px]'} aspect-[200/120] py-2`}>
+                  <HouseSvg
+                    styleType={house.style}
+                    isNight={isNightScene}
+                    hasPiles={true}
+                    viewMode={currentMode}
+                    className="w-full h-full drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
               </div>
 
-              {/* Price & Action row */}
-              <div className="mt-6 pt-4 border-t border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between">
+              {/* Card Details Area */}
+              <div className={`p-6 flex flex-col flex-1 justify-between ${isWide ? 'lg:w-1/2 lg:p-8' : ''}`}>
                 <div>
-                  <span className="text-[11px] text-neutral-500 block">
-                    {t.catalog.from}
-                  </span>
-                  <span className="font-display font-bold text-xl text-neutral-900 dark:text-neutral-100 tracking-tight tabular-nums">
-                    {formatPrice(house.price)} {t.catalog.rub}
-                  </span>
+                  {/* Meta details unboxed */}
+                  <div
+                    className={`flex items-center gap-2 text-xs mb-2 font-medium ${
+                      isFeaturedBestSeller
+                        ? 'text-emerald-200/80'
+                        : 'text-neutral-500 dark:text-neutral-400'
+                    }`}
+                  >
+                    <span>{house.dimensions}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{house.area} м²</span>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {house.floors === 1
+                        ? lang === 'ru'
+                          ? '1 этаж'
+                          : '1 story'
+                        : lang === 'ru'
+                        ? '2 этажа'
+                        : '2 stories'}
+                    </span>
+                  </div>
+
+                  <h3
+                    className={`font-display font-semibold ${
+                      isWide ? 'text-xl sm:text-2xl' : 'text-lg'
+                    } ${
+                      isFeaturedBestSeller
+                        ? 'text-white'
+                        : 'text-neutral-900 dark:text-neutral-100 group-hover:text-[#184534] dark:group-hover:text-[#E6B860]'
+                    } transition-colors`}
+                  >
+                    {house.name[lang]}
+                  </h3>
+
+                  <p
+                    className={`mt-2 text-xs sm:text-sm leading-relaxed ${
+                      isFeaturedBestSeller
+                        ? 'text-emerald-100/80'
+                        : 'text-neutral-600 dark:text-neutral-400 line-clamp-2'
+                    }`}
+                  >
+                    {house.description[lang]}
+                  </p>
+
+                  {/* Key feature specs */}
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {house.specs[lang].map((spec, sIdx) => (
+                      <span
+                        key={sIdx}
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-md ${
+                          isFeaturedBestSeller
+                            ? 'bg-white/10 text-emerald-100'
+                            : 'bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300'
+                        }`}
+                      >
+                        <Check className="w-2.5 h-2.5 text-[#E6B860]" />
+                        <span>{spec}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    playUiClick('tap');
-                    onSelectHouse(house);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] text-xs font-semibold transition-all gold-glow whitespace-nowrap active:scale-95"
+                {/* Price & Action row */}
+                <div
+                  className={`mt-6 pt-4 border-t flex items-center justify-between ${
+                    isFeaturedBestSeller
+                      ? 'border-white/15'
+                      : 'border-neutral-200/80 dark:border-neutral-800'
+                  }`}
                 >
-                  <span>{t.catalog.calculateExact}</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
+                  <div>
+                    <span
+                      className={`text-[11px] block ${
+                        isFeaturedBestSeller ? 'text-emerald-200/70' : 'text-neutral-500'
+                      }`}
+                    >
+                      {t.catalog.from}
+                    </span>
+                    <span
+                      className={`font-display font-bold ${
+                        isWide ? 'text-2xl' : 'text-xl'
+                      } tracking-tight tabular-nums ${
+                        isFeaturedBestSeller
+                          ? 'text-[#E6B860]'
+                          : 'text-neutral-900 dark:text-neutral-100'
+                      }`}
+                    >
+                      {formatPrice(house.price)} {t.catalog.rub}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      playUiClick('tap');
+                      onSelectHouse(house);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] text-xs font-semibold transition-all gold-glow whitespace-nowrap active:scale-95"
+                  >
+                    <span>{t.catalog.calculateExact}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </MagneticBentoCard>
+          );
+        })}
       </div>
 
       {/* Show All 15 / Collapse Toggle Button */}
@@ -377,6 +520,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
               </div>
               <button
                 onClick={() => {
+                  playUiClick('tap');
                   const house = selectedSpecHouse;
                   setSelectedSpecHouse(null);
                   onSelectHouse(house);

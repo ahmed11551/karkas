@@ -291,7 +291,10 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
               max="200"
               step="5"
               value={distanceKm}
-              onChange={(e) => setDistanceKm(+e.target.value)}
+              onChange={(e) => {
+                playUiClick('tick');
+                setDistanceKm(+e.target.value);
+              }}
               className="w-full accent-[#E6B860] cursor-pointer"
             />
             <div className="flex justify-between text-[11px] text-neutral-400">
@@ -320,9 +323,10 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 max="50"
                 step="5"
                 value={config.downPaymentPercent}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, downPaymentPercent: +e.target.value }))
-                }
+                onChange={(e) => {
+                  playUiClick('tick');
+                  setConfig((prev) => ({ ...prev, downPaymentPercent: +e.target.value }));
+                }}
                 className="w-full accent-[#E6B860] cursor-pointer"
               />
 
@@ -338,9 +342,10 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 max="20"
                 step="1"
                 value={config.mortgageYears}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, mortgageYears: +e.target.value }))
-                }
+                onChange={(e) => {
+                  playUiClick('tick');
+                  setConfig((prev) => ({ ...prev, mortgageYears: +e.target.value }));
+                }}
                 className="w-full accent-[#E6B860] cursor-pointer"
               />
 

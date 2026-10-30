@@ -147,10 +147,17 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
   const [activeLayer, setActiveLayer] = useState<number>(3); // Selected layer
   const [hoveredLayer, setHoveredLayer] = useState<number | null>(null); // Hovered hotspot or layer
+  const [focusMode, setFocusMode] = useState<boolean>(true); // Focus Mode enabled by default for Awwwards layer spotlight
 
   // The displayed layer prioritizes hover state for instant interactive inspection
   const displayedLayerIndex = hoveredLayer !== null ? hoveredLayer : activeLayer;
   const currentSpot = HOTSPOTS[displayedLayerIndex];
+
+  // Helper for Focus Mode layer opacity: selected layer = 1, unselected layers become semi-transparent (0.18)
+  const getLayerOpacity = (layerId: number) => {
+    if (displayedLayerIndex === layerId) return 1;
+    return focusMode ? 0.18 : 0.78;
+  };
 
   // Calculate smart tooltip placement in % relative to 400x360 viewBox
   const getTooltipPositionStyle = (spot: HotspotLayer): React.CSSProperties => {
@@ -179,14 +186,36 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
             </h2>
             <p className="mt-2 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
               {lang === 'ru'
-                ? 'Наведите курсор или нажмите на любую точку (01–06) на 3D-разрезе, чтобы открыть всплывающий технический паспорт слоя по ГОСТ.'
-                : 'Hover or click any numbered hotspot (01–06) on the 3D cutaway to open the interactive technical specification tooltip.'}
+                ? 'Наведите курсор или нажмите на любую точку (01–06) на 3D-разрезе: выбранный слой подсвечивается в режиме фокуса, а остальные становятся полупрозрачными.'
+                : 'Hover or click any numbered hotspot (01–06) on the 3D cutaway: the selected layer glows in Focus Mode while the rest of the house becomes semi-transparent.'}
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#183B30] text-[#E6B860] text-xs font-semibold self-start md:self-auto">
-            <ThermometerSnowflake className="w-4 h-4" />
-            <span>{lang === 'ru' ? 'Зимний контур до −35 °C' : 'Winter-rated to −35 °C'}</span>
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => {
+                playUiClick('tap');
+                setFocusMode((prev) => !prev);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-semibold border transition-all ${
+                focusMode
+                  ? 'bg-[#E6B860] text-[#1E1705] border-[#E6B860] shadow-md'
+                  : 'bg-white/80 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>
+                {lang === 'ru'
+                  ? `Focus Mode: ${focusMode ? 'ВКЛ' : 'ВЫКЛ'}`
+                  : `Focus Mode: ${focusMode ? 'ON' : 'OFF'}`}
+              </span>
+            </button>
+
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#183B30] text-[#E6B860] text-xs font-semibold">
+              <ThermometerSnowflake className="w-4 h-4" />
+              <span>{lang === 'ru' ? 'Зимний контур до −35 °C' : 'Winter-rated to −35 °C'}</span>
+            </div>
           </div>
         </div>
 
@@ -200,11 +229,11 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
               {/* Top Interactive Hint Bar */}
               <div className="relative z-10 flex items-center justify-between text-[11px] text-emerald-200/80 mb-2 px-1">
                 <span className="inline-flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-[#E6B860]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#E6B860]" />
                   <span>
                     {lang === 'ru'
-                      ? 'Наведите на маркер 01–06 для всплывающей спецификации'
-                      : 'Hover markers 01–06 for live technical specs'}
+                      ? 'Режим рентген-фокуса активен · Выберите слой 01–06'
+                      : 'X-Ray Focus Mode active · Select layer 01–06'}
                   </span>
                 </span>
                 <span className="font-mono text-[#E6B860] font-semibold">
@@ -224,8 +253,9 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                   aria-label="Изометрический 3D-разрез каркасного дома с интерактивными точками"
                 >
                   <defs>
-                    <filter id="goldLayerGlow" x="-15%" y="-15%" width="130%" height="130%">
-                      <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#E6B860" floodOpacity="0.6" />
+                    <filter id="goldLayerGlow" x="-25%" y="-25%" width="150%" height="150%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#E6B860" floodOpacity="0.85" />
+                      <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#E6B860" floodOpacity="0.45" />
                     </filter>
                   </defs>
 
@@ -236,8 +266,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(5);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 5 ? 1 : 0.72}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(5)}
                     filter={displayedLayerIndex === 5 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     <path d="M50 280 L200 330 L350 280 L200 245 Z" fill="#1C3A2E" opacity="0.5" />
@@ -274,8 +304,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(4);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 4 ? 1 : 0.8}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(4)}
                     filter={displayedLayerIndex === 4 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     <polygon
@@ -305,8 +335,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(2);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 2 ? 1 : 0.82}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(2)}
                     filter={displayedLayerIndex === 2 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     {[110, 155, 200, 245, 290].map((x, idx) => {
@@ -334,8 +364,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(3);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 3 ? 1 : 0.8}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(3)}
                     filter={displayedLayerIndex === 3 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     <polygon
@@ -356,8 +386,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(1);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 1 ? 1 : 0.82}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(1)}
                     filter={displayedLayerIndex === 1 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     <polygon
@@ -385,8 +415,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       playUiClick('tick');
                       setActiveLayer(0);
                     }}
-                    className="cursor-pointer transition-all duration-300"
-                    opacity={displayedLayerIndex === 0 ? 1 : 0.85}
+                    className="cursor-pointer transition-all duration-500"
+                    opacity={getLayerOpacity(0)}
                     filter={displayedLayerIndex === 0 ? 'url(#goldLayerGlow)' : undefined}
                   >
                     <polygon
@@ -415,7 +445,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                           playUiClick('tap');
                           setActiveLayer(spot.id);
                         }}
-                        className="cursor-pointer"
+                        className="cursor-pointer transition-opacity duration-300"
+                        opacity={isFocused ? 1 : focusMode ? 0.65 : 0.9}
                       >
                         {/* Outer animated halo ring when active or hovered */}
                         {isFocused && (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { HouseRoofStyle } from '../types';
 
 interface HouseSvgProps {
@@ -46,80 +47,6 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
       </g>
     );
   };
-
-  // 2D Architectural Floor Plan Layout View
-  if (viewMode === 'plan') {
-    return (
-      <div className={`relative flex items-center justify-center ${className}`}>
-        <svg
-          viewBox="0 0 200 126"
-          className="w-full h-full transition-all duration-500 ease-out font-sans"
-          style={{ transform: `scale(${scale})` }}
-          role="img"
-          aria-label="Архитектурный план этажа"
-        >
-          {/* Blueprint background grid */}
-          <rect x="10" y="8" width="180" height="110" rx="6" fill={isNight ? '#0E221B' : '#E8F1EC'} stroke="#2F5A4B" strokeWidth="1.5" />
-          
-          {/* Outer load-bearing perimeter walls */}
-          <rect x="22" y="18" width="156" height="90" rx="2" fill="none" stroke="#2F5A4B" strokeWidth="5" />
-          
-          {/* Internal partition walls */}
-          <line x1="104" y1="18" x2="104" y2="108" stroke="#2F5A4B" strokeWidth="3" />
-          <line x1="22" y1="68" x2="104" y2="68" stroke="#2F5A4B" strokeWidth="3" />
-          <line x1="68" y1="68" x2="68" y2="108" stroke="#2F5A4B" strokeWidth="2.5" />
-          
-          {/* Windows (blue slots in wall) */}
-          <rect x="44" y="16" width="24" height="4" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
-          <rect x="126" y="16" width="30" height="4" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
-          <rect x="176" y="44" width="4" height="24" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
-          
-          {/* Entrance Door with swing radius arc */}
-          <rect x="36" y="106" width="18" height="4" fill="#E6B860" />
-          <path d="M 36 106 A 18 18 0 0 1 54 88" fill="none" stroke="#E6B860" strokeWidth="1.2" strokeDasharray="2,2" />
-
-          {/* Room Labels & Dimensions */}
-          <text x="140" y="58" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7.5" fontWeight="bold" textAnchor="middle">
-            Гостиная-кухня
-          </text>
-          <text x="140" y="68" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
-            18.4 м²
-          </text>
-
-          <text x="63" y="44" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7" fontWeight="bold" textAnchor="middle">
-            Спальня
-          </text>
-          <text x="63" y="53" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
-            10.2 м²
-          </text>
-
-          <text x="45" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
-            Холл
-          </text>
-          <text x="45" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
-            4.1 м²
-          </text>
-
-          <text x="86" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
-            Санузел
-          </text>
-          <text x="86" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
-            3.3 м²
-          </text>
-
-          {/* Dimension tick marks */}
-          <g stroke="#2F5A4B" strokeWidth="0.8" opacity="0.6">
-            <line x1="22" y1="12" x2="178" y2="12" />
-            <line x1="22" y1="9" x2="22" y2="15" />
-            <line x1="178" y1="9" x2="178" y2="15" />
-            <text x="100" y="11" fill={isNight ? '#E6B860' : '#2F5A4B'} fontSize="5.5" textAnchor="middle" fontWeight="bold">
-              6.00 м
-            </text>
-          </g>
-        </svg>
-      </div>
-    );
-  }
 
   const renderStyleContent = () => {
     switch (styleType) {
@@ -268,41 +195,123 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
   };
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
-      <svg
-        viewBox="0 0 200 126"
-        className="w-full h-full transition-transform duration-500 ease-out"
-        style={{ transform: `scale(${scale})` }}
-        role="img"
-        aria-label="Изометрический проект загородного дома"
-      >
-        <defs>
-          <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={groundFill} stopOpacity={0.8} />
-            <stop offset="100%" stopColor={groundFill} stopOpacity={0.2} />
-          </linearGradient>
-        </defs>
+    <div
+      className={`relative flex items-center justify-center overflow-hidden ${className}`}
+      style={{ transform: `scale(${scale})`, transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
+    >
+      <AnimatePresence mode="sync" initial={false}>
+        {viewMode === 'plan' ? (
+          <motion.svg
+            key="plan-svg"
+            initial={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 1.04, filter: 'blur(4px)' }}
+            transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            viewBox="0 0 200 126"
+            className="w-full h-full font-sans"
+            role="img"
+            aria-label="Архитектурный план этажа"
+          >
+            {/* Blueprint background grid */}
+            <rect x="10" y="8" width="180" height="110" rx="6" fill={isNight ? '#0E221B' : '#E8F1EC'} stroke="#2F5A4B" strokeWidth="1.5" />
 
-        <rect x="8" y="99" width="184" height="4" rx="2" fill={roofFill} opacity="0.25" />
-        <ellipse cx="100" cy="101" rx="88" ry="4" fill="url(#groundGrad)" />
+            {/* Outer load-bearing perimeter walls */}
+            <rect x="22" y="18" width="156" height="90" rx="2" fill="none" stroke="#2F5A4B" strokeWidth="5" />
 
-        {renderScrewPiles()}
+            {/* Internal partition walls */}
+            <line x1="104" y1="18" x2="104" y2="108" stroke="#2F5A4B" strokeWidth="3" />
+            <line x1="22" y1="68" x2="104" y2="68" stroke="#2F5A4B" strokeWidth="3" />
+            <line x1="68" y1="68" x2="68" y2="108" stroke="#2F5A4B" strokeWidth="2.5" />
 
-        <rect x="24" y="98" width="152" height="4" rx="1" fill={roofFill} opacity="0.9" />
+            {/* Windows */}
+            <rect x="44" y="16" width="24" height="4" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
+            <rect x="126" y="16" width="30" height="4" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
+            <rect x="176" y="44" width="4" height="24" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
 
-        {renderStyleContent()}
+            {/* Entrance Door with swing radius arc */}
+            <rect x="36" y="106" width="18" height="4" fill="#E6B860" />
+            <path d="M 36 106 A 18 18 0 0 1 54 88" fill="none" stroke="#E6B860" strokeWidth="1.2" strokeDasharray="2,2" />
 
-        {hasVeranda && styleType !== 'glassv' && (
-          <g transform="translate(148, 56)">
-            <path d="M0 6 L32 12 L32 15 L0 11 Z" fill={roofFill} />
-            <rect x="28" y="14" width="3" height="28" fill={wallFill} stroke={roofFill} strokeWidth="0.8" />
-            <rect x="0" y="28" width="30" height="2" fill={roofFill} />
-            <line x1="8" y1="29" x2="8" y2="42" stroke={roofFill} strokeWidth="1" />
-            <line x1="18" y1="29" x2="18" y2="42" stroke={roofFill} strokeWidth="1" />
-            <rect x="0" y="42" width="32" height="2" fill={roofRidge} />
-          </g>
+            {/* Room Labels & Dimensions */}
+            <text x="140" y="58" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7.5" fontWeight="bold" textAnchor="middle">
+              Гостиная-кухня
+            </text>
+            <text x="140" y="68" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
+              18.4 м²
+            </text>
+
+            <text x="63" y="44" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7" fontWeight="bold" textAnchor="middle">
+              Спальня
+            </text>
+            <text x="63" y="53" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
+              10.2 м²
+            </text>
+
+            <text x="45" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
+              Холл
+            </text>
+            <text x="45" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
+              4.1 м²
+            </text>
+
+            <text x="86" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
+              Санузел
+            </text>
+            <text x="86" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
+              3.3 м²
+            </text>
+
+            {/* Dimension tick marks */}
+            <g stroke="#2F5A4B" strokeWidth="0.8" opacity="0.6">
+              <line x1="22" y1="12" x2="178" y2="12" />
+              <line x1="22" y1="9" x2="22" y2="15" />
+              <line x1="178" y1="9" x2="178" y2="15" />
+              <text x="100" y="11" fill={isNight ? '#E6B860' : '#2F5A4B'} fontSize="5.5" textAnchor="middle" fontWeight="bold">
+                6.00 м
+              </text>
+            </g>
+          </motion.svg>
+        ) : (
+          <motion.svg
+            key="facade-svg"
+            initial={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 1.04, filter: 'blur(4px)' }}
+            transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+            viewBox="0 0 200 126"
+            className="w-full h-full"
+            role="img"
+            aria-label="Изометрический проект загородного дома"
+          >
+            <defs>
+              <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={groundFill} stopOpacity={0.8} />
+                <stop offset="100%" stopColor={groundFill} stopOpacity={0.2} />
+              </linearGradient>
+            </defs>
+
+            <rect x="8" y="99" width="184" height="4" rx="2" fill={roofFill} opacity="0.25" />
+            <ellipse cx="100" cy="101" rx="88" ry="4" fill="url(#groundGrad)" />
+
+            {renderScrewPiles()}
+
+            <rect x="24" y="98" width="152" height="4" rx="1" fill={roofFill} opacity="0.9" />
+
+            {renderStyleContent()}
+
+            {hasVeranda && styleType !== 'glassv' && (
+              <g transform="translate(148, 56)">
+                <path d="M0 6 L32 12 L32 15 L0 11 Z" fill={roofFill} />
+                <rect x="28" y="14" width="3" height="28" fill={wallFill} stroke={roofFill} strokeWidth="0.8" />
+                <rect x="0" y="28" width="30" height="2" fill={roofFill} />
+                <line x1="8" y1="29" x2="8" y2="42" stroke={roofFill} strokeWidth="1" />
+                <line x1="18" y1="29" x2="18" y2="42" stroke={roofFill} strokeWidth="1" />
+                <rect x="0" y="42" width="32" height="2" fill={roofRidge} />
+              </g>
+            )}
+          </motion.svg>
         )}
-      </svg>
+      </AnimatePresence>
     </div>
   );
 };

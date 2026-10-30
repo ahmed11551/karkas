@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 
 interface RollingNumberProps {
   value: number; // e.g. 707000
@@ -13,35 +14,39 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({
   prefix = '≈ ',
   suffix = ' ₽',
   className = '',
-  duration = 600,
+  duration = 550,
 }) => {
   const [displayValue, setDisplayValue] = useState(value);
+  const counterRef = useRef<{ val: number }>({ val: value });
+  const textSpanRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    let startTime: number | null = null;
-    const startValue = displayValue;
-    const difference = value - startValue;
+    if (counterRef.current.val === value) return;
 
-    if (difference === 0) return;
+    const durationSec = duration / 1000;
 
-    let animFrame: number;
+    // 60fps GSAP tween for rapid odometer number roll
+    const tween = gsap.to(counterRef.current, {
+      val: value,
+      duration: durationSec,
+      ease: 'power3.out',
+      onUpdate: () => {
+        setDisplayValue(Math.round(counterRef.current.val));
+      },
+    });
 
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      // Ease out cubic
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(startValue + difference * easedProgress);
-      setDisplayValue(current);
+    // Subtle kinetic velocity pulse on the number node
+    if (textSpanRef.current) {
+      gsap.fromTo(
+        textSpanRef.current,
+        { y: -3, scale: 1.03 },
+        { y: 0, scale: 1, duration: 0.35, ease: 'back.out(2)', overwrite: 'auto' }
+      );
+    }
 
-      if (progress < 1) {
-        animFrame = requestAnimationFrame(step);
-      }
+    return () => {
+      tween.kill();
     };
-
-    animFrame = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(animFrame);
   }, [value, duration]);
 
   // Format with Russian spacing convention
@@ -50,7 +55,9 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({
   return (
     <span className={`inline-flex items-baseline font-display tabular-nums tracking-tight ${className}`}>
       {prefix && <span className="opacity-70 text-[0.8em] mr-1">{prefix}</span>}
-      <span>{formatted}</span>
+      <span ref={textSpanRef} className="inline-block will-change-transform">
+        {formatted}
+      </span>
       {suffix && <span className="text-[0.75em] ml-1.5 opacity-90">{suffix}</span>}
     </span>
   );
