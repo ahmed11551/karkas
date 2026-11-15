@@ -161,12 +161,13 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
 
   // Calculate smart tooltip placement in % relative to 400x360 viewBox
   const getTooltipPositionStyle = (spot: HotspotLayer): React.CSSProperties => {
-    const leftPct = Math.min(Math.max((spot.pinX / 400) * 100, 26), 74);
+    const pinPct = (spot.pinX / 400) * 100;
     const isBottomHalf = spot.pinY > 210;
     const topPct = (spot.pinY / 360) * 100;
 
     return {
-      left: `${leftPct}%`,
+      // Keep the whole card inside the stage: the centre is clamped by half the card width (--tip-half) + gutter
+      left: `clamp(calc(var(--tip-half) + 0.75rem), ${pinPct}%, calc(100% - var(--tip-half) - 0.75rem))`,
       top: isBottomHalf ? `${topPct - 4}%` : `${topPct + 5}%`,
       transform: isBottomHalf ? 'translate(-50%, -100%)' : 'translate(-50%, 0%)',
     };
@@ -498,32 +499,35 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                 {/* POP-UP TOOLTIP OVERLAY ON 3D CUTAWAY */}
                 <AnimatePresence mode="wait">
                   {hoveredLayer !== null && (
-                    <motion.div
+                    // Outer div owns positioning (Motion would overwrite a transform set on the animated element)
+                    <div
                       key={`tooltip-${currentSpot.id}`}
+                      style={getTooltipPositionStyle(currentSpot)}
+                      className="hidden sm:block absolute z-30 w-80 pointer-events-none [--tip-half:10rem]"
+                    >
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.92, y: 6 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.94, y: 4 }}
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      style={getTooltipPositionStyle(currentSpot)}
-                      className="absolute z-30 w-72 sm:w-80 pointer-events-none"
                     >
                       <div className="p-4 rounded-2xl bg-forest/95 backdrop-blur-xl border border-cream/20 shadow-2xl text-cream space-y-2.5">
-                        {/* Header row: Code + GOST + Lifespan */}
-                        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
-                          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-brass-light">
-                            <span className="w-5 h-5 rounded-md bg-cream text-forest flex items-center justify-center text-[10px]">
+                        {/* Header row: Code + GOST + Lifespan (wraps instead of clipping) */}
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-b border-white/10 pb-2">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[11px] font-bold leading-snug text-brass-light">
+                            <span className="shrink-0 w-5 h-5 rounded-md bg-cream text-forest flex items-center justify-center text-[10px]">
                               {currentSpot.code}
                             </span>
-                            <span>{currentSpot.gost}</span>
+                            <span className="break-words">{currentSpot.gost}</span>
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cream/10 text-cream-soft">
+                          <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cream/10 text-cream-soft">
                             {currentSpot.lifespan[lang]}
                           </span>
                         </div>
 
                         {/* Title */}
                         <div>
-                          <h5 className="font-serif text-base sm:text-lg text-cream leading-snug">
+                          <h5 className="font-serif text-base sm:text-lg text-cream leading-snug break-words">
                             {currentSpot.title[lang]}
                           </h5>
                           <p className="text-[11px] text-cream-soft mt-0.5 leading-snug">
@@ -531,46 +535,47 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                           </p>
                         </div>
 
-                        {/* 3 Technical Specification Metrics */}
-                        <div className="grid grid-cols-1 gap-1.5 pt-1 text-[11px] bg-cream/5 p-2.5 rounded-xl border border-cream/10">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-cream-soft">
-                              {lang === 'ru' ? 'Сечение / Контур:' : 'Section:'}
-                            </span>
-                            <span className="font-mono font-semibold text-brass-light text-right">
+                        {/* 3 Technical Specification Metrics: label above value, full text wraps */}
+                        <dl className="grid grid-cols-1 gap-2.5 bg-cream/5 p-3 rounded-xl border border-cream/10">
+                          <div>
+                            <dt className="text-[10px] leading-tight text-cream-soft">
+                              {lang === 'ru' ? 'Сечение / Контур' : 'Section'}
+                            </dt>
+                            <dd className="mt-0.5 font-mono text-xs font-semibold leading-snug text-brass-light break-words">
                               {currentSpot.metrics.thickness[lang]}
-                            </span>
+                            </dd>
                           </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-cream-soft">
-                              {lang === 'ru' ? 'Стандарт / Марка:' : 'Grade:'}
-                            </span>
-                            <span className="font-semibold text-white text-right">
+                          <div>
+                            <dt className="text-[10px] leading-tight text-cream-soft">
+                              {lang === 'ru' ? 'Стандарт / Марка' : 'Grade'}
+                            </dt>
+                            <dd className="mt-0.5 text-xs font-semibold leading-snug text-white break-words">
                               {currentSpot.metrics.densityOrGrade[lang]}
-                            </span>
+                            </dd>
                           </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-cream-soft">
-                              {lang === 'ru' ? 'Показатель:' : 'Rating:'}
-                            </span>
-                            <span className="font-mono text-brass-light text-right">
+                          <div>
+                            <dt className="text-[10px] leading-tight text-cream-soft">
+                              {lang === 'ru' ? 'Показатель' : 'Rating'}
+                            </dt>
+                            <dd className="mt-0.5 font-mono text-xs leading-snug text-brass-light break-words">
                               {currentSpot.metrics.thermalOrLoad[lang]}
-                            </span>
+                            </dd>
                           </div>
-                        </div>
+                        </dl>
                       </div>
                     </motion.div>
+                    </div>
                   )}
                 </AnimatePresence>
               </div>
 
               {/* Persistent Active Hotspot Technical Summary Dock */}
               <div className="mt-3 p-4 rounded-xl bg-cream/5 border border-cream/15 text-cream">
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="font-mono text-xs font-bold text-brass-light">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-1.5">
+                  <span className="min-w-0 font-mono text-xs font-bold leading-snug text-brass-light break-words">
                     УЗЕЛ {currentSpot.code} · {currentSpot.gost}
                   </span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-brass/20 text-brass-light font-semibold">
+                  <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-full bg-brass/20 text-brass-light font-semibold">
                     {currentSpot.lifespan[lang]}
                   </span>
                 </div>
@@ -587,7 +592,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Толщина / Сечение' : 'Dimensions'}
                     </span>
-                    <span className="font-mono font-semibold text-brass-light">
+                    <span className="block font-mono font-semibold leading-snug text-brass-light break-words">
                       {currentSpot.metrics.thickness[lang]}
                     </span>
                   </div>
@@ -595,7 +600,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Материал и класс' : 'Material Grade'}
                     </span>
-                    <span className="font-semibold text-white">
+                    <span className="block font-semibold leading-snug text-white break-words">
                       {currentSpot.metrics.densityOrGrade[lang]}
                     </span>
                   </div>
@@ -603,7 +608,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Инженерный допуск' : 'Engineering Spec'}
                     </span>
-                    <span className="font-mono text-brass-light">
+                    <span className="block font-mono leading-snug text-brass-light break-words">
                       {currentSpot.metrics.thermalOrLoad[lang]}
                     </span>
                   </div>
