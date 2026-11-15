@@ -77,7 +77,7 @@ const AdminLeadsDrawer = lazy(() =>
 const sectionMotionProps = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.02, margin: '0px 0px -30px 0px' },
+  viewport: { once: true, amount: 0.15, margin: '0px 0px -30px 0px' },
   transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
 };
 
@@ -136,24 +136,29 @@ export default function App() {
   useEffect(() => {
     // Users who ask for reduced motion get native scrolling (no eased wheel/anchor tweens).
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Touch screens scroll natively (no JS smoothing); mouse and trackpad keep the eased wheel.
+    const smooth = !reduceMotion && !window.matchMedia('(pointer: coarse)').matches;
 
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 0.9,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: !reduceMotion,
-      wheelMultiplier: 1.0,
-      touchMultiplier: 1.5,
+      smoothWheel: smooth,
+      wheelMultiplier: 0.95,
+      touchMultiplier: 1.2,
     });
 
     lenisRef.current = lenis;
 
-    // Runs once per frame while scrolling. Only the progress bar is touched directly;
-    // React state changes only when the header threshold is crossed.
+    // Runs on each Lenis frame while scrolling. It only writes the progress bar when its value
+    // changes (0.1% steps), and React state changes only when the header threshold is crossed.
     let scrolledNow = false;
+    let lastProgress = -1;
     lenis.on('scroll', ({ scroll, progress }: { scroll: number; progress: number }) => {
       const clamped = Number.isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
       const bar = progressBarRef.current;
-      if (bar) {
+      const pct = Math.round(clamped * 1000);
+      if (bar && pct !== lastProgress) {
+        lastProgress = pct;
         bar.style.transform = `scaleX(${clamped})`;
         bar.setAttribute('aria-valuenow', String(Math.round(clamped * 100)));
       }
@@ -183,7 +188,8 @@ export default function App() {
         const sectionEl = document.querySelector(href) as HTMLElement | null;
         if (sectionEl) {
           e.preventDefault();
-          scrollToAnchorWhenReady(lenis, href, reduceMotion);
+          // Without smooth scrolling (touch, reduced motion) jump instantly, like a native anchor.
+          scrollToAnchorWhenReady(lenis, href, reduceMotion || !smooth);
         }
       }
     };
@@ -467,7 +473,7 @@ export default function App() {
       >
         {/* Bento Grid Proof Metrics & 3 Reason Cards with Lottie Animations */}
         <LazyMount minHeight="360px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <Suspense fallback={<BentoStatsSkeleton />}>
               <BentoStats lang={lang} />
             </Suspense>
@@ -503,7 +509,7 @@ export default function App() {
         </LazyMount>
 
         <LazyMount anchorId="materials" minHeight="900px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <MaterialsSection lang={lang} />
           </motion.div>
         </LazyMount>
@@ -518,19 +524,19 @@ export default function App() {
         </LazyMount>
 
         <LazyMount anchorId="steps" minHeight="800px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <ProcessTimeline lang={lang} />
           </motion.div>
         </LazyMount>
 
         <LazyMount minHeight="600px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <InHouseAdvantage lang={lang} />
           </motion.div>
         </LazyMount>
 
         <LazyMount minHeight="800px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <PlotsMap lang={lang} />
           </motion.div>
         </LazyMount>
@@ -545,13 +551,13 @@ export default function App() {
         </LazyMount>
 
         <LazyMount anchorId="faq" minHeight="700px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <FaqSection lang={lang} />
           </motion.div>
         </LazyMount>
 
         <LazyMount minHeight="360px">
-          <motion.div {...sectionMotionProps}>
+          <motion.div className="cv-auto" {...sectionMotionProps}>
             <CtaBanner
               lang={lang}
               onOpenQuiz={() => handleOpenQuiz()}

@@ -42,8 +42,8 @@ export const Hero: React.FC<HeroProps> = ({
   const badgeRef = useRef<HTMLDivElement | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    // Skip expensive parallax recalculations on mobile touch screens for <2s 4G responsiveness
-    if (!heroSectionRef.current || window.matchMedia('(pointer: coarse)').matches) return;
+    // Parallax follows the mouse, so it runs only with a fine pointer. Touch screens skip it (fewer style writes while scrolling).
+    if (!heroSectionRef.current || !window.matchMedia('(pointer: fine)').matches) return;
     const rect = heroSectionRef.current.getBoundingClientRect();
     // Normalized coordinates from -1 to +1
     const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
@@ -151,7 +151,7 @@ export const Hero: React.FC<HeroProps> = ({
   };
 
   const handleMouseLeave = () => {
-    if (window.matchMedia('(pointer: coarse)').matches) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
     if (sceneCardRef.current)
       gsap.to(sceneCardRef.current, { rotateX: 0, rotateY: 0, duration: 0.9, ease: 'power3.out' });
     if (sunRef.current) gsap.to(sunRef.current, { x: 0, y: 0, duration: 0.9, ease: 'power3.out' });

@@ -42,7 +42,20 @@ export const scrollToAnchorWhenReady = (lenis: Lenis, selector: string, immediat
       // Lenis caches the scroll limit. Sections above just mounted, so the page got taller:
       // refresh the limit, otherwise the scroll stops at the old bottom of the page.
       lenis.resize();
-      lenis.scrollTo(target, { offset: -80, duration: 1.2, immediate });
+      lenis.scrollTo(target, {
+        offset: -80,
+        duration: 1.2,
+        immediate,
+        onComplete: () => {
+          // Sections above can still change height once they are rendered (content-visibility).
+          // If the target drifted, correct it once, without animation.
+          const drift = target.getBoundingClientRect().top - 80;
+          if (Math.abs(drift) > 24) {
+            lenis.resize();
+            lenis.scrollTo(target, { offset: -80, immediate: true });
+          }
+        },
+      });
     }
   };
   attempt();
