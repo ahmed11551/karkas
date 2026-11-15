@@ -1,11 +1,37 @@
+import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
+import { parsePublicLead, sanitizeManagerNotes, sanitizePlainText, validateClientName } from './src/utils/leadPayload.ts';
+import { notifyTelegramNewLead, telegramEnabled } from './server/telegram.ts';
+import {
+  adminLogin,
+  adminPassword,
+  apiErrorHandler,
+  clearSessionCookie,
+  corsGuard,
+  createSession,
+  credentialsConfigured,
+  destroySession,
+  extractSessionToken,
+  isHttps,
+  rateLimit,
+  securityHeaders,
+  sessionIsValid,
+  timingSafeStringEqual,
+  writeSessionCookie,
+} from './server/httpSecurity.ts';
 
-const PORT = 3000;
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const REMEMBER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// Point DATA_DIR at a persistent volume in production, otherwise leads are lost on redeploy.
+const DATA_DIR = process.env.DATA_DIR?.trim()
+  ? path.resolve(process.env.DATA_DIR.trim())
+  : path.resolve(process.cwd(), 'data');
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 
 export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed';
@@ -49,20 +75,6 @@ export interface ServerLead {
   utm?: { [key: string]: string };
   managerNotes?: string;
 }
-
-// Default Admin Credentials (configurable via env)
-const ADMIN_LOGIN = process.env.ADMIN_LOGIN || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'karkas2026';
-
-// Deterministic signed token so dev server restarts keep active admin sessions valid
-const DETERMINISTIC_DEV_TOKEN =
-  'krk_adm_' +
-  crypto
-    .createHmac('sha256', 'karkasnik_crm_secret_2026')
-    .update(`${ADMIN_LOGIN}:${ADMIN_PASSWORD}`)
-    .digest('hex');
-
-const validAdminTokens = new Set<string>([DETERMINISTIC_DEV_TOKEN]);
 
 // Connected SSE clients for real-time lead notifications
 const sseClients = new Set<Response>();
@@ -310,32 +322,18 @@ function saveLeadsToDisk(leads: ServerLead[]) {
     }
     fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf-8');
   } catch {
-    // ignore fs errors on read-only environments
+    // Keep the request successful, but make data loss visible in platform logs (no personal data here).
+    console.error('[leads] failed to write leads file. Check DATA_DIR and that the volume is writable.');
   }
 }
 
 let leadsStore: ServerLead[] = ensureLeadsFile();
 
-function extractToken(req: Request): string | null {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.slice(7).trim();
-  }
-  if (typeof req.query.token === 'string' && req.query.token.trim()) {
-    return req.query.token.trim();
-  }
-  return null;
-}
-
-/**
- * Strict Admin Security Middleware:
- * Returns 403 Forbidden if valid admin_token is missing or invalid.
- */
 function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  const token = extractToken(req);
-  if (!token || !validAdminTokens.has(token)) {
+  const token = extractSessionToken(req);
+  if (!sessionIsValid(token)) {
     res.status(403).json({
-      error: '403 Forbidden: Access denied. Valid admin_token is required.',
+      error: 'Доступ запрещён. Нужна действующая сессия администратора.',
       code: 'FORBIDDEN_ADMIN_TOKEN_REQUIRED',
     });
     return;
@@ -343,40 +341,81 @@ function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+function newLeadId(): string {
+  return `LD-${randomBytes(4).toString('hex').toUpperCase()}`;
+}
+
 async function startServer() {
+  if (process.env.NODE_ENV === 'production' && !credentialsConfigured()) {
+    throw new Error('ADMIN_LOGIN and ADMIN_PASSWORD (12+ chars) are required in production.');
+  }
+  if (!credentialsConfigured()) {
+    console.warn('[auth] ADMIN_LOGIN / ADMIN_PASSWORD are not set. Admin login is disabled.');
+  }
+  console.info(
+    telegramEnabled()
+      ? '[telegram] new-lead notifications enabled'
+      : '[telegram] new-lead notifications disabled (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set or invalid)'
+  );
+
   const app = express();
-  app.use(express.json());
+  app.disable('x-powered-by');
+  app.set('trust proxy', process.env.TRUST_PROXY === '1' ? 1 : false);
+  app.use(securityHeaders);
+  app.use(corsGuard);
+  app.use(express.json({ limit: '16kb' }));
+
+  const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 8, keyPrefix: 'login' });
+  const leadLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 12, keyPrefix: 'leads' });
+
+  // Public health check for hosting platforms (Railway, Render). No data, no auth.
+  app.get('/api/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok' });
+  });
 
   // 1. Admin Login Endpoint (/api/auth/login)
-  app.post('/api/auth/login', (req: Request, res: Response) => {
-    const { username, password } = req.body || {};
-    if (username === ADMIN_LOGIN && password === ADMIN_PASSWORD) {
-      validAdminTokens.add(DETERMINISTIC_DEV_TOKEN);
-      res.status(200).json({
-        success: true,
-        admin_token: DETERMINISTIC_DEV_TOKEN,
-        user: { username: ADMIN_LOGIN, role: 'Руководитель отдела продаж' },
-      });
+  app.post('/api/auth/login', loginLimiter, (req: Request, res: Response) => {
+    if (!credentialsConfigured()) {
+      res.status(503).json({ error: 'Вход администратора временно недоступен.', code: 'AUTH_DISABLED' });
       return;
     }
-    res.status(401).json({
-      error: 'Неверный логин или пароль администратора.',
+    const username = sanitizePlainText(req.body?.username, 64);
+    const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 256) : '';
+    const remember = req.body?.remember === true;
+    const userOk = timingSafeStringEqual(username, adminLogin());
+    const passOk = timingSafeStringEqual(password, adminPassword());
+    if (!userOk || !passOk) {
+      res.status(401).json({ error: 'Неверный логин или пароль администратора.', code: 'INVALID_CREDENTIALS' });
+      return;
+    }
+    const ttl = remember ? REMEMBER_TTL_MS : SESSION_TTL_MS;
+    const token = createSession(ttl);
+    writeSessionCookie(res, token, remember ? Math.floor(ttl / 1000) : null, isHttps(req));
+    res.status(200).json({
+      success: true,
+      user: { username: adminLogin(), role: 'Руководитель отдела продаж' },
     });
   });
 
-  // 2. Verify Admin Token (/api/auth/verify)
+  app.post('/api/auth/logout', (req: Request, res: Response) => {
+    destroySession(extractSessionToken(req));
+    clearSessionCookie(res, isHttps(req));
+    res.status(200).json({ success: true });
+  });
+
+  // 2. Verify Admin Session (/api/auth/verify)
   app.get('/api/auth/verify', (req: Request, res: Response) => {
-    const token = extractToken(req);
-    if (!token || !validAdminTokens.has(token)) {
+    if (!sessionIsValid(extractSessionToken(req))) {
       res.status(403).json({
         authenticated: false,
-        error: '403 Forbidden: Invalid or missing admin_token',
+        error: 'Доступ запрещён. Сессия администратора недействительна.',
+        code: 'FORBIDDEN_ADMIN_TOKEN_REQUIRED',
       });
       return;
     }
     res.status(200).json({
       authenticated: true,
-      user: { username: ADMIN_LOGIN, role: 'Руководитель отдела продаж' },
+      user: { username: adminLogin(), role: 'Руководитель отдела продаж' },
     });
   });
 
@@ -403,61 +442,30 @@ async function startServer() {
     });
   });
 
-  // 5. Public POST /api/leads (Validates phone strictly, creates new lead & broadcasts to Admins)
-  app.post('/api/leads', (req: Request, res: Response) => {
-    const body = req.body || {};
-    const rawPhone = String(body.phone || '').trim();
-    let digits = rawPhone.replace(/\D/g, '');
-    if (digits.length === 10 && (digits.startsWith('9') || digits.startsWith('4'))) {
-      digits = '7' + digits;
-    } else if (digits.length === 11 && digits.startsWith('8')) {
-      digits = '7' + digits.substring(1);
-    }
-
-    const tenDigits = digits.substring(1);
-    const isFakeOrInvalid =
-      digits.length !== 11 ||
-      !digits.startsWith('7') ||
-      !/^(9\d{2}|495|499|496|498|812|800|[348]\d{2})/.test(tenDigits) ||
-      /(\d)\1{5,}/.test(tenDigits) ||
-      new Set(tenDigits.split('')).size < 3 ||
-      ['1234567', '0123456', '7654321', '0000000', '1111111', '9999999'].includes(
-        tenDigits.substring(3)
-      );
-
-    if (isFakeOrInvalid) {
-      res.status(400).json({
-        error: 'Некорректный номер телефона. Укажите действующий контактный номер.',
-        code: 'INVALID_PHONE_NUMBER',
-      });
+  // 5. Public POST /api/leads — schema-validated, server-assigned id and status
+  app.post('/api/leads', leadLimiter, (req: Request, res: Response) => {
+    const parsed = parsePublicLead(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error, code: parsed.code });
       return;
     }
 
-    const nowFormatted =
-      body.timestamp ||
-      new Date().toLocaleString('ru-RU', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      });
-
-    const calcParams: LeadCalculatorParams = body.calculatorParams || {
-      size: 36,
-      insulation: '150 мм (Осень-Зима)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'Без веранды',
-      distanceKm: 45,
-    };
-
+    const lead = parsed.lead;
+    const nowFormatted = new Date().toLocaleString('ru-RU', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+    const calcParams = lead.calculatorParams;
     const historyEntry: CalculationHistoryItem = {
       timestamp: nowFormatted,
       action:
-        body.source === 'calculator'
+        lead.source === 'calculator'
           ? 'Фиксация цены в калькуляторе'
-          : body.source === 'quiz_modal'
+          : lead.source === 'quiz_modal'
             ? 'Завершение квиза с подбором комплектации'
             : 'Быстрая заявка с фиксацией акции',
-      houseTitle: body.houseTitle || 'Индивидуальный проект',
-      calculatedPrice: body.calculatedPrice || 707000,
+      houseTitle: lead.houseTitle,
+      calculatedPrice: lead.calculatedPrice,
       size: calcParams.size,
       insulation: calcParams.insulation,
       foundation: calcParams.foundation,
@@ -466,21 +474,21 @@ async function startServer() {
     };
 
     const newLead: ServerLead = {
-      id: body.id || 'LD-' + Date.now().toString(36).toUpperCase().slice(-5),
+      id: newLeadId(),
       timestamp: nowFormatted,
       createdAtMs: Date.now(),
-      source: body.source || 'calculator',
-      clientName: body.clientName || 'Клиент сайта',
-      phone: rawPhone,
-      houseTitle: body.houseTitle || 'Индивидуальный проект',
-      calculatedPrice: body.calculatedPrice || 707000,
+      source: lead.source,
+      clientName: lead.clientName,
+      phone: lead.phone,
+      houseTitle: lead.houseTitle,
+      calculatedPrice: lead.calculatedPrice,
       status: 'new',
       calculatorParams: calcParams,
-      calculationHistory: body.calculationHistory || [historyEntry],
-      giftsSelected: body.giftsSelected || ['Металлочерепица 0 ₽', 'Сваи −50%'],
-      quizAnswers: body.quizAnswers,
-      utm: body.utm,
-      managerNotes: body.managerNotes || '',
+      calculationHistory: [historyEntry],
+      giftsSelected: lead.giftsSelected,
+      quizAnswers: lead.quizAnswers,
+      utm: lead.utm,
+      managerNotes: '',
     };
 
     leadsStore = [newLead, ...leadsStore];
@@ -496,25 +504,49 @@ async function startServer() {
       }
     });
 
+    // Fire-and-forget: Telegram latency or failure must not affect the client response.
+    void notifyTelegramNewLead(newLead);
+
     res.status(201).json({ lead: newLead });
   });
 
   // 6. Protected PATCH /api/leads/:id (Status Dropdown & Notes Update — 403 without token)
   app.patch('/api/leads/:id', requireAdminAuth, (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
+    if (!/^LD-[A-F0-9]{8}$/.test(id) && !/^LD-[A-Z0-9]{5}$/.test(id)) {
+      res.status(400).json({ error: 'Некорректный идентификатор заявки.', code: 'INVALID_ID' });
+      return;
+    }
     const { status, managerNotes, clientName } = req.body || {};
 
     const idx = leadsStore.findIndex((l) => l.id === id);
     if (idx === -1) {
-      res.status(404).json({ error: 'Лид не найден' });
+      res.status(404).json({ error: 'Лид не найден', code: 'NOT_FOUND' });
       return;
+    }
+
+    const allowedStatus =
+      status === 'new' ||
+      status === 'contacted' ||
+      status === 'negotiation' ||
+      status === 'contract' ||
+      status === 'completed';
+    const notes = sanitizeManagerNotes(managerNotes);
+    let nextName: string | undefined;
+    if (typeof clientName === 'string') {
+      const nameCheck = validateClientName(clientName, 'ru');
+      if (!nameCheck.ok) {
+        res.status(400).json({ error: nameCheck.error, code: 'INVALID_NAME' });
+        return;
+      }
+      nextName = nameCheck.value || leadsStore[idx].clientName;
     }
 
     const updated: ServerLead = {
       ...leadsStore[idx],
-      ...(status ? { status: normalizeStatus(status) } : {}),
-      ...(typeof managerNotes === 'string' ? { managerNotes } : {}),
-      ...(typeof clientName === 'string' ? { clientName } : {}),
+      ...(allowedStatus ? { status } : {}),
+      ...(notes !== null ? { managerNotes: notes } : {}),
+      ...(nextName !== undefined ? { clientName: nextName } : {}),
     };
 
     leadsStore[idx] = updated;
@@ -525,11 +557,22 @@ async function startServer() {
 
   // 7. Protected DELETE /api/leads/:id (Delete single lead — 403 without token)
   app.delete('/api/leads/:id', requireAdminAuth, (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
+    if (!/^LD-[A-F0-9]{8}$/.test(id) && !/^LD-[A-Z0-9]{5}$/.test(id)) {
+      res.status(400).json({ error: 'Некорректный идентификатор заявки.', code: 'INVALID_ID' });
+      return;
+    }
+    const before = leadsStore.length;
     leadsStore = leadsStore.filter((l) => l.id !== id);
+    if (leadsStore.length === before) {
+      res.status(404).json({ error: 'Лид не найден', code: 'NOT_FOUND' });
+      return;
+    }
     saveLeadsToDisk(leadsStore);
     res.status(200).json({ success: true, total: leadsStore.length });
   });
+
+  app.use('/api', apiErrorHandler);
 
   // Vite middleware in development, static files in production
   if (process.env.NODE_ENV !== 'production') {
@@ -541,12 +584,30 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (_req: Request, res: Response) => {
+    // Express 4 syntax: '*' (not '*all', which is Express 5). Without this, deep links such as /login 404.
+    app.get('*', (req: Request, res: Response) => {
+      // Missing static files must 404, not return index.html (stale hashed bundles after a deploy).
+      if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || req.path.startsWith('/icons/')) {
+        res.status(404).json({ error: 'Маршрут не найден.', code: 'NOT_FOUND' });
+        return;
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0');
+  app.listen(PORT, HOST);
 }
 
-startServer();
+process.on('unhandledRejection', (reason) => {
+  console.error('[process] unhandledRejection', reason instanceof Error ? reason.message : 'unknown');
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[process] uncaughtException', error.message);
+  process.exit(1);
+});
+
+startServer().catch((error: unknown) => {
+  console.error('[boot] failed', error instanceof Error ? error.message : 'unknown');
+  process.exit(1);
+});

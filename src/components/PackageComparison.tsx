@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Sparkles, Sun, CloudSnow, Flame, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Language } from '../types';
 import { playUiClick } from '../utils/sound';
 
@@ -8,13 +8,62 @@ interface PackageComparisonProps {
   onSelectPackage: (price: number) => void;
 }
 
+type SpecKey =
+  | 'wallFrame'
+  | 'insulation'
+  | 'floorJoists'
+  | 'windows'
+  | 'door'
+  | 'floorFinish'
+  | 'roofGift'
+  | 'foundationDiscount';
+
+interface Tier {
+  id: number;
+  badge: string;
+  name: string;
+  temp: string;
+  price: number;
+  priceDisplay: string;
+  popular: boolean;
+  specs: Record<SpecKey, string>;
+}
+
+/** Package CTA. The popular package gets the single gold button of the section. */
+const PackageCta: React.FC<{ tier: Tier; lang: Language; onSelect: (price: number) => void }> = ({
+  tier,
+  lang,
+  onSelect,
+}) => {
+  const label =
+    lang === 'ru' ? `Рассчитать в комплектации «${tier.name.split(' ')[0]}»` : `Calculate ${tier.name}`;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        playUiClick('tap');
+        onSelect(tier.price);
+      }}
+      className={`inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-full text-sm font-semibold transition-colors active:scale-95 ${
+        tier.popular
+          ? 'bg-brass hover:bg-brass-hover text-[#1E1705] gold-glow'
+          : 'border border-ink/30 text-ink hover:bg-ink hover:text-paper dark:border-cream/30 dark:text-cream dark:hover:bg-cream dark:hover:text-forest'
+      }`}
+    >
+      <span>{label}</span>
+      <ArrowRight className="w-4 h-4 shrink-0" />
+    </button>
+  );
+};
+
 export const PackageComparison: React.FC<PackageComparisonProps> = ({
   lang,
   onSelectPackage,
 }) => {
   const [selectedTier, setSelectedTier] = useState<number>(1); // Middle tier 150mm highlighted by default
 
-  const tiers = [
+  const tiers: Tier[] = [
     {
       id: 0,
       badge: lang === 'ru' ? 'Дачный сезон' : 'Summer Season',
@@ -22,7 +71,6 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
       temp: lang === 'ru' ? 'от +5 °C до +35 °C' : '+5 °C to +35 °C',
       price: 498000,
       priceDisplay: 'от 498 000 ₽',
-      icon: Sun,
       popular: false,
       specs: {
         wallFrame: 'Сухой брус 100×50 мм',
@@ -42,7 +90,6 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
       temp: lang === 'ru' ? 'до −20 °C (круглый год)' : 'Down to −20 °C',
       price: 582000,
       priceDisplay: 'от 582 000 ₽',
-      icon: CloudSnow,
       popular: true,
       specs: {
         wallFrame: 'Сухой строганный брус 150×50 мм',
@@ -62,7 +109,6 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
       temp: lang === 'ru' ? 'до −35 °C (постоянное жильё)' : 'Down to −35 °C (Permanent)',
       price: 652000,
       priceDisplay: 'от 652 000 ₽',
-      icon: Flame,
       popular: false,
       specs: {
         wallFrame: 'Сухой брус 150×50 + контрбрус 50×50 мм',
@@ -77,7 +123,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
     },
   ];
 
-  const rowLabels = [
+  const rowLabels: { key: SpecKey; label: string }[] = [
     { key: 'wallFrame', label: lang === 'ru' ? 'Силовой каркас стен' : 'Wall Framing Studs' },
     { key: 'insulation', label: lang === 'ru' ? 'Базальтовое утепление' : 'Basalt Wool Insulation' },
     { key: 'floorJoists', label: lang === 'ru' ? 'Обвязка и лаги пола' : 'Sill Plate & Floor Joists' },
@@ -86,162 +132,218 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
     { key: 'floorFinish', label: lang === 'ru' ? 'Чистовой пол' : 'Finished Flooring' },
     { key: 'roofGift', label: lang === 'ru' ? 'Кровля по акции' : 'Promotional Roofing' },
     { key: 'foundationDiscount', label: lang === 'ru' ? 'Фундамент' : 'Foundation Bonus' },
-  ] as const;
+  ];
+
+  const priceLabel = lang === 'ru' ? 'Базовая стоимость под ключ' : 'Base turnkey price';
+  const tempPrefix = lang === 'ru' ? 'Режим эксплуатации' : 'Operating range';
+
+  const selectTier = (id: number) => {
+    playUiClick('tap');
+    setSelectedTier(id);
+  };
+
+  const renderCta = (tier: Tier) => (
+    <PackageCta
+      tier={tier}
+      lang={lang}
+      onSelect={(price) => onSelectPackage(price)}
+    />
+  );
 
   return (
-    <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-          {lang === 'ru' ? 'Прозрачное сравнение комплектаций' : 'Turnkey Package Comparison'}
+      <div className="max-w-3xl mb-12 sm:mb-14">
+        <span className="eyebrow text-brass-ink dark:text-brass-light">
+          04 · {lang === 'ru' ? 'Прозрачное сравнение комплектаций' : 'Turnkey Package Comparison'}
         </span>
-        <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
+        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
           {lang === 'ru'
             ? 'Выберите комплектацию под ваш режим отдыха или жизни'
             : 'Choose the Insulation Package for Your Lifestyle'}
         </h2>
-        <p className="mt-2 text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
+        <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed max-w-2xl">
           {lang === 'ru'
             ? 'Любой проект из каталога мы строим в одном из трёх тепловых контуров — от летней дачи до зимнего дома ПМЖ.'
             : 'Any model in our catalog can be built in one of three thermal packages.'}
         </p>
       </div>
 
-      {/* 3-Column Interactive Comparison Cards / Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      {/* Desktop: one comparison table, rows = specs, columns = packages */}
+      <div className="hidden md:block rounded-2xl overflow-hidden border border-ink/15 dark:border-cream/12">
+        <table className="w-full table-fixed border-collapse text-left">
+          <caption className="sr-only">
+            {lang === 'ru' ? 'Сравнение тепловых комплектаций' : 'Comparison of thermal packages'}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="w-[24%] p-6 align-bottom bg-paper dark:bg-forest-raised">
+                <span className="eyebrow text-olive dark:text-cream-soft">
+                  {lang === 'ru' ? 'Характеристика' : 'Specification'}
+                </span>
+              </th>
+              {tiers.map((tier) => {
+                const isSelected = selectedTier === tier.id;
+                return (
+                  <th
+                    key={tier.id}
+                    scope="col"
+                    className={`p-6 align-bottom font-normal ${
+                      tier.popular
+                        ? 'bg-forest text-cream'
+                        : 'bg-paper dark:bg-forest-raised text-ink dark:text-cream'
+                    }`}
+                  >
+                    <span
+                      className={`eyebrow block mb-3 ${
+                        tier.popular ? 'text-brass-light' : 'text-brass-ink dark:text-brass-light'
+                      }`}
+                    >
+                      {tier.badge}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => selectTier(tier.id)}
+                      aria-pressed={isSelected}
+                      className="text-left group"
+                    >
+                      <span className="font-serif text-3xl leading-tight block">{tier.name}</span>
+                      <span
+                        className={`block h-[2px] mt-3 origin-left transition-transform duration-500 ease-out-soft ${
+                          tier.popular ? 'bg-brass-light' : 'bg-ink dark:bg-brass-light'
+                        } ${isSelected ? 'scale-x-100' : 'scale-x-0'}`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <span
+                      className={`block text-xs mt-3 ${
+                        tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'
+                      }`}
+                    >
+                      {tempPrefix}: <span className="font-semibold">{tier.temp}</span>
+                    </span>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+
+          <tbody>
+            {/* Price row */}
+            <tr>
+              <th scope="row" className="p-5 text-sm font-normal text-ink-soft dark:text-cream-soft bg-paper dark:bg-forest-raised border-t border-ink/15 dark:border-cream/12">
+                {priceLabel}
+              </th>
+              {tiers.map((tier) => (
+                <td
+                  key={tier.id}
+                  className={`p-5 border-t font-serif text-3xl tabular-nums ${
+                    tier.popular
+                      ? 'bg-forest text-cream border-cream/12'
+                      : 'bg-paper dark:bg-forest-raised text-ink dark:text-cream border-ink/15 dark:border-cream/12'
+                  }`}
+                >
+                  {tier.priceDisplay}
+                </td>
+              ))}
+            </tr>
+
+            {/* Spec rows */}
+            {rowLabels.map((row) => (
+              <tr key={row.key}>
+                <th scope="row" className="p-5 text-xs font-medium text-olive dark:text-cream-soft bg-paper dark:bg-forest-raised border-t border-ink/12 dark:border-cream/10">
+                  {row.label}
+                </th>
+                {tiers.map((tier) => (
+                  <td
+                    key={tier.id}
+                    className={`p-5 border-t text-sm font-medium ${
+                      tier.popular
+                        ? 'bg-forest text-cream border-cream/10'
+                        : 'bg-paper dark:bg-forest-raised text-ink dark:text-cream border-ink/12 dark:border-cream/10'
+                    }`}
+                  >
+                    {tier.specs[row.key]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+
+            {/* CTA row */}
+            <tr>
+              <th scope="row" className="p-5 bg-paper dark:bg-forest-raised border-t border-ink/15 dark:border-cream/12" />
+              {tiers.map((tier) => (
+                <td
+                  key={tier.id}
+                  className={`p-5 border-t align-top ${
+                    tier.popular
+                      ? 'bg-forest border-cream/12'
+                      : 'bg-paper dark:bg-forest-raised border-ink/15 dark:border-cream/12'
+                  }`}
+                >
+                  {renderCta(tier)}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile: the same data as stacked cards */}
+      <div className="md:hidden grid gap-5">
         {tiers.map((tier) => {
-          const Icon = tier.icon;
           const isSelected = selectedTier === tier.id;
           return (
             <div
               key={tier.id}
-              onClick={() => {
-                playUiClick('tap');
-                setSelectedTier(tier.id);
-              }}
-              className={`rounded-3xl p-6 sm:p-7 border transition-all duration-300 cursor-pointer flex flex-col justify-between relative ${
+              onClick={() => selectTier(tier.id)}
+              className={`rounded-2xl p-6 border transition-colors cursor-pointer ${
                 tier.popular
-                  ? 'bg-gradient-to-b from-[#183B30] via-[#122A21] to-[#0B1A14] text-white border-[#E6B860] shadow-2xl lg:-translate-y-2'
-                  : isSelected
-                  ? 'glass-card border-[#183B30] dark:border-[#E6B860] shadow-xl'
-                  : 'glass-card border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                  ? 'bg-forest text-cream border-cream/10'
+                  : `bg-paper dark:bg-forest-raised ${
+                      isSelected
+                        ? 'border-ink dark:border-brass-light'
+                        : 'border-ink/12 dark:border-cream/10'
+                    }`
               }`}
             >
-              <div>
-                {/* Top Kicker & Icon */}
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                      tier.popular
-                        ? 'bg-[#E6B860] text-[#1E1705]'
-                        : 'bg-[#E6B860]/15 text-[#B27D18] dark:text-[#E6B860]'
-                    }`}
-                  >
-                    {tier.popular && <Sparkles className="w-3.5 h-3.5" />}
-                    <span>{tier.badge}</span>
-                  </span>
-
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      tier.popular
-                        ? 'bg-white/10 text-[#E6B860]'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-[#B27D18] dark:text-[#E6B860]'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                </div>
-
-                {/* Tier Name & Temperature */}
-                <h3
-                  className={`font-display font-bold text-2xl ${
-                    tier.popular ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'
-                  }`}
-                >
-                  {tier.name}
-                </h3>
-                <p
-                  className={`text-xs font-medium mt-1 ${
-                    tier.popular ? 'text-emerald-200/80' : 'text-neutral-500 dark:text-neutral-400'
-                  }`}
-                >
-                  Режим эксплуатации: <strong className="font-semibold">{tier.temp}</strong>
-                </p>
-
-                {/* Price */}
-                <div
-                  className={`my-5 py-4 border-y ${
-                    tier.popular ? 'border-white/15' : 'border-neutral-200 dark:border-neutral-800'
-                  }`}
-                >
-                  <span
-                    className={`text-[11px] uppercase tracking-wider block ${
-                      tier.popular ? 'text-emerald-200/70' : 'text-neutral-500'
-                    }`}
-                  >
-                    Базовая стоимость под ключ
-                  </span>
-                  <span
-                    className={`font-display font-bold text-2xl sm:text-3xl tabular-nums ${
-                      tier.popular ? 'text-[#E6B860]' : 'text-neutral-900 dark:text-neutral-100'
-                    }`}
-                  >
-                    {tier.priceDisplay}
-                  </span>
-                </div>
-
-                {/* 8 Engineering Specs List */}
-                <div className="space-y-3">
-                  {rowLabels.map((row) => (
-                    <div key={row.key} className="text-xs flex items-start gap-2.5">
-                      <Check
-                        className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          tier.popular ? 'text-[#E6B860]' : 'text-[#B27D18] dark:text-[#E6B860]'
-                        }`}
-                      />
-                      <div>
-                        <span
-                          className={`block font-medium ${
-                            tier.popular
-                              ? 'text-emerald-200/75 text-[11px]'
-                              : 'text-neutral-400 dark:text-neutral-500 text-[11px]'
-                          }`}
-                        >
-                          {row.label}
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            tier.popular ? 'text-white' : 'text-neutral-800 dark:text-neutral-200'
-                          }`}
-                        >
-                          {tier.specs[row.key]}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action CTA */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playUiClick('tap');
-                  onSelectPackage(tier.price);
-                }}
-                className={`mt-7 w-full py-3.5 px-5 rounded-full font-display font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 ${
-                  tier.popular
-                    ? 'bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] gold-glow'
-                    : 'bg-[#183B30] hover:bg-[#122A21] text-[#E6B860] dark:bg-white/10 dark:hover:bg-white/20 dark:text-white'
+              <span
+                className={`eyebrow block mb-3 ${
+                  tier.popular ? 'text-brass-light' : 'text-brass-ink dark:text-brass-light'
                 }`}
               >
-                <span>
-                  {lang === 'ru'
-                    ? `Рассчитать в комплектации «${tier.name.split(' ')[0]}»`
-                    : `Calculate ${tier.name}`}
+                {tier.badge}
+              </span>
+              <h3 className="font-serif text-3xl leading-tight">{tier.name}</h3>
+              <p className={`text-xs mt-2 ${tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'}`}>
+                {tempPrefix}: <span className="font-semibold">{tier.temp}</span>
+              </p>
+
+              <div
+                className={`my-5 py-4 border-y ${
+                  tier.popular ? 'border-cream/12' : 'border-ink/12 dark:border-cream/10'
+                }`}
+              >
+                <span className={`eyebrow block mb-1 ${tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'}`}>
+                  {priceLabel}
                 </span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <span className="font-serif text-3xl tabular-nums">{tier.priceDisplay}</span>
+              </div>
+
+              <dl className="space-y-3">
+                {rowLabels.map((row) => (
+                  <div key={row.key}>
+                    <dt className={`text-[11px] font-medium ${tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'}`}>
+                      {row.label}
+                    </dt>
+                    <dd className="text-sm font-medium">{tier.specs[row.key]}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div className="mt-7">
+                {renderCta(tier)}
+              </div>
             </div>
           );
         })}

@@ -7,6 +7,7 @@ interface RollingNumberProps {
   suffix?: string;
   className?: string;
   duration?: number; // ms
+  font?: string; // font-family utility, e.g. 'font-serif'
 }
 
 export const RollingNumber: React.FC<RollingNumberProps> = ({
@@ -15,6 +16,7 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({
   suffix = ' ₽',
   className = '',
   duration = 550,
+  font = 'font-display',
 }) => {
   const [displayValue, setDisplayValue] = useState(value);
   const counterRef = useRef<{ val: number }>({ val: value });
@@ -53,7 +55,7 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({
   const formatted = displayValue.toLocaleString('ru-RU').replace(/\u00a0/g, ' ');
 
   return (
-    <span className={`inline-flex items-baseline font-display tabular-nums tracking-tight ${className}`}>
+    <span className={`inline-flex items-baseline ${font} tabular-nums tracking-tight ${className}`}>
       {prefix && <span className="opacity-70 text-[0.8em] mr-1">{prefix}</span>}
       <span ref={textSpanRef} className="inline-block will-change-transform">
         {formatted}

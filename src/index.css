@@ -1,19 +1,55 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Design tokens (stage 1).
+ * Every colour used for new work comes from here. Contrast pairs were checked
+ * against WCAG AA (4.5:1 for text). Brass is a fill colour only: as text on
+ * paper it fails AA, so text accents use --color-brass-ink.
+ */
 @theme {
   --font-display: 'Unbounded', sans-serif;
+  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
   --font-sans: 'Onest', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Light surfaces */
+  --color-paper: #F7F4ED;
+  --color-paper-deep: #F2EFE6;
+  --color-ink: #14231E;
+  --color-ink-soft: #4A5A53;      /* secondary text, 6.6:1 on paper */
+  --color-olive: #5E6450;         /* tertiary labels, 5.6:1 on paper */
+
+  /* Dark surfaces */
+  --color-forest: #0B1512;
+  --color-forest-raised: #142A21;
+  --color-cream: #EFE9DC;         /* primary text on forest, 15.4:1 */
+  --color-cream-soft: #B9C4BE;    /* secondary text on forest, 10.4:1 */
+
+  /* Brass: fill for CTA and progress; text accents on light use -ink */
+  --color-brass: #C9A35A;         /* fill, dark text on it is 7.5:1 */
+  --color-brass-hover: #B8944A;
+  --color-brass-ink: #6F5520;     /* text accent on paper, 6.4:1 */
+  --color-brass-light: #E0C27F;   /* text accent on forest, 10.8:1 */
+
+  /* Status */
+  --color-danger: #B42318;        /* form errors on paper, 6.0:1 */
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 200ms;
+  --duration-base: 450ms;
+  --duration-slow: 800ms;
 }
 
 html {
   scroll-padding-top: 5rem;
-  background-color: #F4F2EC;
+  background-color: var(--color-paper);
 }
 
 html.dark {
-  background-color: #0B1512;
+  background-color: var(--color-forest);
 }
 
 html.lenis,
@@ -34,12 +70,14 @@ html.lenis body {
 }
 
 /* Content-visibility optimization for below-the-fold sections (<2s mobile 4G load) */
+/* 'auto' makes the browser remember each section's last rendered height,
+   so sections don't jump when they first enter the viewport. */
 .cv-auto {
   content-visibility: auto;
-  contain-intrinsic-size: 1px 650px;
+  contain-intrinsic-size: auto 650px;
 }
 
-/* Custom subtle scrollbar */
+/* Thin, quiet scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -50,47 +88,49 @@ html.lenis body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.25);
+  background: rgba(20, 35, 30, 0.18);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.45);
+  background: rgba(20, 35, 30, 0.32);
 }
 
-/* Awwwards-style SVG Film Grain Texture Overlay */
+/* Film grain: finer and fainter than before (ТЗ 2). */
 .bg-grain-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
 }
 
-/* Smooth organic off-white glassmorphism helpers */
+/* Surfaces: warm paper on light, raised forest on dark. */
 .glass-panel {
-  background: rgba(250, 248, 243, 0.9);
+  background: rgba(247, 244, 237, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(230, 224, 210, 0.85);
+  border: 1px solid rgba(20, 35, 30, 0.08);
 }
 
 .dark .glass-panel {
-  background: rgba(18, 36, 29, 0.82);
+  background: rgba(20, 42, 33, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(239, 233, 220, 0.08);
 }
 
 .glass-card {
-  background: rgba(251, 249, 245, 0.94);
+  background: rgba(247, 244, 237, 0.96);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(20, 46, 37, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(20, 35, 30, 0.07);
 }
 
 .dark .glass-card {
-  background: rgba(20, 42, 33, 0.86);
+  background: rgba(20, 42, 33, 0.88);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 233, 220, 0.07);
 }
 
-/* Reduce expensive GPU backdrop-filter cost on mobile 4G devices */
+/* Reduce GPU cost of backdrop-filter on mobile */
 @media (max-width: 768px) {
   .glass-panel,
   .dark .glass-panel,
@@ -101,11 +141,109 @@ html.lenis body {
   }
 }
 
-/* Subtle glow utility */
+/* Brass CTA lift. Used only on primary buttons. */
 .gold-glow {
-  box-shadow: 0 10px 30px -8px rgba(230, 184, 96, 0.45);
+  box-shadow: 0 10px 28px -10px rgba(201, 163, 90, 0.55);
+  transition: box-shadow var(--duration-base) var(--ease-out-soft),
+    transform var(--duration-base) var(--ease-out-soft);
 }
 
 .gold-glow:hover {
-  box-shadow: 0 14px 38px -6px rgba(230, 184, 96, 0.65);
+  box-shadow: 0 14px 34px -10px rgba(201, 163, 90, 0.7);
+}
+
+/* Header over the dark hero (transparent state): light ink.
+   Higher specificity than the Tailwind utilities it overrides. */
+.header-on-hero .hdr-ink {
+  color: var(--color-cream);
+}
+
+.header-on-hero .hdr-soft {
+  color: var(--color-cream-soft);
+}
+
+/* Utility buttons (sound, language, theme) over the dark hero: cream outline, brass icons. */
+.header-on-hero .hdr-util {
+  background-color: rgba(239, 233, 220, 0.06);
+  border-color: rgba(239, 233, 220, 0.3);
+  color: var(--color-cream);
+}
+
+.header-on-hero .hdr-util:hover {
+  background-color: rgba(239, 233, 220, 0.14);
+}
+
+.header-on-hero .hdr-util svg {
+  color: var(--color-brass-light);
+}
+
+/* Keyboard focus: visible ring on every control. Kept in the base layer so
+   Tailwind utilities (e.g. outline-none) can still override it where needed. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brass-ink);
+    outline-offset: 3px;
+  }
+
+  html.dark :focus-visible {
+    outline-color: var(--color-brass-light);
+  }
+}
+
+/* Editorial label: small uppercase, wide tracking. */
+.eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Reduced motion: keep state changes, drop movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print / save as PDF. While the estimate sheet is open, only the sheet is printed:
+   everything that does not contain it is hidden, and the modal overlay becomes static flow. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body:has([data-print-area]) *:not(:has([data-print-area])):not([data-print-area]):not([data-print-area] *) {
+    display: none !important;
+  }
+
+  [data-print-root] {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+
+  [data-print-area] {
+    position: static !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
 }

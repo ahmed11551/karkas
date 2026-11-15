@@ -1,8 +1,10 @@
 import React from 'react';
-import { Phone, Calculator } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Phone, Calculator, MessageCircle } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
-import { COMPANY_CONFIG } from '../config/company';
+import { COMPANY_CONFIG, buildMessengerUrl } from '../config/company';
+import { playUiClick } from '../utils/sound';
 
 interface StickyMobileBarProps {
   lang: Language;
@@ -10,34 +12,54 @@ interface StickyMobileBarProps {
   isVisible: boolean;
 }
 
-export const StickyMobileBar: React.FC<StickyMobileBarProps> = ({
-  lang,
-  onOpenQuiz,
-  isVisible,
-}) => {
+// Persistent mobile action bar: forest + cream, so it does not compete with the gold CTA of each section.
+// bottom uses the safe-area inset, so the bar clears the iPhone home indicator.
+export const StickyMobileBar: React.FC<StickyMobileBarProps> = ({ lang, onOpenQuiz, isVisible }) => {
   const t = TRANSLATIONS[lang];
 
-  if (!isVisible) return null;
-
   return (
-    <div className="md:hidden fixed bottom-3 left-3 right-3 z-40 transition-all duration-300">
-      <div className="glass-panel p-2 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2">
-        <a
-          href={COMPANY_CONFIG.phoneHref}
-          className="p-3 rounded-xl bg-neutral-200/80 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center shrink-0"
-          aria-label={t.sticky.call}
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          key="sticky-mobile-bar"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="md:hidden fixed left-3 right-3 z-40 bottom-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
-          <Phone className="w-5 h-5 text-[#B27D18] dark:text-[#E6B860]" />
-        </a>
+          <div className="p-2 rounded-2xl bg-forest border border-cream/10 shadow-2xl flex items-center gap-2">
+            <a
+              href={COMPANY_CONFIG.phoneHref}
+              onClick={() => playUiClick('tap')}
+              className="min-w-11 min-h-11 p-3 rounded-xl border border-cream/20 text-cream hover:bg-cream/10 transition-colors flex items-center justify-center shrink-0"
+              aria-label={t.sticky.call}
+            >
+              <Phone className="w-5 h-5" aria-hidden="true" />
+            </a>
 
-        <button
-          onClick={onOpenQuiz}
-          className="flex-1 py-3 px-4 rounded-xl bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-display font-semibold text-xs tracking-tight transition-all gold-glow flex items-center justify-center gap-2"
-        >
-          <Calculator className="w-4 h-4 shrink-0" />
-          <span>{t.sticky.calculate}</span>
-        </button>
-      </div>
-    </div>
+            <a
+              href={buildMessengerUrl('whatsapp')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => playUiClick('tap')}
+              className="min-w-11 min-h-11 p-3 rounded-xl border border-cream/20 text-cream hover:bg-cream/10 transition-colors flex items-center justify-center shrink-0"
+              aria-label={t.sticky.whatsapp}
+            >
+              <MessageCircle className="w-5 h-5" aria-hidden="true" />
+            </a>
+
+            <button
+              type="button"
+              onClick={onOpenQuiz}
+              className="flex-1 min-h-11 py-3 px-4 rounded-xl bg-cream hover:bg-cream-soft text-forest font-semibold text-sm tracking-tight transition-colors flex items-center justify-center gap-2"
+            >
+              <Calculator className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>{t.sticky.calculate}</span>
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

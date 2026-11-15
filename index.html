@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#142E25" />
+    <!-- Must stay before the stylesheet: applies the saved or system dark theme before first paint. -->
+    <script src="/theme-init.js"></script>
 
     <!-- Primary SEO Meta Tags (Google & Yandex) -->
     <title>Каркасник — Дачные дома в Москве и МО от 498 000 ₽</title>
@@ -20,12 +22,15 @@
       name="robots"
       content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     />
-    <meta name="yandex-verification" content="karkasnik-msk-verified-2026" />
-    <meta name="google-site-verification" content="karkasnik-google-verified-2026" />
     <meta name="geo.region" content="RU-MOW" />
     <meta name="geo.placename" content="Москва и Московская область" />
     <meta name="format-detection" content="telephone=yes" />
     <link rel="canonical" id="canonical-url" href="https://karkasnik.ru/" />
+
+    <!-- Icons and installable app (PWA) -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- OpenGraph Social Sharing Meta (VK, Telegram, WhatsApp, Facebook, LinkedIn) -->
     <meta property="og:type" content="website" />
@@ -37,8 +42,8 @@
       property="og:description"
       content="Премиальный интерактивный сервис и каталог каркасных дачных домов от 498 000 ₽ с живым калькулятором, 3D/SVG визуализатором, квизом и сезонными подарками."
     />
-    <meta property="og:image" id="og-image" content="/og-cover.webp" />
-    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image" id="og-image" content="https://karkasnik.ru/og-cover.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
@@ -53,23 +58,15 @@
       name="twitter:description"
       content="Премиальный интерактивный сервис и каталог каркасных дачных домов от 498 000 ₽ с живым калькулятором, 3D/SVG визуализатором, квизом и сезонными подарками."
     />
-    <meta name="twitter:image" id="twitter-image" content="/og-cover.webp" />
+    <meta name="twitter:image" id="twitter-image" content="https://karkasnik.ru/og-cover.jpg" />
 
     <!-- Preconnect Critical Fonts for <2s Mobile 4G Load -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap"
-      media="print"
-      onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Onest:wght@400;500;600;700&family=Unbounded:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap"
     />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap"
-      />
-    </noscript>
 
     <!-- Schema.org Rich Structured Data (JSON-LD) for Google & Yandex Snippets -->
     <script type="application/ld+json">
@@ -81,7 +78,7 @@
           "@id": "https://karkasnik.ru/#organization",
           "name": "Каркасник — Строительство дачных каркасных домов",
           "url": "https://karkasnik.ru",
-          "image": "https://karkasnik.ru/og-cover.webp",
+          "image": "https://karkasnik.ru/og-cover.jpg",
           "telephone": "+74951520242",
           "email": "info@karkasnik.ru",
           "taxID": "7714985412",
@@ -100,7 +97,7 @@
         {
           "@type": "Product",
           "name": "Каркасные дачные дома под ключ в Москве и МО",
-          "image": "https://karkasnik.ru/og-cover.webp",
+          "image": "https://karkasnik.ru/og-cover.jpg",
           "description": "Каталог из 15 проектов каркасных домов от 16 до 110 м² со сборкой за 1–3 дня на участке без предоплаты.",
           "brand": {
             "@type": "Brand",
@@ -113,13 +110,6 @@
             "priceCurrency": "RUB",
             "offerCount": "15",
             "availability": "https://schema.org/InStock"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "1420",
-            "bestRating": "5",
-            "worstRating": "1"
           }
         },
         {

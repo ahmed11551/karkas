@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, ShieldAlert, KeyRound, X, ArrowRight, Terminal, Database } from 'lucide-react';
+import { Lock, ShieldCheck, ShieldAlert, X, ArrowRight, Terminal } from 'lucide-react';
 import { loginAdmin, testUnauthorizedRequest } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
 
@@ -14,9 +14,9 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [storageMode, setStorageMode] = useState<'local' | 'session'>('local');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [securityTestResult, setSecurityTestResult] = useState<{
@@ -32,7 +32,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setIsLoading(true);
     playUiClick('tap');
 
-    const result = await loginAdmin(username.trim(), password, storageMode);
+    const result = await loginAdmin(username.trim(), password, remember);
     setIsLoading(false);
 
     if (!result.success) {
@@ -60,170 +60,134 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setSecurityTestResult(res);
   };
 
+  // Light paper sheet in both themes, like the other modals.
+  const labelClass = 'block eyebrow text-ink-soft mb-2';
+  const inputClass =
+    'w-full px-4 py-3.5 rounded-xl bg-white border border-ink/20 text-sm text-ink placeholder:text-olive/70 focus:outline-none focus:border-ink focus:ring-2 focus:ring-brass/40';
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Авторизация в CRM Каркасник"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/75 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#E6B860]/30 relative overflow-hidden"
+        className="w-full max-w-md rounded-2xl p-6 sm:p-9 shadow-2xl bg-paper text-ink border border-ink/15 relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute -top-20 -right-20 w-44 h-44 bg-[#E6B860]/15 rounded-full blur-3xl pointer-events-none" />
-
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          className="absolute top-5 right-5 p-1.5 rounded-full text-olive hover:text-ink hover:bg-ink/5 transition-colors"
           aria-label="Закрыть"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-[#183B30] text-[#E6B860] flex items-center justify-center border border-[#2F5A4B] shadow-md">
+        <div className="flex items-start gap-4 mb-7 pr-8">
+          <div className="w-11 h-11 rounded-full border border-ink/20 text-brass-ink flex items-center justify-center shrink-0">
             <Lock className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#B27D18] dark:text-[#E6B860] font-semibold block">
+            <span className="block font-mono text-[10px] uppercase tracking-widest text-brass-ink font-semibold">
               PROTECTED ENDPOINT · /login
             </span>
-            <h3 className="font-display font-bold text-xl text-neutral-900 dark:text-neutral-100">
-              Авторизация в CRM
-            </h3>
+            <h3 className="font-serif text-3xl leading-tight text-ink mt-1">Авторизация в CRM</h3>
           </div>
         </div>
 
-        <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed mb-5">
-          Доступ к базе лидов защищен токеном. Кнопка «Открыть CRM» монтируется в DOM только после верификации <code className="font-mono text-[#B27D18] dark:text-[#E6B860]">admin_token</code>.
+        <p className="text-xs text-ink-soft leading-relaxed mb-6">
+          Сессия хранится в HttpOnly-cookie и не попадает в JavaScript. Кнопка «Открыть CRM» появляется только после проверки сессии на сервере.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
+            <label htmlFor="admin-username" className={labelClass}>
               Логин администратора
             </label>
             <input
+              id="admin-username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#E6B860]"
+              autoComplete="username"
+              maxLength={64}
+              placeholder="Логин"
+              className={inputClass}
               required
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Пароль администратора
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  playUiClick('tick');
-                  setUsername('admin');
-                  setPassword('karkas2026');
-                  setError('');
-                }}
-                className="text-[11px] font-mono text-[#B27D18] dark:text-[#E6B860] hover:underline flex items-center gap-1"
-              >
-                <KeyRound className="w-3 h-3" />
-                <span>Подставить: karkas2026</span>
-              </button>
-            </div>
+            <label htmlFor="admin-password" className={labelClass}>
+              Пароль администратора
+            </label>
             <input
+              id="admin-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              maxLength={256}
               placeholder="••••••••••"
-              className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#E6B860]"
+              className={inputClass}
               required
               autoFocus
             />
           </div>
 
-          {/* Token Storage Selector (localStorage vs sessionStorage) */}
-          <div className="p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/70">
-            <span className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5 mb-2">
-              <Database className="w-3.5 h-3.5 text-[#E6B860]" />
-              <span>Хранилище токена (Token Storage):</span>
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  playUiClick('tick');
-                  setStorageMode('local');
-                }}
-                className={`py-1.5 px-2.5 rounded-xl text-[11px] font-mono border transition-all ${
-                  storageMode === 'local'
-                    ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] dark:border-[#E6B860] font-semibold'
-                    : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
-                }`}
-              >
-                localStorage (Постоянно)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playUiClick('tick');
-                  setStorageMode('session');
-                }}
-                className={`py-1.5 px-2.5 rounded-xl text-[11px] font-mono border transition-all ${
-                  storageMode === 'session'
-                    ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] dark:border-[#E6B860] font-semibold'
-                    : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700'
-                }`}
-              >
-                sessionStorage (Сессия)
-              </button>
-            </div>
-          </div>
+          <label htmlFor="admin-remember" className="flex items-center gap-2.5 text-xs text-ink-soft cursor-pointer">
+            <input
+              id="admin-remember"
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="h-4 w-4 accent-[#183B30]"
+            />
+            <span>Запомнить на этом устройстве (7 дней)</span>
+          </label>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+            <div className="p-3 rounded-xl border border-danger/30 bg-danger/5 text-xs text-danger flex items-center gap-2" role="alert">
               <ShieldAlert className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
+          {/* The one gold CTA of the modal */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-display font-semibold text-xs sm:text-sm transition-all gold-glow flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60"
+            className="w-full py-3.5 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-all gold-glow flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>{isLoading ? 'Верификация токена...' : 'Войти и открыть CRM'}</span>
+            <span>{isLoading ? 'Проверка входа...' : 'Войти и открыть CRM'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Live 403 Forbidden Security Verification Box */}
-        <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] text-neutral-500 flex items-center gap-1.5">
-              <Terminal className="w-3.5 h-3.5 text-[#E6B860]" />
+        {/* Live 403 check of the leads endpoint */}
+        <div className="mt-7 pt-5 border-t border-ink/12">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] text-olive flex items-center gap-1.5">
+              <Terminal className="w-3.5 h-3.5 text-brass-ink" />
               <span>Проверка защиты базы лидов:</span>
             </span>
             <button
               type="button"
               onClick={handleRun403Test}
-              className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-neutral-200/80 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 transition-colors"
+              className="text-[11px] font-mono px-2.5 py-1 rounded-md border border-ink/20 hover:bg-ink hover:text-paper text-ink transition-colors"
             >
               GET /api/leads (без токена)
             </button>
           </div>
 
           {securityTestResult && (
-            <div className="mt-2.5 p-2.5 rounded-xl bg-neutral-900 text-emerald-400 font-mono text-[11px] border border-neutral-800">
-              <div className="text-rose-400 font-bold">
-                HTTP Status: {securityTestResult.status} Forbidden
-              </div>
-              <div className="text-neutral-300 mt-0.5">{securityTestResult.message}</div>
+            <div className="mt-3 p-3 rounded-xl bg-forest text-cream-soft font-mono text-[11px]">
+              <div className="text-brass-light font-bold">HTTP Status: {securityTestResult.status} Forbidden</div>
+              <div className="mt-0.5 text-cream-soft/90">{securityTestResult.message}</div>
             </div>
           )}
         </div>

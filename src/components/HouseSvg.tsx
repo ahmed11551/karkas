@@ -1,8 +1,32 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { HouseRoofStyle } from '../types';
+import { HouseRoofStyle, Language } from '../types';
+
+const SVG_LABELS: Record<Language, Record<string, string>> = {
+  ru: {
+    living: 'Гостиная-кухня',
+    bedroom: 'Спальня',
+    hall: 'Холл',
+    bath: 'Санузел',
+    m2: 'м²',
+    m: 'м',
+    planAria: 'Архитектурный план этажа',
+    isoAria: 'Изометрический проект загородного дома',
+  },
+  en: {
+    living: 'Living-kitchen',
+    bedroom: 'Bedroom',
+    hall: 'Hall',
+    bath: 'Bathroom',
+    m2: 'm²',
+    m: 'm',
+    planAria: 'Architectural floor plan',
+    isoAria: 'Isometric view of the country house',
+  },
+};
 
 interface HouseSvgProps {
+  lang?: Language;
   styleType: HouseRoofStyle;
   isNight?: boolean;
   hasPiles?: boolean;
@@ -20,7 +44,9 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
   scale = 1,
   viewMode = 'facade',
   className = 'w-full h-auto',
+  lang = 'ru',
 }) => {
+  const L = SVG_LABELS[lang];
   // Theme palette tokens for the house elements
   const wallFill = isNight ? '#C9AD7C' : '#F6E3C0';
   const wallStroke = isNight ? '#987544' : '#E0C59A';
@@ -210,7 +236,7 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
             viewBox="0 0 200 126"
             className="w-full h-full font-sans"
             role="img"
-            aria-label="Архитектурный план этажа"
+            aria-label={L.planAria}
           >
             {/* Blueprint background grid */}
             <rect x="10" y="8" width="180" height="110" rx="6" fill={isNight ? '#0E221B' : '#E8F1EC'} stroke="#2F5A4B" strokeWidth="1.5" />
@@ -234,31 +260,31 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
 
             {/* Room Labels & Dimensions */}
             <text x="140" y="58" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7.5" fontWeight="bold" textAnchor="middle">
-              Гостиная-кухня
+              {L.living}
             </text>
             <text x="140" y="68" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
-              18.4 м²
+              18.4 {L.m2}
             </text>
 
             <text x="63" y="44" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7" fontWeight="bold" textAnchor="middle">
-              Спальня
+              {L.bedroom}
             </text>
             <text x="63" y="53" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
-              10.2 м²
+              10.2 {L.m2}
             </text>
 
             <text x="45" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
-              Холл
+              {L.hall}
             </text>
             <text x="45" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
-              4.1 м²
+              4.1 {L.m2}
             </text>
 
             <text x="86" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
-              Санузел
+              {L.bath}
             </text>
             <text x="86" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
-              3.3 м²
+              3.3 {L.m2}
             </text>
 
             {/* Dimension tick marks */}
@@ -267,7 +293,7 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
               <line x1="22" y1="9" x2="22" y2="15" />
               <line x1="178" y1="9" x2="178" y2="15" />
               <text x="100" y="11" fill={isNight ? '#E6B860' : '#2F5A4B'} fontSize="5.5" textAnchor="middle" fontWeight="bold">
-                6.00 м
+                6.00 {L.m}
               </text>
             </g>
           </motion.svg>
@@ -281,7 +307,7 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
             viewBox="0 0 200 126"
             className="w-full h-full"
             role="img"
-            aria-label="Изометрический проект загородного дома"
+            aria-label={L.isoAria}
           >
             <defs>
               <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Globe, Phone, Volume2, VolumeX, Shield } from 'lucide-react';
+import { Sun, Moon, Globe, Volume2, VolumeX, Shield } from 'lucide-react';
 import { Language, Theme } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { COMPANY_CONFIG } from '../config/company';
@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? 'bg-[#F4F2EC]/90 dark:bg-[#0B1512]/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 shadow-sm py-3.5'
-          : 'bg-transparent py-5'
+          : 'bg-transparent py-5 header-on-hero'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,14 +50,14 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Zone 1: Brand Wordmark (Single element) */}
           <a
             href="#"
-            className="flex items-center gap-2.5 font-display font-semibold text-lg md:text-xl tracking-tight text-neutral-900 dark:text-neutral-50 hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
+            className="hdr-ink flex items-center gap-2.5 font-serif text-2xl md:text-[1.75rem] leading-none tracking-[-0.01em] text-neutral-900 dark:text-neutral-50 hover:opacity-80 transition-opacity whitespace-nowrap shrink-0"
           >
-            <span className="w-3.5 h-3.5 rounded-sm rounded-br-none bg-[#E6B860] shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-[#E6B860] shrink-0" />
             <span>{t.brandName}</span>
           </a>
 
           {/* Zone 2: Navigation Links (Single-line, 4-5 items) */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <nav className="hdr-soft hidden lg:flex items-center gap-7 text-sm font-medium text-neutral-700 dark:text-neutral-300">
             <a
               href="#catalog"
               className="hover:text-[#184534] dark:hover:text-[#E6B860] transition-colors whitespace-nowrap shrink-0"
@@ -101,12 +101,12 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Direct Phone link */}
             <a
               href={COMPANY_CONFIG.phoneHref}
-              className="hidden sm:flex flex-col items-end text-xs font-semibold text-neutral-800 dark:text-neutral-200 hover:text-[#184534] dark:hover:text-[#E6B860] transition-colors mr-1"
+              className="hdr-ink hidden sm:flex flex-col items-end text-xs font-semibold text-neutral-800 dark:text-neutral-200 hover:text-[#184534] dark:hover:text-[#E6B860] transition-colors mr-1"
             >
-              <span className="font-sans text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+              <span className="hdr-ink font-sans text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                 {COMPANY_CONFIG.phoneDisplay}
               </span>
-              <span className="text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+              <span className="hdr-soft text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
                 {t.phoneSchedule}
               </span>
             </a>
@@ -114,8 +114,8 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Sound Effects Toggle */}
             <button
               onClick={handleSoundToggle}
-              aria-label="Переключить звуки интерфейса"
-              className="p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+              aria-label={lang === 'ru' ? 'Переключить звуки интерфейса' : 'Toggle interface sounds'}
+              className="hdr-util p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
               title={isMuted ? 'Включить звуковые эффекты' : 'Выключить звуки'}
             >
               {isMuted ? (
@@ -131,8 +131,8 @@ export const Header: React.FC<HeaderProps> = ({
                 playUiClick('tap');
                 onToggleLang();
               }}
-              aria-label="Switch language"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors"
+              aria-label={lang === 'ru' ? 'Переключить язык' : 'Switch language'}
+              className="hdr-util flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors"
             >
               <Globe className="w-3.5 h-3.5 text-[#E6B860]" />
               <span className="uppercase">{lang}</span>
@@ -144,8 +144,8 @@ export const Header: React.FC<HeaderProps> = ({
                 playUiClick('tap');
                 onToggleTheme();
               }}
-              aria-label="Toggle color theme"
-              className="p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
+              aria-label={lang === 'ru' ? 'Переключить цветовую тему' : 'Toggle color theme'}
+              className="hdr-util p-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 hover:bg-white dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-[#F5C46B]" />
@@ -180,7 +180,11 @@ export const Header: React.FC<HeaderProps> = ({
                 playUiClick('tap');
                 onOpenQuiz();
               }}
-              className="px-4 py-2 text-xs md:text-sm font-semibold rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] gold-glow transition-all transform active:scale-95 whitespace-nowrap"
+              className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-full transition-all transform active:scale-95 whitespace-nowrap ${
+                isScrolled
+                  ? 'bg-forest text-cream hover:bg-forest-raised dark:bg-cream dark:text-forest dark:hover:bg-cream-soft'
+                  : 'bg-cream text-forest hover:bg-cream-soft'
+              }`}
             >
               {lang === 'ru' ? 'Рассчитать цену' : 'Get Quote'}
             </button>

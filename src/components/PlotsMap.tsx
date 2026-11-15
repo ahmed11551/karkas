@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, CheckCircle2, Star, Calendar, Clock, Home } from 'lucide-react';
+import { MapPin, CheckCircle2, Star } from 'lucide-react';
 import { Language } from '../types';
 import { COMPANY_CONFIG } from '../config/company';
 import { playUiClick } from '../utils/sound';
@@ -100,50 +100,47 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
   const [selectedPlot, setSelectedPlot] = useState<PlotItem>(PLOTS[0]);
 
   return (
-    <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-20 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-          <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-            {lang === 'ru' ? 'География и отзывы' : 'Built Projects & Locations'}
+        <div className="max-w-3xl">
+          <span className="eyebrow text-brass-ink dark:text-brass-light">
+            09 · {lang === 'ru' ? 'География и отзывы' : 'Built Projects & Locations'}
           </span>
-          <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {lang === 'ru'
               ? 'Наши дома по всей Москве и Подмосковью'
               : 'Our Completed Homes Across Moscow Region'}
           </h2>
-          <p className="mt-2 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
+          <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-2xl leading-relaxed">
             {lang === 'ru'
               ? 'Более 38 000 построенных объектов с 2010 года. Посмотрите недавние сданные дома и реальные отзывы заказчиков.'
               : 'Over 38,000 houses erected since 2010. Explore recently handed-over plots and verified client impressions.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start md:self-auto text-xs text-neutral-500 font-medium">
+        <div className="flex items-center gap-3 self-start md:self-auto eyebrow text-olive dark:text-cream-soft">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#E6B860]" />
-            Сданный объект
+            <span className="w-2 h-2 rounded-full bg-brass" aria-hidden="true" />
+            {lang === 'ru' ? 'Сданный объект' : 'Handed over'}
           </span>
-          <span>·</span>
-          <span>Доставка до 100 км бесплатно</span>
+          <span aria-hidden="true">·</span>
+          <span>{lang === 'ru' ? 'Доставка до 100 км бесплатно' : 'Free delivery up to 100 km'}</span>
         </div>
       </div>
 
-      {/* 2-Column Interactive Map & Review Dossier */}
-      <div className="glass-panel rounded-3xl border border-neutral-200/90 dark:border-neutral-800 p-6 sm:p-10 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-        {/* Left Column: Interactive Map Vector Canvas */}
-        <div className="lg:col-span-7 relative bg-gradient-to-br from-[#122A21] to-[#0A1813] rounded-2xl p-6 sm:p-8 min-h-[360px] sm:min-h-[420px] flex items-center justify-center border border-[#2F5A4B] overflow-hidden">
-          {/* Subtle regional ring contours (MKAD, A107, A108) */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" viewBox="0 0 100 100">
-            {/* Center MKAD */}
-            <circle cx="50" cy="50" r="12" fill="none" stroke="#E6B860" strokeWidth="0.8" strokeDasharray="1,1" />
-            {/* Betonka A107 */}
-            <circle cx="50" cy="50" r="26" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="2,2" />
-            {/* Big Ring A108 */}
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="3,3" />
-            <text x="50" y="51" fill="#E6B860" fontSize="3" fontWeight="bold" textAnchor="middle">МОСКВА</text>
+      {/* 2-column dossier: map on the left, selected project on the right */}
+      <div className="rounded-2xl border border-ink/15 dark:border-cream/12 p-5 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+        {/* Left: map canvas */}
+        <div className="lg:col-span-7 relative bg-forest rounded-xl p-6 sm:p-8 min-h-[360px] sm:min-h-[420px] flex items-center justify-center border border-cream/10 overflow-hidden">
+          {/* Regional ring contours (MKAD, A107, A108) */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="12" fill="none" stroke="#E0C27F" strokeWidth="0.8" strokeDasharray="1,1" />
+            <circle cx="50" cy="50" r="26" fill="none" stroke="#B9C4BE" strokeWidth="0.5" strokeDasharray="2,2" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#B9C4BE" strokeWidth="0.5" strokeDasharray="3,3" />
+            <text x="50" y="51" fill="#E0C27F" fontSize="3" fontWeight="bold" textAnchor="middle" letterSpacing="0.3">МОСКВА</text>
           </svg>
 
-          {/* Interactive Plot Location Pins */}
+          {/* Plot pins */}
           {PLOTS.map((plot) => {
             const isSelected = selectedPlot.id === plot.id;
             return (
@@ -155,17 +152,16 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
                 }}
                 style={{ left: `${plot.x}%`, top: `${plot.y}%` }}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 p-2 rounded-full transition-all duration-300 group z-10 ${
-                  isSelected
-                    ? 'scale-125 z-20'
-                    : 'hover:scale-110'
+                  isSelected ? 'scale-125 z-20' : 'hover:scale-110'
                 }`}
                 aria-label={`Выбрать ${plot.location}`}
+                aria-pressed={isSelected}
               >
                 <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors ${
                     isSelected
-                      ? 'bg-[#E6B860] text-[#1E1705] ring-4 ring-[#E6B860]/40'
-                      : 'bg-[#183B30] text-emerald-100 hover:bg-[#E6B860] hover:text-[#1E1705] border border-white/20'
+                      ? 'bg-cream text-forest ring-4 ring-cream/25'
+                      : 'bg-forest-raised text-cream border border-cream/40 hover:bg-cream hover:text-forest'
                   }`}
                 >
                   <MapPin className="w-4 h-4" />
@@ -173,7 +169,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
                 <span
                   className={`absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap pointer-events-none transition-all ${
                     isSelected
-                      ? 'bg-[#E6B860] text-[#1E1705] opacity-100'
+                      ? 'bg-cream text-forest opacity-100'
                       : 'bg-black/80 text-white opacity-0 group-hover:opacity-100'
                   }`}
                 >
@@ -184,68 +180,66 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
           })}
         </div>
 
-        {/* Right Column: Selected Plot Project Details & Client Review */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
+        {/* Right: selected project and review */}
+        <div className="lg:col-span-5 flex flex-col justify-between gap-8">
           <div>
-            <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
-              <span className="font-mono text-[#B27D18] dark:text-[#E6B860] font-semibold">
-                {selectedPlot.district}
-              </span>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex items-center justify-between gap-4 eyebrow text-olive dark:text-cream-soft mb-4">
+              <span className="text-brass-ink dark:text-brass-light">{selectedPlot.district}</span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Сдан и проверен
+                {lang === 'ru' ? 'Сдан и проверен' : 'Handed over & verified'}
               </span>
             </div>
 
-            <h3 className="font-display font-bold text-2xl text-neutral-900 dark:text-neutral-100">
+            <h3 className="font-serif text-3xl sm:text-4xl leading-tight text-ink dark:text-cream">
               {selectedPlot.location}
             </h3>
 
-            <div className="mt-4 p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60 grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <span className="text-neutral-500 block">Проект:</span>
-                <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                  {selectedPlot.houseModel}
-                </span>
+            <dl className="mt-6 grid grid-cols-2 gap-px bg-ink/12 dark:bg-cream/10 border border-ink/12 dark:border-cream/10 rounded-xl overflow-hidden text-sm">
+              <div className="bg-paper dark:bg-forest p-4">
+                <dt className="eyebrow text-olive dark:text-cream-soft mb-1.5">
+                  {lang === 'ru' ? 'Проект' : 'Project'}
+                </dt>
+                <dd className="font-medium text-ink dark:text-cream">{selectedPlot.houseModel}</dd>
               </div>
-              <div>
-                <span className="text-neutral-500 block">Срок сборки:</span>
-                <span className="font-semibold text-[#B27D18] dark:text-[#E6B860]">
-                  {selectedPlot.days} на участке
-                </span>
+              <div className="bg-paper dark:bg-forest p-4">
+                <dt className="eyebrow text-olive dark:text-cream-soft mb-1.5">
+                  {lang === 'ru' ? 'Срок сборки' : 'Assembly time'}
+                </dt>
+                <dd className="font-medium text-brass-ink dark:text-brass-light">
+                  {lang === 'ru' ? `${selectedPlot.days} на участке` : `${selectedPlot.days} on site`}
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          {/* Testimonial Quote */}
-          <div className="p-5 rounded-2xl bg-[#E6B860]/10 border border-[#E6B860]/20 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
-                {selectedPlot.client}
-              </span>
-              <div className="flex items-center gap-0.5 text-amber-500">
+          {/* Testimonial: editorial quote with a brass rule, no tinted box */}
+          <figure className="border-l-2 border-brass pl-5 sm:pl-6 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-semibold text-sm text-ink dark:text-cream">{selectedPlot.client}</span>
+              <div className="flex items-center gap-0.5 text-brass-ink dark:text-brass-light" aria-label={`${selectedPlot.rating} / 5`}>
                 {[...Array(selectedPlot.rating)].map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 italic leading-relaxed">
+            <blockquote className="font-serif italic text-xl sm:text-2xl leading-snug text-ink dark:text-cream">
               «{selectedPlot.review}»
-            </p>
+            </blockquote>
 
-            <span className="text-[11px] text-neutral-500 block pt-1">
-              Дата сдачи: {selectedPlot.date}
-            </span>
-          </div>
+            <figcaption className="eyebrow text-olive dark:text-cream-soft">
+              {lang === 'ru' ? 'Дата сдачи' : 'Handed over'}: {selectedPlot.date}
+            </figcaption>
+          </figure>
 
-          <div className="text-xs text-neutral-500 flex items-center justify-between pt-2">
-            <span>Хотите посмотреть готовый дом вживую?</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-ink/12 dark:border-cream/10 text-sm text-ink-soft dark:text-cream-soft">
+            <span>{lang === 'ru' ? 'Хотите посмотреть готовый дом вживую?' : 'Want to see a finished house in person?'}</span>
             <a
               href={COMPANY_CONFIG.phoneHref}
-              className="font-semibold text-[#B27D18] dark:text-[#E6B860] hover:underline"
+              className="font-semibold text-ink dark:text-cream border-b border-ink/40 dark:border-cream/40 hover:border-ink dark:hover:border-cream pb-0.5 transition-colors"
             >
-              Записаться на экскурсию
+              {lang === 'ru' ? 'Записаться на экскурсию' : 'Book a site visit'}
             </a>
           </div>
         </div>

@@ -289,6 +289,14 @@ export const TRANSLATIONS = {
     sticky: {
       calculate: 'Рассчитать цену',
       call: 'Позвонить',
+      whatsapp: 'Написать в WhatsApp',
+    },
+    messenger: {
+      open: 'Быстрая связь в мессенджерах',
+      close: 'Закрыть',
+      title: 'Напишите инженеру',
+      telegram: 'Telegram (ответим за 2 мин)',
+      whatsapp: 'WhatsApp (расчёт сметы)',
     },
   },
   en: {
@@ -578,6 +586,14 @@ export const TRANSLATIONS = {
     sticky: {
       calculate: 'Get Price',
       call: 'Call Us',
+      whatsapp: 'Message on WhatsApp',
+    },
+    messenger: {
+      open: 'Quick contact via messengers',
+      close: 'Close',
+      title: 'Message an engineer',
+      telegram: 'Telegram (reply in 2 min)',
+      whatsapp: 'WhatsApp (estimate)',
     },
   },
 };

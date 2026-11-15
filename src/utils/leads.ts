@@ -1,3 +1,6 @@
+import { parsePublicLead } from './leadPayload';
+import { reachGoal } from './analytics';
+
 export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed';
 
 export interface LeadCalculatorParams {
@@ -51,7 +54,25 @@ export interface StoredLead {
 
 const STORAGE_KEY = 'karkasnik_leads_archive_v3';
 const UTM_STORAGE_KEY = 'karkasnik_utm_params';
-export const ADMIN_TOKEN_KEY = 'admin_token';
+const LEGACY_TOKEN_KEY = 'admin_token';
+const UI_FLAG = 'karkas_admin_ui';
+
+function safeApiError(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object' || !('error' in data)) return fallback;
+  const message = (data as { error?: unknown }).error;
+  if (typeof message !== 'string') return fallback;
+  if (message.length > 240 || message.includes('    at ') || message.includes('/Users/')) return fallback;
+  return message;
+}
+
+function clearLegacyToken() {
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    sessionStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    // ignore storage access issues
+  }
+}
 
 /**
  * Captures UTM tags from URL query parameters and persists them in sessionStorage for attribution
@@ -129,86 +150,85 @@ export function normalizeLeadStatus(st?: string): LeadStatus {
   return 'new';
 }
 
-/**
- * Reads admin_token from either sessionStorage or localStorage
- */
-export const getAdminToken = (): string | null => {
+/** Non-secret UI hint. The session itself lives in an HttpOnly cookie. */
+export const markAdminUiSession = () => {
   try {
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Stores admin_token in localStorage (persistent) or sessionStorage (current tab session)
- */
-export const setAdminToken = (
-  token: string,
-  storageMode: 'local' | 'session' = 'local'
-) => {
-  try {
-    if (storageMode === 'session') {
-      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-    } else {
-      localStorage.setItem(ADMIN_TOKEN_KEY, token);
-      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-    }
+    sessionStorage.setItem(UI_FLAG, '1');
+    clearLegacyToken();
     window.dispatchEvent(new CustomEvent('admin_auth_changed', { detail: { authenticated: true } }));
   } catch {
     // ignore storage errors
   }
 };
 
-export const clearAdminToken = () => {
+export const clearAdminUiSession = () => {
   try {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    sessionStorage.removeItem(UI_FLAG);
+    clearLegacyToken();
     window.dispatchEvent(new CustomEvent('admin_auth_changed', { detail: { authenticated: false } }));
   } catch {
     // ignore
   }
 };
 
+export const hasAdminUiSession = (): boolean => {
+  try {
+    return sessionStorage.getItem(UI_FLAG) === '1';
+  } catch {
+    return false;
+  }
+};
+
 export const loginAdmin = async (
   username: string,
   password: string,
-  storageMode: 'local' | 'session' = 'local'
-): Promise<{ success: boolean; token?: string; error?: string }> => {
+  remember = false
+): Promise<{ success: boolean; error?: string }> => {
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ username, password, remember }),
     });
-    const data = await res.json();
-    if (!res.ok || !data.admin_token) {
-      return { success: false, error: data.error || 'Ошибка авторизации (401)' };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      return { success: false, error: safeApiError(data, 'Неверный логин или пароль') };
     }
-    setAdminToken(data.admin_token, storageMode);
-    return { success: true, token: data.admin_token };
+    markAdminUiSession();
+    return { success: true };
   } catch {
     return { success: false, error: 'Сервер авторизации недоступен' };
   }
 };
 
-export const verifyAdminSession = async (): Promise<boolean> => {
-  const token = getAdminToken();
-  if (!token) return false;
+export const logoutAdmin = async (): Promise<void> => {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch {
+    // The local UI hint is cleared even if the network call fails.
+  }
+  clearAdminUiSession();
+};
 
+export const verifyAdminSession = async (): Promise<boolean> => {
   try {
     const res = await fetch('/api/auth/verify', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
     });
-    if (res.status === 403 || res.status === 401 || !res.ok) {
-      clearAdminToken();
+    if (res.status === 401 || res.status === 403) {
+      clearAdminUiSession();
       return false;
     }
-    const data = await res.json();
-    return Boolean(data.authenticated);
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => ({}));
+    if (!data.authenticated) {
+      clearAdminUiSession();
+      return false;
+    }
+    markAdminUiSession();
+    return true;
   } catch {
     return false;
   }
@@ -223,21 +243,22 @@ export const fetchProtectedLeads = async (): Promise<{
   status: number;
   error?: string;
 }> => {
-  const token = getAdminToken();
   try {
     const res = await fetch('/api/leads', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
     });
-    const data = await res.json();
-    if (res.status === 403) {
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 403 || res.status === 401) {
+      clearAdminUiSession();
       return {
         leads: [],
-        status: 403,
-        error: data.error || '403 Forbidden: Access denied without valid admin_token',
+        status: res.status,
+        error: safeApiError(data, 'Доступ запрещён'),
       };
     }
     if (!res.ok) {
-      return { leads: getStoredLeads(), status: res.status, error: data.error };
+      return { leads: [], status: res.status, error: safeApiError(data, 'Не удалось загрузить заявки') };
     }
     if (Array.isArray(data.leads)) {
       const normalized = data.leads.map((l: StoredLead) => ({
@@ -247,27 +268,28 @@ export const fetchProtectedLeads = async (): Promise<{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
       return { leads: normalized, status: 200 };
     }
-    return { leads: getStoredLeads(), status: 200 };
+    return { leads: [], status: 200 };
   } catch {
-    return { leads: getStoredLeads(), status: 200 };
+    return { leads: [], status: 0, error: 'Сервер недоступен' };
   }
 };
 
 /**
- * Diagnostic helper to verify that requests without admin_token receive HTTP 403 Forbidden
+ * Confirms that a request without the admin cookie receives HTTP 403.
+ * credentials: 'omit' keeps an existing session from being sent.
  */
 export const testUnauthorizedRequest = async (): Promise<{ status: number; message: string }> => {
   try {
-    const res = await fetch('/api/leads'); // No Authorization header
-    const data = await res.json();
+    const res = await fetch('/api/leads', { credentials: 'omit' });
+    const data = await res.json().catch(() => ({}));
     return {
       status: res.status,
-      message: data.error || `HTTP ${res.status} Forbidden`,
+      message: safeApiError(data, `HTTP ${res.status}`),
     };
   } catch {
     return {
-      status: 403,
-      message: '403 Forbidden: Access denied without admin_token',
+      status: 0,
+      message: 'Сервер недоступен',
     };
   }
 };
@@ -276,146 +298,100 @@ export const updateLeadOnServer = async (
   id: string,
   patch: Partial<Pick<StoredLead, 'status' | 'managerNotes' | 'clientName'>>
 ): Promise<StoredLead | null> => {
-  const token = getAdminToken();
-  if (!token) return null;
-
   try {
-    const res = await fetch(`/api/leads/${id}`, {
+    const res = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
       method: 'PATCH',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
       },
       body: JSON.stringify(patch),
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      const existing = getStoredLeads().map((l) => (l.id === id ? { ...l, ...patch } : l));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-      window.dispatchEvent(new CustomEvent('leads_updated'));
-      crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
-      return data.lead;
-    }
+    if (!res.ok) return null;
+    const data = await res.json();
+    const existing = getStoredLeads().map((l) => (l.id === id ? { ...l, ...patch } : l));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    window.dispatchEvent(new CustomEvent('leads_updated'));
+    crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
+    return data.lead;
   } catch {
-    // Fallback local update
+    return null;
   }
-
-  const existing = getStoredLeads().map((l) => (l.id === id ? { ...l, ...patch } : l));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-  window.dispatchEvent(new CustomEvent('leads_updated'));
-  return existing.find((l) => l.id === id) || null;
 };
 
 export const deleteLeadOnServer = async (id: string): Promise<boolean> => {
-  const token = getAdminToken();
-  if (!token) return false;
-
   try {
-    const res = await fetch(`/api/leads/${id}`, {
+    const res = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'same-origin',
     });
-    if (res.ok) {
-      const updated = getStoredLeads().filter((l) => l.id !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('leads_updated'));
-      crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
-      return true;
-    }
+    if (!res.ok) return false;
+    const updated = getStoredLeads().filter((l) => l.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('leads_updated'));
+    crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
+    return true;
   } catch {
-    // ignore
+    return false;
   }
-  return false;
 };
 
-export const saveLead = (
-  lead: Omit<StoredLead, 'id' | 'timestamp' | 'status'> & { status?: LeadStatus }
-): StoredLead => {
-  const nowFormatted = new Date().toLocaleString('ru-RU', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
-
-  const calcParams: LeadCalculatorParams = lead.calculatorParams || {
-    size: 36,
-    insulation: '150 мм (Осень-Зима)',
-    foundation: 'Свайно-винтовой (−50% акция)',
-    veranda: 'Без веранды',
-    distanceKm: 45,
-  };
-
-  const historyEntry: CalculationHistoryItem = {
-    timestamp: nowFormatted,
-    action:
-      lead.source === 'calculator'
-        ? 'Фиксация цены в калькуляторе'
-        : lead.source === 'quiz_modal'
-          ? 'Завершение квиза с подбором комплектации'
-          : 'Быстрая заявка с фиксацией акции',
-    houseTitle: lead.houseTitle || 'Индивидуальный проект',
-    calculatedPrice: lead.calculatedPrice || 707000,
-    size: calcParams.size,
-    insulation: calcParams.insulation,
-    foundation: calcParams.foundation,
-    veranda: calcParams.veranda,
-    distanceKm: calcParams.distanceKm,
-  };
-
-  const capturedUtm = lead.utm || getCapturedUtmParams();
-
-  const newLead: StoredLead = {
-    status: 'new',
+export const saveLead = async (
+  lead: Omit<StoredLead, 'id' | 'timestamp' | 'status'> & { status?: LeadStatus; consent: boolean }
+): Promise<{ ok: boolean; error?: string; lead?: StoredLead }> => {
+  const parsed = parsePublicLead({
     ...lead,
-    id: 'LD-' + Date.now().toString(36).toUpperCase().slice(-5),
-    timestamp: nowFormatted,
-    createdAtMs: Date.now(),
-    calculatorParams: calcParams,
-    calculationHistory: lead.calculationHistory || [historyEntry],
-    ...(capturedUtm ? { utm: capturedUtm } : {}),
-  };
+    utm: lead.utm || getCapturedUtmParams(),
+    consent: lead.consent,
+  });
+  if (!parsed.ok) return { ok: false, error: parsed.error };
 
   try {
-    const existing = getStoredLeads();
-    const updated = [newLead, ...existing];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch {
-    // ignore storage quota errors
-  }
-
-  // Send to backend API (which also broadcasts via SSE to connected admin clients)
-  fetch('/api/leads', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newLead),
-  }).catch(() => {
-    // ignore network errors
-  });
-
-  // Dispatch instant real-time notification events in current tab & across tabs
-  window.dispatchEvent(new CustomEvent('crm_new_lead', { detail: newLead }));
-  window.dispatchEvent(new CustomEvent('leads_updated'));
-  crmChannel?.postMessage({ type: 'NEW_LEAD', lead: newLead });
-
-  // Trigger Browser Push Notification if permission granted and admin is logged in
-  if (
-    getAdminToken() &&
-    typeof window !== 'undefined' &&
-    'Notification' in window &&
-    Notification.permission === 'granted'
-  ) {
-    try {
-      new Notification('🔥 Новая заявка: Каркасник CRM', {
-        body: `${newLead.houseTitle || 'Расчёт калькулятора'} — ${(newLead.calculatedPrice || 0).toLocaleString('ru-RU')} ₽ (${newLead.phone})`,
-      });
-    } catch {
-      // ignore notification errors in iframe
+    const res = await fetch('/api/leads', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ ...parsed.lead, consent: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.lead) {
+      return { ok: false, error: safeApiError(data, 'Не удалось отправить заявку.') };
     }
-  }
 
-  return newLead;
+    const newLead = data.lead as StoredLead;
+    try {
+      const updated = [newLead, ...getStoredLeads().filter((item) => item.id !== newLead.id)];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore storage quota errors
+    }
+
+    window.dispatchEvent(new CustomEvent('crm_new_lead', { detail: newLead }));
+    window.dispatchEvent(new CustomEvent('leads_updated'));
+    crmChannel?.postMessage({ type: 'NEW_LEAD', lead: newLead });
+
+    if (
+      hasAdminUiSession() &&
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      try {
+        new Notification('Новая заявка: Каркасник CRM', {
+          body: `${newLead.houseTitle || 'Расчёт'} — ${(newLead.calculatedPrice || 0).toLocaleString('ru-RU')} ₽`,
+        });
+      } catch {
+        // ignore notification errors in iframe
+      }
+    }
+
+    reachGoal('lead_sent');
+    return { ok: true, lead: newLead };
+  } catch {
+    return { ok: false, error: 'Сервер недоступен. Повторите отправку через минуту.' };
+  }
 };
 
 export const getStoredLeads = (): StoredLead[] => {
@@ -541,6 +517,12 @@ export const exportLeadsCsv = (leads: StoredLead[]) => {
     completed: 'Сдан (Completed)',
   };
 
+  const csvCell = (value: unknown) => {
+    const text = String(value ?? '');
+    const neutralized = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+    return `"${neutralized.replace(/"/g, '""')}"`;
+  };
+
   const rows = leads.map((l) => {
     const utmStr = l.utm
       ? Object.entries(l.utm)
@@ -549,20 +531,20 @@ export const exportLeadsCsv = (leads: StoredLead[]) => {
           .join(' | ')
       : l.source;
     return [
-      l.id,
-      `"${l.timestamp}"`,
-      `"${statusMap[l.status] || 'Новый'}"`,
-      `"${l.clientName || 'Клиент'}"`,
-      `"${l.phone}"`,
-      `"${l.houseTitle || 'Индивидуальный'}"`,
-      l.calculatorParams?.size || 36,
-      `"${l.calculatorParams?.insulation || '150 мм'}"`,
-      `"${l.calculatorParams?.foundation || 'Свайный'}"`,
-      `"${l.calculatorParams?.veranda || 'Без веранды'}"`,
-      l.calculatedPrice || 0,
-      `"${(l.giftsSelected || []).join('; ')}"`,
-      `"${(utmStr || '').replace(/"/g, '""')}"`,
-      `"${(l.managerNotes || '').replace(/"/g, '""')}"`,
+      csvCell(l.id),
+      csvCell(l.timestamp),
+      csvCell(statusMap[l.status] || 'Новый'),
+      csvCell(l.clientName || 'Клиент'),
+      csvCell(l.phone),
+      csvCell(l.houseTitle || 'Индивидуальный'),
+      csvCell(l.calculatorParams?.size || 36),
+      csvCell(l.calculatorParams?.insulation || '150 мм'),
+      csvCell(l.calculatorParams?.foundation || 'Свайный'),
+      csvCell(l.calculatorParams?.veranda || 'Без веранды'),
+      csvCell(l.calculatedPrice || 0),
+      csvCell((l.giftsSelected || []).join('; ')),
+      csvCell(utmStr || ''),
+      csvCell(l.managerNotes || ''),
     ];
   });
 

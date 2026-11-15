@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, ThermometerSnowflake, Sparkles, Info, Layers } from 'lucide-react';
+import { ShieldCheck, ThermometerSnowflake, Sparkles, Layers } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { playUiClick } from '../utils/sound';
@@ -173,18 +173,18 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
   };
 
   return (
-    <section id="materials" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="glass-panel rounded-3xl border border-neutral-200/90 dark:border-neutral-800 p-6 sm:p-10 lg:p-12 shadow-xl">
+    <section id="materials" className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div>
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-              {lang === 'ru' ? 'Интерактивный 3D-разрез конструкции' : 'Interactive 3D Structural Cutaway'}
+            <span className="eyebrow text-brass-ink dark:text-brass-light">
+              05 · {lang === 'ru' ? 'Интерактивный 3D-разрез конструкции' : 'Interactive 3D Structural Cutaway'}
             </span>
-            <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
+            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
               {t.specsSection.title}
             </h2>
-            <p className="mt-2 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
+            <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-2xl leading-relaxed">
               {lang === 'ru'
                 ? 'Наведите курсор или нажмите на любую точку (01–06) на 3D-разрезе: выбранный слой подсвечивается в режиме фокуса, а остальные становятся полупрозрачными.'
                 : 'Hover or click any numbered hotspot (01–06) on the 3D cutaway: the selected layer glows in Focus Mode while the rest of the house becomes semi-transparent.'}
@@ -200,8 +200,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
               }}
               className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-semibold border transition-all ${
                 focusMode
-                  ? 'bg-[#E6B860] text-[#1E1705] border-[#E6B860] shadow-md'
-                  : 'bg-white/80 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700'
+                  ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream'
+                  : 'bg-transparent text-ink-soft dark:text-cream-soft border-ink/20 dark:border-cream/20 hover:text-ink dark:hover:text-cream'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -212,7 +212,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
               </span>
             </button>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#183B30] text-[#E6B860] text-xs font-semibold">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-ink/20 dark:border-cream/20 text-ink dark:text-cream text-xs font-semibold">
               <ThermometerSnowflake className="w-4 h-4" />
               <span>{lang === 'ru' ? 'Зимний контур до −35 °C' : 'Winter-rated to −35 °C'}</span>
             </div>
@@ -222,21 +222,21 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Left Column: Interactive 3D Isometric Wall/Roof/Foundation Cut-Away SVG + Pop-up Tooltips */}
           <div className="lg:col-span-6 flex flex-col">
-            <div className="relative rounded-3xl bg-gradient-to-br from-[#122A21] via-[#0F231B] to-[#091510] border border-[#2F5A4B] p-4 sm:p-6 shadow-2xl overflow-hidden">
+            <div className="relative rounded-2xl bg-forest border border-cream/10 p-4 sm:p-6 overflow-hidden">
               {/* Blueprint subtle grid */}
-              <div className="absolute inset-0 bg-[radial-gradient(#E6B860_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.06] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(#EFE9DC_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.07] pointer-events-none" />
 
               {/* Top Interactive Hint Bar */}
-              <div className="relative z-10 flex items-center justify-between text-[11px] text-emerald-200/80 mb-2 px-1">
+              <div className="relative z-10 flex items-center justify-between text-[11px] text-cream-soft mb-2 px-1">
                 <span className="inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#E6B860]" />
+                  <Sparkles className="w-3.5 h-3.5 text-brass-light" />
                   <span>
                     {lang === 'ru'
                       ? 'Режим рентген-фокуса активен · Выберите слой 01–06'
                       : 'X-Ray Focus Mode active · Select layer 01–06'}
                   </span>
                 </span>
-                <span className="font-mono text-[#E6B860] font-semibold">
+                <span className="font-mono text-brass-light font-semibold">
                   {currentSpot.code} / 06
                 </span>
               </div>
@@ -507,42 +507,42 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       style={getTooltipPositionStyle(currentSpot)}
                       className="absolute z-30 w-72 sm:w-80 pointer-events-none"
                     >
-                      <div className="p-4 rounded-2xl bg-[#0D1F18]/95 backdrop-blur-xl border border-[#E6B860]/60 shadow-2xl text-white space-y-2.5">
+                      <div className="p-4 rounded-2xl bg-forest/95 backdrop-blur-xl border border-cream/20 shadow-2xl text-cream space-y-2.5">
                         {/* Header row: Code + GOST + Lifespan */}
                         <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
-                          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#E6B860]">
-                            <span className="w-5 h-5 rounded-md bg-[#E6B860] text-[#1E1705] flex items-center justify-center text-[10px]">
+                          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-brass-light">
+                            <span className="w-5 h-5 rounded-md bg-cream text-forest flex items-center justify-center text-[10px]">
                               {currentSpot.code}
                             </span>
                             <span>{currentSpot.gost}</span>
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cream/10 text-cream-soft">
                             {currentSpot.lifespan[lang]}
                           </span>
                         </div>
 
                         {/* Title */}
                         <div>
-                          <h5 className="font-display font-bold text-xs sm:text-sm text-white leading-snug">
+                          <h5 className="font-serif text-base sm:text-lg text-cream leading-snug">
                             {currentSpot.title[lang]}
                           </h5>
-                          <p className="text-[11px] text-emerald-100/80 mt-0.5 leading-snug">
+                          <p className="text-[11px] text-cream-soft mt-0.5 leading-snug">
                             {currentSpot.subtitle[lang]}
                           </p>
                         </div>
 
                         {/* 3 Technical Specification Metrics */}
-                        <div className="grid grid-cols-1 gap-1.5 pt-1 text-[11px] bg-white/5 p-2.5 rounded-xl border border-white/10">
+                        <div className="grid grid-cols-1 gap-1.5 pt-1 text-[11px] bg-cream/5 p-2.5 rounded-xl border border-cream/10">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-emerald-200/60">
+                            <span className="text-cream-soft">
                               {lang === 'ru' ? 'Сечение / Контур:' : 'Section:'}
                             </span>
-                            <span className="font-mono font-semibold text-[#E6B860] text-right">
+                            <span className="font-mono font-semibold text-brass-light text-right">
                               {currentSpot.metrics.thickness[lang]}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-emerald-200/60">
+                            <span className="text-cream-soft">
                               {lang === 'ru' ? 'Стандарт / Марка:' : 'Grade:'}
                             </span>
                             <span className="font-semibold text-white text-right">
@@ -550,10 +550,10 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-emerald-200/60">
+                            <span className="text-cream-soft">
                               {lang === 'ru' ? 'Показатель:' : 'Rating:'}
                             </span>
-                            <span className="font-mono text-emerald-300 text-right">
+                            <span className="font-mono text-brass-light text-right">
                               {currentSpot.metrics.thermalOrLoad[lang]}
                             </span>
                           </div>
@@ -565,34 +565,34 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
               </div>
 
               {/* Persistent Active Hotspot Technical Summary Dock */}
-              <div className="mt-3 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-white">
+              <div className="mt-3 p-4 rounded-xl bg-cream/5 border border-cream/15 text-cream">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="font-mono text-xs font-bold text-[#E6B860]">
+                  <span className="font-mono text-xs font-bold text-brass-light">
                     УЗЕЛ {currentSpot.code} · {currentSpot.gost}
                   </span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#E6B860]/20 text-[#E6B860] font-semibold">
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-brass/20 text-brass-light font-semibold">
                     {currentSpot.lifespan[lang]}
                   </span>
                 </div>
-                <h4 className="font-display font-bold text-base text-white">
+                <h4 className="font-serif text-2xl leading-tight text-cream">
                   {currentSpot.title[lang]}
                 </h4>
-                <p className="text-xs text-emerald-100/85 mt-1 leading-relaxed">
+                <p className="text-xs text-cream-soft mt-1 leading-relaxed">
                   {currentSpot.spec[lang]}
                 </p>
 
                 {/* Inline Mini Specs Pills */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/10 text-[11px]">
                   <div className="bg-black/25 px-2.5 py-1.5 rounded-lg">
-                    <span className="text-emerald-200/60 block text-[10px]">
+                    <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Толщина / Сечение' : 'Dimensions'}
                     </span>
-                    <span className="font-mono font-semibold text-[#E6B860]">
+                    <span className="font-mono font-semibold text-brass-light">
                       {currentSpot.metrics.thickness[lang]}
                     </span>
                   </div>
                   <div className="bg-black/25 px-2.5 py-1.5 rounded-lg">
-                    <span className="text-emerald-200/60 block text-[10px]">
+                    <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Материал и класс' : 'Material Grade'}
                     </span>
                     <span className="font-semibold text-white">
@@ -600,10 +600,10 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     </span>
                   </div>
                   <div className="bg-black/25 px-2.5 py-1.5 rounded-lg">
-                    <span className="text-emerald-200/60 block text-[10px]">
+                    <span className="text-cream-soft block text-[10px]">
                       {lang === 'ru' ? 'Инженерный допуск' : 'Engineering Spec'}
                     </span>
-                    <span className="font-mono text-emerald-300">
+                    <span className="font-mono text-brass-light">
                       {currentSpot.metrics.thermalOrLoad[lang]}
                     </span>
                   </div>
@@ -629,15 +629,15 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                   }}
                   className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-200 flex items-start gap-4 ${
                     isSelected
-                      ? 'bg-[#183B30] text-white border-[#183B30] dark:border-[#E6B860] shadow-lg -translate-y-0.5'
-                      : 'bg-white/70 dark:bg-neutral-800/40 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-900 dark:text-neutral-100'
+                      ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream shadow-lg -translate-y-0.5'
+                      : 'bg-transparent border-ink/12 dark:border-cream/10 hover:border-ink/40 dark:hover:border-cream/40 text-ink dark:text-cream'
                   }`}
                 >
                   <span
                     className={`w-9 h-9 rounded-xl font-mono font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                       isSelected
-                        ? 'bg-[#E6B860] text-[#1E1705]'
-                        : 'bg-[#E6B860]/15 text-[#B27D18] dark:text-[#E6B860]'
+                        ? 'bg-brass text-[#1E1705]'
+                        : 'bg-brass/15 text-brass-ink dark:text-brass-light'
                     }`}
                   >
                     {spot.code}
@@ -646,8 +646,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <h3
-                        className={`font-display font-semibold text-sm sm:text-base ${
-                          isSelected ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'
+                        className={`font-serif text-lg sm:text-xl leading-snug ${
+                          isSelected ? 'text-paper dark:text-forest' : 'text-ink dark:text-cream'
                         }`}
                       >
                         {spot.title[lang]}
@@ -655,8 +655,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       <span
                         className={`text-[10px] font-mono px-2 py-0.5 rounded shrink-0 ${
                           isSelected
-                            ? 'bg-white/15 text-[#E6B860]'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500'
+                            ? 'bg-paper/10 text-brass-light dark:bg-forest/10 dark:text-brass-ink'
+                            : 'border border-ink/15 dark:border-cream/15 text-olive dark:text-cream-soft'
                         }`}
                       >
                         {spot.gost}
@@ -664,7 +664,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     </div>
                     <p
                       className={`text-xs mt-1 ${
-                        isSelected ? 'text-emerald-100/85' : 'text-neutral-600 dark:text-neutral-400'
+                        isSelected ? 'text-paper/80 dark:text-forest/80' : 'text-ink-soft dark:text-cream-soft'
                       }`}
                     >
                       {spot.subtitle[lang]}
@@ -672,8 +672,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <div
                       className={`mt-2 pt-2 border-t flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono ${
                         isSelected
-                          ? 'border-white/10 text-[#E6B860]'
-                          : 'border-neutral-200/60 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400'
+                          ? 'border-paper/15 text-brass-light dark:border-forest/15 dark:text-brass-ink'
+                          : 'border-ink/12 dark:border-cream/10 text-olive dark:text-cream-soft'
                       }`}
                     >
                       <span>{spot.metrics.thickness[lang]}</span>
@@ -686,14 +686,14 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
             })}
 
             {/* Bottom GOST verification note */}
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400 px-1">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-olive dark:text-cream-soft px-1">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#B27D18] dark:text-[#E6B860]" />
+                <ShieldCheck className="w-4 h-4 text-brass-ink dark:text-brass-light" />
                 {lang === 'ru'
                   ? 'Все пиломатериалы проходят входной влагомерный контроль (≤ 14%)'
                   : 'All timber undergoes strict moisture inspection (≤ 14%)'}
               </span>
-              <span className="font-mono text-[#B27D18] dark:text-[#E6B860]">ГОСТ 8486-86</span>
+              <span className="font-mono text-brass-ink dark:text-brass-light">ГОСТ 8486-86</span>
             </div>
           </div>
         </div>

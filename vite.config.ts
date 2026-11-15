@@ -7,9 +7,16 @@ export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, '.') },
+        // Lottie is only rendered as SVG and the JSON has no expressions, so the light
+        // build is enough. It drops the expression engine (direct eval), which the
+        // strict CSP would block anyway, and cuts the vendor-lottie chunk.
+        {
+          find: /^lottie-web(\/build\/player\/lottie_svg\.js)?$/,
+          replacement: path.resolve(__dirname, 'node_modules/lottie-web/build/player/lottie_light.js'),
+        },
+      ],
     },
     build: {
       target: 'es2020',

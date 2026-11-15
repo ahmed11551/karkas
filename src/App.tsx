@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -11,37 +11,57 @@ import { Bell, Lock, ShieldCheck, X, ArrowRight } from 'lucide-react';
 import { Language, Theme, HouseItem } from './types';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { BentoStats } from './components/BentoStats';
 import { HouseCatalog } from './components/HouseCatalog';
 import { Footer } from './components/Footer';
 import { StickyMobileBar } from './components/StickyMobileBar';
 import { MessengerFloating } from './components/MessengerFloating';
-import {
-  BentoStatsSkeleton,
-  CatalogSkeleton,
-  CalculatorSkeleton,
-  PlotsMapSkeleton,
-} from './components/SkeletonLoaders';
+import { BentoStatsSkeleton } from './components/SkeletonLoaders';
 import {
   StoredLead,
   LeadCalculatorParams,
   verifyAdminSession,
-  getAdminToken,
   fetchProtectedLeads,
   getCapturedUtmParams,
 } from './utils/leads';
 import { playUiClick } from './utils/sound';
 
-import { InteractiveCalculator } from './components/InteractiveCalculator';
-import { PackageComparison } from './components/PackageComparison';
-import { MaterialsSection } from './components/MaterialsSection';
-import { ConstructionMedia } from './components/ConstructionMedia';
-import { ProcessTimeline } from './components/ProcessTimeline';
-import { InHouseAdvantage } from './components/InHouseAdvantage';
-import { PlotsMap } from './components/PlotsMap';
-import { GiftsBento } from './components/GiftsBento';
-import { FaqSection } from './components/FaqSection';
-import { CtaBanner } from './components/CtaBanner';
+import { LazyMount, scrollToAnchorWhenReady } from './components/LazyMount';
+
+// Below-the-fold sections: code is split and loaded only when the section nears the viewport
+// (see LazyMount). Heavy sections keep their own chunks; the first load stays small.
+const BentoStats = lazy(() =>
+  import('./components/BentoStats').then((m) => ({ default: m.BentoStats }))
+);
+const InteractiveCalculator = lazy(() =>
+  import('./components/InteractiveCalculator').then((m) => ({ default: m.InteractiveCalculator }))
+);
+const PackageComparison = lazy(() =>
+  import('./components/PackageComparison').then((m) => ({ default: m.PackageComparison }))
+);
+const MaterialsSection = lazy(() =>
+  import('./components/MaterialsSection').then((m) => ({ default: m.MaterialsSection }))
+);
+const ConstructionMedia = lazy(() =>
+  import('./components/ConstructionMedia').then((m) => ({ default: m.ConstructionMedia }))
+);
+const ProcessTimeline = lazy(() =>
+  import('./components/ProcessTimeline').then((m) => ({ default: m.ProcessTimeline }))
+);
+const InHouseAdvantage = lazy(() =>
+  import('./components/InHouseAdvantage').then((m) => ({ default: m.InHouseAdvantage }))
+);
+const PlotsMap = lazy(() =>
+  import('./components/PlotsMap').then((m) => ({ default: m.PlotsMap }))
+);
+const GiftsBento = lazy(() =>
+  import('./components/GiftsBento').then((m) => ({ default: m.GiftsBento }))
+);
+const FaqSection = lazy(() =>
+  import('./components/FaqSection').then((m) => ({ default: m.FaqSection }))
+);
+const CtaBanner = lazy(() =>
+  import('./components/CtaBanner').then((m) => ({ default: m.CtaBanner }))
+);
 
 // Lazy-load interactive modals & CRM drawer
 const QuizModal = lazy(() =>
@@ -63,7 +83,10 @@ const sectionMotionProps = {
 
 export default function App() {
   const [lang, setLang] = useState<Language>('ru');
-  const [theme, setTheme] = useState<Theme>('light');
+  // Start from what public/theme-init.js already applied (saved choice or system), so state matches the DOM.
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
   const [isNightScene, setIsNightScene] = useState<boolean>(false);
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [isCrmOpen, setIsCrmOpen] = useState<boolean>(false);
@@ -79,24 +102,16 @@ export default function App() {
   );
   const [prefilledHouseTitle, setPrefilledHouseTitle] = useState<string | undefined>(undefined);
 
-  const [scrollProgress, setScrollProgress] = useState<number>(0);
+  // Scroll progress lives in a ref: it changes every frame, so it must not be React state.
+  const progressBarRef = useRef<HTMLDivElement | null>(null);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const [isDataFetching, setIsDataFetching] = useState<boolean>(false);
-
   const lenisRef = useRef<Lenis | null>(null);
-
-  const handleSimulateDataFetch = () => {
-    setIsDataFetching(true);
-    setTimeout(() => {
-      setIsDataFetching(false);
-    }, 850);
-  };
 
   // Dynamic SEO Canonical & OpenGraph URL Resolution
   useEffect(() => {
     const origin = window.location.origin;
     const currentUrl = origin + window.location.pathname;
-    const ogImageAbs = `${origin}/og-cover.webp`;
+    const ogImageAbs = `${origin}/og-cover.jpg`;
 
     const canonicalEl = document.getElementById('canonical-url') as HTMLLinkElement | null;
     if (canonicalEl) canonicalEl.href = currentUrl;
@@ -119,19 +134,34 @@ export default function App() {
 
   // 1. Initialize Lenis Smooth Scroll ("Эффект Шелка") synced with IntersectionObserver & Scroll Progress
   useEffect(() => {
+    // Users who ask for reduced motion get native scrolling (no eased wheel/anchor tweens).
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const lenis = new Lenis({
       duration: 1.15,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+      smoothWheel: !reduceMotion,
       wheelMultiplier: 1.0,
       touchMultiplier: 1.5,
     });
 
     lenisRef.current = lenis;
 
+    // Runs once per frame while scrolling. Only the progress bar is touched directly;
+    // React state changes only when the header threshold is crossed.
+    let scrolledNow = false;
     lenis.on('scroll', ({ scroll, progress }: { scroll: number; progress: number }) => {
-      setScrollProgress(Number.isNaN(progress) ? 0 : progress * 100);
-      setIsScrolled(scroll > 60);
+      const clamped = Number.isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
+      const bar = progressBarRef.current;
+      if (bar) {
+        bar.style.transform = `scaleX(${clamped})`;
+        bar.setAttribute('aria-valuenow', String(Math.round(clamped * 100)));
+      }
+      const nextScrolled = scroll > 60;
+      if (nextScrolled !== scrolledNow) {
+        scrolledNow = nextScrolled;
+        setIsScrolled(nextScrolled);
+      }
     });
 
     const updateLenis = (time: number) => {
@@ -153,7 +183,7 @@ export default function App() {
         const sectionEl = document.querySelector(href) as HTMLElement | null;
         if (sectionEl) {
           e.preventDefault();
-          lenis.scrollTo(sectionEl, { offset: -80, duration: 1.2 });
+          scrollToAnchorWhenReady(lenis, href, reduceMotion);
         }
       }
     };
@@ -229,10 +259,9 @@ export default function App() {
     window.addEventListener('crm_new_lead', handleLocalNewLead);
 
     let eventSource: EventSource | null = null;
-    const token = getAdminToken();
-    if (isAdminAuthenticated && token && typeof EventSource !== 'undefined') {
+    if (isAdminAuthenticated && typeof EventSource !== 'undefined') {
       try {
-        eventSource = new EventSource(`/api/leads/stream?token=${encodeURIComponent(token)}`);
+        eventSource = new EventSource('/api/leads/stream');
         eventSource.addEventListener('new_lead', (ev: MessageEvent) => {
           try {
             const incomingLead: StoredLead = JSON.parse(ev.data);
@@ -269,7 +298,14 @@ export default function App() {
   };
 
   const handleToggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    const next: Theme = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    try {
+      // Same key as public/theme-init.js. Storage can be blocked; the toggle still works for this visit.
+      window.localStorage.setItem('karkas-theme', next);
+    } catch {
+      // ignore
+    }
   };
 
   const handleToggleScene = () => {
@@ -300,7 +336,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F2EC] dark:bg-[#0B1512] text-[#14231E] dark:text-[#E8F1EC] transition-colors duration-300 font-sans selection:bg-[#E6B860]/30 selection:text-[#B27D18] relative">
+    <div id="main-content" className="min-h-screen bg-[#F4F2EC] dark:bg-[#0B1512] text-[#14231E] dark:text-[#E8F1EC] transition-colors duration-300 font-sans selection:bg-[#E6B860]/30 selection:text-[#B27D18] relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#14231E]"
+      >
+        Перейти к содержанию
+      </a>
       {/* Global Subtle Film-Grain Texture Overlay */}
       <div
         className="fixed inset-0 bg-grain-overlay pointer-events-none z-40"
@@ -308,11 +350,14 @@ export default function App() {
       />
 
       {/* Top Reading Progress Bar (Synced with Lenis) */}
+      {/* Updated imperatively from the Lenis scroll handler (no React re-render per frame) */}
       <div
-        className="fixed top-0 left-0 h-[3px] bg-[#E6B860] z-50 transition-all duration-75 ease-out"
-        style={{ width: `${scrollProgress}%` }}
+        ref={progressBarRef}
+        className="fixed top-0 left-0 w-full h-[3px] origin-left bg-[#E6B860] z-50 will-change-transform"
+        style={{ transform: 'scaleX(0)' }}
         role="progressbar"
-        aria-valuenow={Math.round(scrollProgress)}
+        aria-label={lang === 'ru' ? 'Прогресс чтения страницы' : 'Page reading progress'}
+        aria-valuenow={0}
         aria-valuemin={0}
         aria-valuemax={100}
       />
@@ -345,6 +390,7 @@ export default function App() {
               <button
                 onClick={() => setRealtimeToastLead(null)}
                 className="text-emerald-200/70 hover:text-white p-1"
+                aria-label="Закрыть уведомление"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -414,101 +460,105 @@ export default function App() {
         onToggleScene={handleToggleScene}
       />
 
-      {/* Interactive Perceived Data Fetching Skeleton Switcher */}
-      <AnimatePresence mode="wait">
-        {isDataFetching ? (
-          <motion.div
-            key="skeleton-view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-12"
-          >
-            <BentoStatsSkeleton />
-            <CatalogSkeleton />
-            <CalculatorSkeleton />
-            <PlotsMapSkeleton />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="loaded-view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.35 }}
-          >
-            {/* Bento Grid Proof Metrics & 3 Reason Cards with Lottie Animations */}
-            <motion.div {...sectionMotionProps}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
+      >
+        {/* Bento Grid Proof Metrics & 3 Reason Cards with Lottie Animations */}
+        <LazyMount minHeight="360px">
+          <motion.div {...sectionMotionProps}>
+            <Suspense fallback={<BentoStatsSkeleton />}>
               <BentoStats lang={lang} />
-            </motion.div>
-
-            {/* Interactive Architectural Catalog (Bento Grid + WebP Renders + Cross-Fade) */}
-            <motion.div {...sectionMotionProps}>
-              <HouseCatalog
-                lang={lang}
-                onSelectHouse={handleSelectHouse}
-                isNightScene={isNightScene}
-              />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <InteractiveCalculator
-                lang={lang}
-                onOpenQuiz={handleOpenQuiz}
-                isNightScene={isNightScene}
-              />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <PackageComparison
-                lang={lang}
-                onSelectPackage={(price) => handleOpenQuiz(price)}
-              />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <MaterialsSection lang={lang} />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <ConstructionMedia
-                lang={lang}
-                onOpenQuiz={() => handleOpenQuiz()}
-              />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <ProcessTimeline lang={lang} />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <InHouseAdvantage lang={lang} />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <PlotsMap lang={lang} />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <GiftsBento
-                lang={lang}
-                onOpenQuiz={() => handleOpenQuiz()}
-              />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <FaqSection lang={lang} />
-            </motion.div>
-
-            <motion.div {...sectionMotionProps}>
-              <CtaBanner
-                lang={lang}
-                onOpenQuiz={() => handleOpenQuiz()}
-              />
-            </motion.div>
+            </Suspense>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </LazyMount>
+
+        {/* Interactive Architectural Catalog (Bento Grid + WebP Renders + Cross-Fade) */}
+        <motion.div {...sectionMotionProps}>
+          <HouseCatalog
+            lang={lang}
+            onSelectHouse={handleSelectHouse}
+            isNightScene={isNightScene}
+          />
+        </motion.div>
+
+        <LazyMount anchorId="calculator" minHeight="900px">
+          <motion.div {...sectionMotionProps}>
+            <InteractiveCalculator
+              lang={lang}
+              onOpenQuiz={handleOpenQuiz}
+              isNightScene={isNightScene}
+            />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount minHeight="700px">
+          <motion.div {...sectionMotionProps}>
+            <PackageComparison
+              lang={lang}
+              onSelectPackage={(price) => handleOpenQuiz(price)}
+            />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="materials" minHeight="900px">
+          <motion.div {...sectionMotionProps}>
+            <MaterialsSection lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount minHeight="800px">
+          <motion.div {...sectionMotionProps}>
+            <ConstructionMedia
+              lang={lang}
+              onOpenQuiz={() => handleOpenQuiz()}
+            />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="steps" minHeight="800px">
+          <motion.div {...sectionMotionProps}>
+            <ProcessTimeline lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount minHeight="600px">
+          <motion.div {...sectionMotionProps}>
+            <InHouseAdvantage lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount minHeight="800px">
+          <motion.div {...sectionMotionProps}>
+            <PlotsMap lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="gifts" minHeight="700px">
+          <motion.div {...sectionMotionProps}>
+            <GiftsBento
+              lang={lang}
+              onOpenQuiz={() => handleOpenQuiz()}
+            />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="faq" minHeight="700px">
+          <motion.div {...sectionMotionProps}>
+            <FaqSection lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount minHeight="360px">
+          <motion.div {...sectionMotionProps}>
+            <CtaBanner
+              lang={lang}
+              onOpenQuiz={() => handleOpenQuiz()}
+            />
+          </motion.div>
+        </LazyMount>
+      </motion.div>
 
       {/* Footer Credentials, Policy Links & /login Staff Trigger */}
       <Footer
@@ -518,17 +568,8 @@ export default function App() {
         onOpenCrm={() => setIsCrmOpen(true)}
       />
 
-      {/* Bottom-Left Quick Utility Dock: Skeleton Trigger + /login Staff Access */}
-      <div className="fixed bottom-3 left-4 z-40 hidden sm:flex items-center gap-2">
-        <button
-          onClick={handleSimulateDataFetch}
-          className="px-3 py-1.5 rounded-full bg-neutral-900/80 dark:bg-neutral-100/90 text-white dark:text-neutral-900 text-[11px] font-mono hover:scale-105 transition-all shadow-md backdrop-blur-md flex items-center gap-1.5 opacity-75 hover:opacity-100"
-          title="Показать скелетон-загрузку Framer Motion"
-        >
-          <span className="w-2 h-2 rounded-full bg-[#E6B860] animate-pulse" />
-          <span>Скелетон</span>
-        </button>
-
+      {/* Bottom-Left Quick Utility Dock: /login Staff Access */}
+      <div className="fixed bottom-3 left-4 z-40 hidden xl:flex items-center gap-2">
         {!isAdminAuthenticated ? (
           <button
             onClick={() => {
@@ -563,7 +604,7 @@ export default function App() {
       />
 
       {/* Direct Telegram & WhatsApp Messenger Quick-Conversion Floating Widget */}
-      <MessengerFloating />
+      <MessengerFloating lang={lang} showOnMobile={isScrolled} />
 
       {/* Lazy-Loaded Interactive Modals & CRM Drawer */}
       <Suspense fallback={null}>

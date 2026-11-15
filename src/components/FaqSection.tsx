@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Minus, HelpCircle } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -16,44 +16,56 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang }) => {
   };
 
   return (
-    <section id="faq" className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-14">
-        <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-          {lang === 'ru' ? 'Ответы на главные вопросы' : 'Answers & Clarity'}
+    <section id="faq" className="py-20 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mb-12 sm:mb-14">
+        <span className="eyebrow text-brass-ink dark:text-brass-light">
+          11 · {lang === 'ru' ? 'Ответы на главные вопросы' : 'Answers & Clarity'}
         </span>
-        <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
+        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
           {t.faq.title}
         </h2>
-        <p className="mt-3 text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
+        <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
           {t.faq.subtitle}
         </p>
       </div>
 
-      <div className="space-y-4">
+      {/* Ruled accordion: hairlines between items, no cards */}
+      <div className="border-t border-ink/15 dark:border-cream/12">
         {t.faq.items.map((item, idx) => {
           const isOpen = openIdx === idx;
           return (
-            <div
-              key={idx}
-              className={`rounded-2xl border transition-all overflow-hidden ${
-                isOpen
-                  ? 'glass-card border-[#E6B860]/40 shadow-md'
-                  : 'bg-white/60 dark:bg-neutral-800/40 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
-              }`}
-            >
+            <div key={idx} className="border-b border-ink/15 dark:border-cream/12">
               <button
                 onClick={() => toggleAccordion(idx)}
-                className="w-full text-left p-6 sm:p-7 flex items-center justify-between gap-4 font-display font-semibold text-base sm:text-lg text-neutral-900 dark:text-neutral-100 transition-colors"
+                className="group w-full text-left py-6 sm:py-7 flex items-start justify-between gap-6 text-ink dark:text-cream transition-colors"
                 aria-expanded={isOpen}
               >
-                <span>{item.q}</span>
-                <span className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-[#B27D18] dark:text-[#E6B860] shrink-0">
+                <span className="flex items-baseline gap-4 sm:gap-6">
+                  <span className="font-serif italic text-lg sm:text-xl text-olive dark:text-cream-soft tabular-nums shrink-0 w-8 sm:w-10">
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`font-serif text-2xl sm:text-3xl leading-snug transition-colors ${
+                      isOpen ? 'text-ink dark:text-cream' : 'text-ink-soft dark:text-cream-soft group-hover:text-ink dark:group-hover:text-cream'
+                    }`}
+                  >
+                    {item.q}
+                  </span>
+                </span>
+                <span
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 mt-1 transition-colors ${
+                    isOpen
+                      ? 'border-ink bg-ink text-paper dark:border-cream dark:bg-cream dark:text-forest'
+                      : 'border-ink/25 text-ink dark:border-cream/30 dark:text-cream group-hover:border-ink/60 dark:group-hover:border-cream/60'
+                  }`}
+                  aria-hidden="true"
+                >
                   {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 </span>
               </button>
 
               {isOpen && (
-                <div className="px-6 pb-6 sm:px-7 sm:pb-7 text-sm sm:text-base text-neutral-600 dark:text-neutral-300 leading-relaxed border-t border-neutral-100 dark:border-neutral-800/60 pt-4">
+                <div className="pb-7 sm:pb-8 pl-12 sm:pl-16 pr-12 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed max-w-2xl">
                   {item.a}
                 </div>
               )}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CreditCard, ShieldCheck, Truck, Share2, CheckCheck, FileDown, AlertCircle, CheckCircle2, MessageCircle, Send } from 'lucide-react';
+import { CreditCard, ShieldCheck, Truck, Share2, CheckCheck, FileDown, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language, CalculatorConfig } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { CALCULATOR_CONSTANTS, buildMessengerUrl } from '../config/company';
@@ -8,7 +8,9 @@ import { RollingNumber } from './RollingNumber';
 import { EstimateDocumentModal } from './EstimateDocumentModal';
 import { playUiClick } from '../utils/sound';
 import { saveLead, LeadCalculatorParams } from '../utils/leads';
+import { SuccessNotice } from './SuccessNotice';
 import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
+import { ConsentField } from './ConsentField';
 
 const {
   BASE_PRICE_THOUSANDS,
@@ -25,6 +27,37 @@ interface InteractiveCalculatorProps {
   onOpenQuiz: (prefilledPrice?: number, calcParams?: LeadCalculatorParams, houseTitle?: string) => void;
   isNightScene: boolean;
 }
+
+/** Option button in the spec sheet: ink fill when selected, hairline otherwise. */
+const optionClass = (active: boolean): string =>
+  `px-3 py-3 rounded-lg text-xs sm:text-sm font-medium border text-center transition-colors duration-300 ${
+    active
+      ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream'
+      : 'bg-transparent text-ink-soft border-ink/15 hover:border-ink/50 hover:text-ink dark:text-cream-soft dark:border-cream/15 dark:hover:border-cream/50 dark:hover:text-cream'
+  }`;
+
+/** Numbered group header, spec-sheet style. */
+const SpecGroup: React.FC<{
+  index: string;
+  label: string;
+  value?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ index, label, value, children }) => (
+  <div>
+    <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-ink/12 dark:border-cream/10">
+      <div className="flex items-baseline gap-3">
+        <span className="font-serif italic text-base text-olive dark:text-cream-soft">{index}</span>
+        <span className="eyebrow text-ink dark:text-cream">{label}</span>
+      </div>
+      {value !== undefined && (
+        <span className="font-mono text-xs font-semibold text-brass-ink dark:text-brass-light tabular-nums">
+          {value}
+        </span>
+      )}
+    </div>
+    {children}
+  </div>
+);
 
 export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   lang,
@@ -48,6 +81,8 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   const [isEstimateModalOpen, setIsEstimateModalOpen] = useState<boolean>(false);
   const [calcPhone, setCalcPhone] = useState<string>('');
   const [calcPhoneError, setCalcPhoneError] = useState<string>('');
+  const [calcConsent, setCalcConsent] = useState(false);
+  const [calcConsentError, setCalcConsentError] = useState('');
   const [calcLockedSuccess, setCalcLockedSuccess] = useState<boolean>(false);
 
   // Delivery cost calculation (Free up to 100km, then 50₽/km)
@@ -111,69 +146,65 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
     }
   };
 
+  const insulationLabel = config.insulation === 0 ? '100 мм' : config.insulation === 35 ? '150 мм' : '200 мм';
+
   return (
-    <section id="calculator" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="calculator" className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Title & Mode Toggles */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-        <div>
-          <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#E6B860] uppercase">
-            {lang === 'ru' ? 'Конфигуратор за 1 минуту' : '1-Minute Estimator'}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10">
+        <div className="max-w-2xl">
+          <span className="eyebrow text-brass-ink dark:text-brass-light">
+            03 · {lang === 'ru' ? 'Конфигуратор за 1 минуту' : '1-Minute Estimator'}
           </span>
-          <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl text-neutral-900 dark:text-neutral-50 tracking-tight mt-2 text-balance">
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {t.calculator.title}
           </h2>
-          <p className="mt-2 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
+          <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
             {t.calculator.subtitle}
           </p>
         </div>
 
-        {/* Cash vs Mortgage Mode Switch */}
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-md self-start md:self-auto">
-          <button
-            onClick={() => {
-              playUiClick('tap');
-              setConfig((prev) => ({ ...prev, mortgageMode: false }));
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-              !config.mortgageMode
-                ? 'bg-white dark:bg-[#183B30] text-[#142E25] dark:text-[#E6B860] shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>{t.calculator.modeCash}</span>
-          </button>
-          <button
-            onClick={() => {
-              playUiClick('tap');
-              setConfig((prev) => ({ ...prev, mortgageMode: true }));
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-              config.mortgageMode
-                ? 'bg-white dark:bg-[#183B30] text-[#142E25] dark:text-[#E6B860] shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>{t.calculator.modeMortgage}</span>
-          </button>
+        {/* Cash vs Mortgage Mode: underline tabs */}
+        <div className="flex items-center gap-7 border-b border-ink/15 dark:border-cream/12 self-start md:self-auto">
+          {[
+            { mortgage: false, label: t.calculator.modeCash, Icon: ShieldCheck },
+            { mortgage: true, label: t.calculator.modeMortgage, Icon: CreditCard },
+          ].map(({ mortgage, label, Icon }) => {
+            const active = config.mortgageMode === mortgage;
+            return (
+              <button
+                key={label}
+                onClick={() => {
+                  playUiClick('tap');
+                  setConfig((prev) => ({ ...prev, mortgageMode: mortgage }));
+                }}
+                aria-pressed={active}
+                className={`relative pb-3 flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                  active
+                    ? 'text-ink dark:text-cream'
+                    : 'text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{label}</span>
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0 right-0 -bottom-px h-[2px] bg-ink dark:bg-brass-light origin-left transition-transform duration-500 ease-out-soft ${
+                    active ? 'scale-x-100' : 'scale-x-0'
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Main 2-Column Calculator Box */}
-      <div className="glass-panel rounded-3xl border border-neutral-200/90 dark:border-neutral-800 p-6 sm:p-10 lg:p-12 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
-        {/* Left Interactive Options Deck */}
-        <div className="lg:col-span-7 flex flex-col justify-between space-y-7">
+      {/* One panel: spec sheet on paper, price card on forest */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden border border-ink/15 dark:border-cream/12">
+        {/* Left: spec options */}
+        <div className="lg:col-span-7 bg-paper dark:bg-forest-raised p-6 sm:p-10 lg:p-12 flex flex-col justify-between gap-9">
           {/* Group 1: House Size */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                {t.calculator.houseSize}
-              </span>
-              <span className="text-xs font-semibold text-[#B27D18] dark:text-[#E6B860]">
-                {config.size} м²
-              </span>
-            </div>
+          <SpecGroup index="01" label={t.calculator.houseSize} value={`${config.size} м²`}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {t.calculator.sizes.map((s) => (
                 <button
@@ -182,28 +213,16 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tick');
                     setConfig((prev) => ({ ...prev, size: s.val }));
                   }}
-                  className={`px-3 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all text-center ${
-                    config.size === s.val
-                      ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] shadow-md dark:bg-[#E6B860] dark:text-[#142E25] dark:border-[#E6B860]'
-                      : 'bg-white/70 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700/60 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                  }`}
+                  className={optionClass(config.size === s.val)}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
-          </div>
+          </SpecGroup>
 
           {/* Group 2: Insulation */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                {t.calculator.insulation}
-              </span>
-              <span className="text-xs font-semibold text-[#B27D18] dark:text-[#E6B860]">
-                {config.insulation === 0 ? '100 мм' : config.insulation === 35 ? '150 мм' : '200 мм'}
-              </span>
-            </div>
+          <SpecGroup index="02" label={t.calculator.insulation} value={insulationLabel}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {t.calculator.insulations.map((ins) => (
                 <button
@@ -212,28 +231,20 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tick');
                     setConfig((prev) => ({ ...prev, insulation: ins.val }));
                   }}
-                  className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all text-center ${
-                    config.insulation === ins.val
-                      ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] shadow-md dark:bg-[#E6B860] dark:text-[#142E25] dark:border-[#E6B860]'
-                      : 'bg-white/70 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700/60 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                  }`}
+                  className={optionClass(config.insulation === ins.val)}
                 >
                   {ins.label}
                 </button>
               ))}
             </div>
-          </div>
+          </SpecGroup>
 
           {/* Group 3: Foundation */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                {t.calculator.foundation}
-              </span>
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                {config.foundation === 1 ? '−50% акция' : '0 ₽'}
-              </span>
-            </div>
+          <SpecGroup
+            index="03"
+            label={t.calculator.foundation}
+            value={config.foundation === 1 ? '−50% акция' : '0 ₽'}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {t.calculator.foundations.map((f) => (
                 <button
@@ -242,28 +253,20 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tick');
                     setConfig((prev) => ({ ...prev, foundation: f.val }));
                   }}
-                  className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all text-center ${
-                    config.foundation === f.val
-                      ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] shadow-md dark:bg-[#E6B860] dark:text-[#142E25] dark:border-[#E6B860]'
-                      : 'bg-white/70 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700/60 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                  }`}
+                  className={optionClass(config.foundation === f.val)}
                 >
                   {f.label}
                 </button>
               ))}
             </div>
-          </div>
+          </SpecGroup>
 
           {/* Group 4: Veranda / Terrace */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                {t.calculator.veranda}
-              </span>
-              <span className="text-xs font-semibold text-[#B27D18] dark:text-[#E6B860]">
-                {config.veranda === 1 ? '+60 000 ₽' : '0 ₽'}
-              </span>
-            </div>
+          <SpecGroup
+            index="04"
+            label={t.calculator.veranda}
+            value={config.veranda === 1 ? '+60 000 ₽' : '0 ₽'}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {t.calculator.verandas.map((v) => (
                 <button
@@ -272,28 +275,24 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tick');
                     setConfig((prev) => ({ ...prev, veranda: v.val }));
                   }}
-                  className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all text-center ${
-                    config.veranda === v.val
-                      ? 'bg-[#183B30] text-[#E6B860] border-[#183B30] shadow-md dark:bg-[#E6B860] dark:text-[#142E25] dark:border-[#E6B860]'
-                      : 'bg-white/70 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700/60 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                  }`}
+                  className={optionClass(config.veranda === v.val)}
                 >
                   {v.label}
                 </button>
               ))}
             </div>
-          </div>
+          </SpecGroup>
 
           {/* Group 5: Delivery Distance from MKAD */}
-          <div className="p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700/60 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-neutral-900 dark:text-neutral-100">
+          <div className="p-4 rounded-lg border border-ink/12 dark:border-cream/10 space-y-3">
+            <div className="flex items-center justify-between gap-3 text-xs font-semibold text-ink dark:text-cream">
               <span className="flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-[#E6B860]" />
+                <Truck className="w-4 h-4 text-brass-ink dark:text-brass-light shrink-0" />
                 {lang === 'ru'
                   ? `Расстояние до участка от МКАД: ${distanceKm} км`
                   : `Distance from MKAD: ${distanceKm} km`}
               </span>
-              <span className="font-mono text-[#B27D18] dark:text-[#E6B860]">
+              <span className="font-mono text-brass-ink dark:text-brass-light whitespace-nowrap">
                 {distanceKm <= 100
                   ? lang === 'ru'
                     ? '0 ₽ (Бесплатно)'
@@ -307,15 +306,16 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
               max="200"
               step="5"
               value={distanceKm}
+              aria-label={lang === 'ru' ? 'Расстояние от МКАД' : 'Distance from MKAD'}
               onChange={(e) => {
                 playUiClick('tick');
                 setDistanceKm(+e.target.value);
               }}
-              className="w-full accent-[#E6B860] cursor-pointer"
+              className="w-full accent-[#B8944A] cursor-pointer"
             />
-            <div className="flex justify-between text-[11px] text-neutral-400">
-              <span>0 км (МКАД)</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+            <div className="flex justify-between text-[11px] text-olive dark:text-cream-soft">
+              <span>{lang === 'ru' ? '0 км (МКАД)' : '0 km (MKAD)'}</span>
+              <span className="font-semibold text-brass-ink dark:text-brass-light">
                 {lang === 'ru' ? 'до 100 км бесплатно' : 'free up to 100 km'}
               </span>
               <span>200 км</span>
@@ -324,12 +324,12 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
 
           {/* Mortgage Mode Sub-deck */}
           {config.mortgageMode && (
-            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-4">
-              <div className="flex items-center justify-between text-xs font-bold text-neutral-900 dark:text-neutral-100">
+            <div className="p-5 rounded-lg border border-ink/12 dark:border-cream/10 space-y-5">
+              <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream">
                 <span>
                   {t.calculator.downPayment}: {config.downPaymentPercent}%
                 </span>
-                <span className="font-mono text-[#B27D18] dark:text-[#E6B860]">
+                <span className="font-mono text-brass-ink dark:text-brass-light">
                   {downPaymentAmount.toLocaleString('ru-RU')} ₽
                 </span>
               </div>
@@ -339,18 +339,19 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 max="50"
                 step="5"
                 value={config.downPaymentPercent}
+                aria-label={t.calculator.downPayment}
                 onChange={(e) => {
                   playUiClick('tick');
                   setConfig((prev) => ({ ...prev, downPaymentPercent: +e.target.value }));
                 }}
-                className="w-full accent-[#E6B860] cursor-pointer"
+                className="w-full accent-[#B8944A] cursor-pointer"
               />
 
-              <div className="flex items-center justify-between text-xs font-bold text-neutral-900 dark:text-neutral-100 pt-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream pt-1">
                 <span>
                   {t.calculator.loanTerm}: {config.mortgageYears} лет
                 </span>
-                <span className="text-neutral-500">{config.mortgageYears * 12} мес.</span>
+                <span className="text-olive dark:text-cream-soft">{config.mortgageYears * 12} мес.</span>
               </div>
               <input
                 type="range"
@@ -358,109 +359,117 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 max="20"
                 step="1"
                 value={config.mortgageYears}
+                aria-label={t.calculator.loanTerm}
                 onChange={(e) => {
                   playUiClick('tick');
                   setConfig((prev) => ({ ...prev, mortgageYears: +e.target.value }));
                 }}
-                className="w-full accent-[#E6B860] cursor-pointer"
+                className="w-full accent-[#B8944A] cursor-pointer"
               />
 
-              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+              <p className="text-[11px] text-olive dark:text-cream-soft leading-relaxed">
                 {t.calculator.rateNotice}
               </p>
             </div>
           )}
         </div>
 
-        {/* Right Live Visualizer & Price Counter Card */}
-        <div className="lg:col-span-5 flex flex-col justify-between bg-gradient-to-br from-[#183B30] via-[#122A21] to-[#0B1A14] text-white p-7 sm:p-8 rounded-3xl border border-[#2F5A4B] shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#E6B860]/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Right: live preview & price on forest */}
+        <div className="lg:col-span-5 relative overflow-hidden bg-forest text-cream p-7 sm:p-9 lg:p-10 flex flex-col justify-between gap-7">
+          <div
+            className="absolute inset-0 pointer-events-none opacity-60"
+            style={{
+              background:
+                'radial-gradient(120% 70% at 100% 0%, rgba(224,194,127,0.10), transparent 60%)',
+            }}
+            aria-hidden="true"
+          />
 
           {/* Visual Header */}
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs uppercase tracking-wider font-semibold text-emerald-200/80">
-                {t.calculator.previewHeader}
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-white/10 text-[11px] text-[#E6B860] font-medium border border-white/15">
-                {config.size} м²
-              </span>
+              <span className="eyebrow text-brass-light">{t.calculator.previewHeader}</span>
+              <span className="font-mono text-xs text-cream-soft tabular-nums">{config.size} м²</span>
             </div>
 
             {/* Dynamic SVG House Rendering */}
-            <div className="my-5 max-w-[280px] mx-auto aspect-[200/120] flex items-center justify-center">
+            <div className="my-4 max-w-[280px] mx-auto aspect-[200/120] flex items-center justify-center">
               <HouseSvg
+                lang={lang}
                 styleType={config.veranda ? 'glassv' : 'gable'}
                 isNight={isNightScene}
                 hasPiles={config.foundation === 1}
                 hasVeranda={config.veranda === 1}
                 scale={previewScale}
-                className="w-full h-full drop-shadow-md transition-all duration-300"
+                className="w-full h-full transition-all duration-300"
               />
             </div>
           </div>
 
           {/* Price Numbers & Breakdown */}
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-5">
             {config.mortgageMode ? (
               <div>
-                <span className="text-xs text-emerald-200/80 block">
-                  {t.calculator.monthlyPayment}
-                </span>
+                <span className="eyebrow block text-cream-soft mb-2">{t.calculator.monthlyPayment}</span>
                 <RollingNumber
                   value={monthlyPayment}
                   prefix="≈ "
                   suffix=" ₽ / мес"
-                  className="text-3xl sm:text-4xl font-bold text-[#E6B860] my-1"
+                  font="font-serif"
+                  className="text-5xl sm:text-6xl leading-none text-cream"
                 />
-                <div className="text-xs text-emerald-100/70">
-                  Полная стоимость: {totalPrice.toLocaleString('ru-RU')} ₽
+                <div className="mt-3 text-xs text-cream-soft">
+                  {lang === 'ru' ? 'Полная стоимость' : 'Full price'}: {totalPrice.toLocaleString('ru-RU')} ₽
                 </div>
               </div>
             ) : (
               <div>
+                <span className="eyebrow block text-cream-soft mb-2">
+                  {lang === 'ru' ? 'Итого под ключ' : 'Total turnkey'}
+                </span>
                 <RollingNumber
                   value={totalPrice}
                   prefix="≈ "
                   suffix=" ₽"
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#E6B860]"
+                  font="font-serif"
+                  className="text-5xl sm:text-6xl leading-none text-cream"
                 />
               </div>
             )}
 
-            <p className="text-xs text-emerald-100/80 leading-relaxed">
+            <p className="text-sm text-cream-soft leading-relaxed">
               {t.calculator.breakdownBase} {config.size} м²
               {config.veranda ? ` ${t.calculator.withVerandaText}` : ''}, {t.calculator.paymentAfterText}{' '}
               {t.calculator.giftRoofText}
             </p>
 
-            <div className="p-3.5 rounded-2xl bg-[#E6B860]/15 border border-[#E6B860]/30 text-xs text-[#FDE5B3] leading-relaxed">
+            <div className="p-4 rounded-lg border border-brass-light/30 text-sm text-brass-light leading-relaxed">
               {config.foundation === 1
                 ? t.calculator.saveTextWithPiles
                 : t.calculator.saveTextWithoutPiles}
             </div>
 
             {/* Strictly Validated Phone Input + Buttons: Lock In, Download PDF Estimate, Share */}
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-3 pt-1">
               {calcLockedSuccess ? (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 space-y-2.5 text-xs text-emerald-100">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#E6B860] shrink-0" />
-                      <span>
-                        {lang === 'ru'
-                          ? `Цена ${totalPrice.toLocaleString('ru-RU')} ₽ закреплена за ${calcPhone}!`
-                          : `Price locked for ${calcPhone}!`}
-                      </span>
-                    </div>
+                <div className="p-4 sm:p-5 rounded-2xl border border-cream/20 bg-forest-raised/60 space-y-4 text-cream">
+                  <SuccessNotice
+                    tone="dark"
+                    title={lang === 'ru' ? 'Цена закреплена' : 'Price locked'}
+                    text={
+                      lang === 'ru'
+                        ? `${totalPrice.toLocaleString('ru-RU')} ₽ за ${calcPhone}. Перезвоним, чтобы уточнить участок, и пришлём смету в мессенджер.`
+                        : `${totalPrice.toLocaleString('ru-RU')} ₽ for ${calcPhone}. We will call to confirm the plot and send the estimate by messenger.`
+                    }
+                  >
                     <button
                       type="button"
                       onClick={() => setCalcLockedSuccess(false)}
-                      className="text-[11px] underline text-[#E6B860]"
+                      className="text-xs underline text-brass-light hover:text-cream transition-colors"
                     >
-                      Изменить
+                      {lang === 'ru' ? 'Изменить телефон' : 'Change phone'}
                     </button>
-                  </div>
+                  </SuccessNotice>
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <a
                       href={buildMessengerUrl(
@@ -469,7 +478,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-[11px] transition-all"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-colors"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
@@ -481,7 +490,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-[11px] transition-all"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Telegram</span>
@@ -490,6 +499,9 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2">
+                  <label htmlFor="calc-phone" className="sr-only">
+                    {lang === 'ru' ? 'Номер телефона для фиксации сметы' : 'Phone number to lock the estimate'}
+                  </label>
                   <input
                     type="tel"
                     inputMode="tel"
@@ -505,26 +517,41 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                         ? 'Ваш телефон: +7 (9__) ___-__-__'
                         : 'Your phone: +7 (9__) ___-__-__'
                     }
-                    aria-label="Номер телефона для фиксации сметы"
+                    id="calc-phone"
                     aria-invalid={Boolean(calcPhoneError)}
-                    className={`w-full px-4 py-3 rounded-full bg-white/95 text-neutral-900 placeholder-neutral-400 font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
-                      calcPhoneError ? 'ring-2 ring-rose-400 bg-rose-50' : 'focus:ring-[#E6B860]'
+                    aria-describedby={calcPhoneError ? 'calc-phone-error' : undefined}
+                    className={`w-full px-4 py-3 rounded-full bg-cream text-forest placeholder:text-olive font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
+                      calcPhoneError ? 'ring-2 ring-rose-400 bg-rose-50' : 'focus:ring-brass-light'
                     }`}
                   />
                   {calcPhoneError && (
                     <p
+                      id="calc-phone-error"
                       role="alert"
-                      className="text-[11px] text-rose-300 px-3 font-medium flex items-center gap-1.5"
+                      className="text-xs text-rose-300 px-3 font-medium flex items-center gap-1.5"
                     >
                       <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                       <span>{calcPhoneError}</span>
                     </p>
                   )}
+                  <ConsentField
+                    id="calc-consent"
+                    lang={lang}
+                    tone="dark"
+                    checked={calcConsent}
+                    error={calcConsentError}
+                    onChange={(checked) => {
+                      setCalcConsent(checked);
+                      if (checked) setCalcConsentError('');
+                    }}
+                    className="px-1 text-cream-soft"
+                  />
                 </div>
               )}
 
               <button
-                onClick={() => {
+                type="button"
+                onClick={async () => {
                   const calcParams: LeadCalculatorParams = {
                     size: config.size,
                     insulation:
@@ -560,10 +587,19 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       );
                       return;
                     }
+                    if (!calcConsent) {
+                      playUiClick('tick');
+                      setCalcConsentError(
+                        lang === 'ru'
+                          ? 'Подтвердите согласие на обработку персональных данных.'
+                          : 'Please confirm consent to process your personal data.'
+                      );
+                      return;
+                    }
 
-                    saveLead({
+                    const result = await saveLead({
                       source: 'calculator',
-                      clientName: 'Онлайн-расчет (Калькулятор)',
+                      clientName: '',
                       phone: validation.normalized || calcPhone,
                       houseTitle: title,
                       calculatedPrice: totalPrice,
@@ -572,7 +608,16 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                         'Металлочерепица 0 ₽',
                         config.foundation === 1 ? 'Сваи −50%' : 'Доставка до 100 км 0 ₽',
                       ],
+                      consent: true,
                     });
+                    if (!result.ok) {
+                      playUiClick('tick');
+                      setCalcPhoneError(
+                        result.error ||
+                          (lang === 'ru' ? 'Не удалось закрепить заявку.' : 'Could not save the request.')
+                      );
+                      return;
+                    }
                     playUiClick('success');
                     setCalcLockedSuccess(true);
                     setCalcPhoneError('');
@@ -587,7 +632,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       : 'Please enter a valid phone number above to lock this price.'
                   );
                 }}
-                className="w-full py-3.5 rounded-full bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-display font-semibold text-sm transition-all gold-glow text-center active:scale-95"
+                className="w-full py-4 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-colors gold-glow text-center active:scale-95"
               >
                 {t.calculator.lockPriceBtn}
               </button>
@@ -598,24 +643,24 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tap');
                     setIsEstimateModalOpen(true);
                   }}
-                  className="w-full py-2.5 px-3 rounded-full bg-white/15 hover:bg-white/25 border border-[#E6B860]/40 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-full border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <FileDown className="w-3.5 h-3.5 text-[#E6B860] shrink-0" />
+                  <FileDown className="w-3.5 h-3.5 text-brass-light shrink-0" />
                   <span>{lang === 'ru' ? 'Скачать PDF-смету' : 'Download PDF Quote'}</span>
                 </button>
 
                 <button
                   onClick={handleShareEstimate}
-                  className="w-full py-2.5 px-3 rounded-full bg-white/10 hover:bg-white/15 text-emerald-100 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-full border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                 >
                   {copiedShare ? (
                     <>
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <CheckCheck className="w-3.5 h-3.5 text-brass-light shrink-0" />
                       <span>{lang === 'ru' ? 'Скопировано!' : 'Copied!'}</span>
                     </>
                   ) : (
                     <>
-                      <Share2 className="w-3.5 h-3.5 text-[#E6B860] shrink-0" />
+                      <Share2 className="w-3.5 h-3.5 text-brass-light shrink-0" />
                       <span>{lang === 'ru' ? 'Копировать ссылку' : 'Copy Estimate'}</span>
                     </>
                   )}

@@ -52,84 +52,72 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
     return () => observer.disconnect();
   }, []);
 
+  const kpis = [
+    { value: t.stats.builtCount, label: t.stats.builtLabel },
+    { value: t.stats.projectsCount, label: t.stats.projectsLabel },
+    { value: t.stats.assemblyCount, label: t.stats.assemblyLabel },
+    { value: t.stats.warrantyCount, label: t.stats.warrantyLabel },
+  ];
+
   return (
     <section
       ref={sectionRef}
-      className="relative z-20 -mt-10 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      className="relative z-20 -mt-6 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
     >
-      {/* 4-Column KPI Strip */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl shadow-xl border border-neutral-200/80 dark:border-neutral-800/80 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-        <div className="flex flex-col">
-          <div className="flex items-baseline gap-1 text-[#142E25] dark:text-[#E6B860]">
-            <span className="font-display font-bold text-3xl sm:text-4xl tabular-nums tracking-tight">
-              {t.stats.builtCount}
+      {/* KPI row: editorial hairlines instead of a boxed card */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 border-y border-ink/15 dark:border-cream/12">
+        {kpis.map((kpi, i) => (
+          <div
+            key={kpi.label}
+            className={`py-7 sm:py-9 px-4 sm:px-7 ${
+              i % 2 === 1 ? 'border-l border-ink/15 dark:border-cream/12' : ''
+            } ${
+              i >= 2 ? 'border-t border-ink/15 dark:border-cream/12' : ''
+            } lg:border-t-0 ${
+              i > 0 ? 'lg:border-l lg:border-ink/15 dark:lg:border-cream/12' : ''
+            }`}
+          >
+            <span className="block font-serif text-4xl sm:text-5xl lg:text-6xl leading-none tracking-[-0.02em] text-ink dark:text-cream tabular-nums">
+              {kpi.value}
+            </span>
+            <span className="block text-xs sm:text-sm text-ink-soft dark:text-cream-soft mt-3">
+              {kpi.label}
             </span>
           </div>
-          <span className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            {t.stats.builtLabel}
-          </span>
-        </div>
-
-        <div className="flex flex-col border-l border-neutral-200 dark:border-neutral-800/80 pl-4 sm:pl-6">
-          <div className="flex items-baseline gap-1 text-[#142E25] dark:text-[#E6B860]">
-            <span className="font-display font-bold text-3xl sm:text-4xl tabular-nums tracking-tight">
-              {t.stats.projectsCount}
-            </span>
-          </div>
-          <span className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            {t.stats.projectsLabel}
-          </span>
-        </div>
-
-        <div className="flex flex-col border-l border-neutral-200 dark:border-neutral-800/80 pl-4 sm:pl-6">
-          <div className="flex items-baseline gap-1 text-[#142E25] dark:text-[#E6B860]">
-            <span className="font-display font-bold text-3xl sm:text-4xl tabular-nums tracking-tight">
-              {t.stats.assemblyCount}
-            </span>
-          </div>
-          <span className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            {t.stats.assemblyLabel}
-          </span>
-        </div>
-
-        <div className="flex flex-col border-l border-neutral-200 dark:border-neutral-800/80 pl-4 sm:pl-6">
-          <div className="flex items-baseline gap-1 text-[#142E25] dark:text-[#E6B860]">
-            <span className="font-display font-bold text-3xl sm:text-4xl tabular-nums tracking-tight">
-              {t.stats.warrantyCount}
-            </span>
-          </div>
-          <span className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            {t.stats.warrantyLabel}
-          </span>
-        </div>
+        ))}
       </div>
 
-      {/* Bento Grid: Three Reasons Why Houses Cost Less (with Lottie JSON Animations) */}
-      <div className="mt-14">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl tracking-tight text-neutral-900 dark:text-neutral-50 text-balance">
+      {/* Section heading: numbered, editorial */}
+      <div className="mt-20 sm:mt-24 mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <div className="max-w-2xl">
+          <span className="eyebrow text-brass-ink dark:text-brass-light">
+            01 · {lang === 'ru' ? 'Почему дешевле' : 'Why it costs less'}
+          </span>
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {t.reasons.title}
           </h2>
-          <p className="mt-3 text-sm sm:text-base text-neutral-600 dark:text-neutral-400">
-            {t.reasons.subtitle}
-          </p>
         </div>
+        <p className="text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-sm md:text-right leading-relaxed">
+          {t.reasons.subtitle}
+        </p>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Ready Designs (Lottie: Blueprint -> House) */}
-          <div
-            onMouseEnter={() => {
-              lottieRef1.current?.setSpeed(1.1);
-              lottieRef1.current?.seek(0);
-              lottieRef1.current?.play();
-            }}
-            onMouseLeave={() => {
-              lottieRef1.current?.setSpeed(0.65);
-            }}
-            className="glass-card p-7 rounded-3xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 group"
-          >
-            <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#E6B860]/15 border border-[#E6B860]/30 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+        {/* Card 1: Ready Designs (Lottie: Blueprint -> House) */}
+        <div
+          onMouseEnter={() => {
+            lottieRef1.current?.setSpeed(1.1);
+            lottieRef1.current?.seek(0);
+            lottieRef1.current?.play();
+          }}
+          onMouseLeave={() => {
+            lottieRef1.current?.setSpeed(0.65);
+          }}
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+        >
+          <div>
+            <div className="flex items-start justify-between mb-8">
+              <div className="w-16 h-16 rounded-full border border-ink/15 dark:border-cream/15 flex items-center justify-center overflow-hidden">
                 <Lottie
                   lottieRef={lottieRef1}
                   src={blueprintHouseLottie}
@@ -138,36 +126,39 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#F5C46B] uppercase">
-                {t.reasons.cards[0].tag}
-              </span>
-              <h3 className="font-display font-semibold text-xl text-neutral-900 dark:text-neutral-100 mt-2 mb-3">
-                {t.reasons.cards[0].title}
-              </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                {t.reasons.cards[0].text}
-              </p>
+              <span className="font-serif italic text-2xl text-olive dark:text-cream-soft">01</span>
             </div>
-            <div className="mt-6 pt-4 border-t border-neutral-200/60 dark:border-neutral-800/60 text-xs text-neutral-500 flex items-center justify-between">
-              <span>{lang === 'ru' ? 'Каталог типовых проектов' : 'Standardized catalog'}</span>
-              <span className="font-mono text-[#B27D18] dark:text-[#F5C46B]">−35% затрат</span>
-            </div>
+            <span className="eyebrow text-brass-ink dark:text-brass-light">
+              {t.reasons.cards[0].tag}
+            </span>
+            <h3 className="font-serif text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
+              {t.reasons.cards[0].title}
+            </h3>
+            <p className="text-sm sm:text-[15px] leading-relaxed text-ink-soft dark:text-cream-soft">
+              {t.reasons.cards[0].text}
+            </p>
           </div>
+          <div className="mt-8 pt-4 border-t border-ink/12 dark:border-cream/10 flex items-center justify-between text-xs text-olive dark:text-cream-soft">
+            <span>{lang === 'ru' ? 'Каталог типовых проектов' : 'Standardized catalog'}</span>
+            <span className="font-mono font-semibold text-brass-ink dark:text-brass-light">−35% затрат</span>
+          </div>
+        </div>
 
-          {/* Card 2: All Season Warmth (Lottie: Snowflake -> Sun around House) */}
-          <div
-            onMouseEnter={() => {
-              lottieRef2.current?.setSpeed(1.1);
-              lottieRef2.current?.seek(0);
-              lottieRef2.current?.play();
-            }}
-            onMouseLeave={() => {
-              lottieRef2.current?.setSpeed(0.55);
-            }}
-            className="bg-gradient-to-br from-[#183B30] to-[#0E251E] text-white p-7 rounded-3xl border border-[#2F5A4B] shadow-xl flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 group"
-          >
-            <div>
-              <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform overflow-hidden">
+        {/* Card 2: All Season Warmth, the dark card of the trio (Lottie: Snowflake -> Sun) */}
+        <div
+          onMouseEnter={() => {
+            lottieRef2.current?.setSpeed(1.1);
+            lottieRef2.current?.seek(0);
+            lottieRef2.current?.play();
+          }}
+          onMouseLeave={() => {
+            lottieRef2.current?.setSpeed(0.55);
+          }}
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-cream/10 bg-forest text-cream dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+        >
+          <div>
+            <div className="flex items-start justify-between mb-8">
+              <div className="w-16 h-16 rounded-full border border-cream/20 flex items-center justify-center overflow-hidden">
                 <Lottie
                   lottieRef={lottieRef2}
                   src={seasonalHouseLottie}
@@ -176,36 +167,37 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="text-xs font-semibold tracking-wider text-[#E6B860] uppercase">
-                {t.reasons.cards[1].tag}
-              </span>
-              <h3 className="font-display font-semibold text-xl text-white mt-2 mb-3">
-                {t.reasons.cards[1].title}
-              </h3>
-              <p className="text-sm text-emerald-100/80 leading-relaxed">
-                {t.reasons.cards[1].text}
-              </p>
+              <span className="font-serif italic text-2xl text-cream-soft">02</span>
             </div>
-            <div className="mt-6 pt-4 border-t border-white/10 text-xs text-emerald-200/70 flex items-center justify-between">
-              <span>{lang === 'ru' ? 'Плиты базальтовой ваты' : 'Basalt mineral wool'}</span>
-              <span className="font-mono text-[#E6B860]">100 / 150 / 200 мм</span>
-            </div>
+            <span className="eyebrow text-brass-light">{t.reasons.cards[1].tag}</span>
+            <h3 className="font-serif text-3xl leading-tight text-cream mt-3 mb-3">
+              {t.reasons.cards[1].title}
+            </h3>
+            <p className="text-sm sm:text-[15px] leading-relaxed text-cream-soft">
+              {t.reasons.cards[1].text}
+            </p>
           </div>
+          <div className="mt-8 pt-4 border-t border-cream/10 flex items-center justify-between text-xs text-cream-soft">
+            <span>{lang === 'ru' ? 'Плиты базальтовой ваты' : 'Basalt mineral wool'}</span>
+            <span className="font-mono font-semibold text-brass-light">100 / 150 / 200 мм</span>
+          </div>
+        </div>
 
-          {/* Card 3: Screw Pile Foundation (Lottie: Pile Driven + Protection Shield) */}
-          <div
-            onMouseEnter={() => {
-              lottieRef3.current?.setSpeed(1.1);
-              lottieRef3.current?.seek(0);
-              lottieRef3.current?.play();
-            }}
-            onMouseLeave={() => {
-              lottieRef3.current?.setSpeed(0.65);
-            }}
-            className="glass-card p-7 rounded-3xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 group"
-          >
-            <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#E6B860]/15 border border-[#E6B860]/30 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform overflow-hidden">
+        {/* Card 3: Screw Pile Foundation (Lottie: Pile Driven + Protection Shield) */}
+        <div
+          onMouseEnter={() => {
+            lottieRef3.current?.setSpeed(1.1);
+            lottieRef3.current?.seek(0);
+            lottieRef3.current?.play();
+          }}
+          onMouseLeave={() => {
+            lottieRef3.current?.setSpeed(0.65);
+          }}
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+        >
+          <div>
+            <div className="flex items-start justify-between mb-8">
+              <div className="w-16 h-16 rounded-full border border-ink/15 dark:border-cream/15 flex items-center justify-center overflow-hidden">
                 <Lottie
                   lottieRef={lottieRef3}
                   src={pileShieldLottie}
@@ -214,20 +206,21 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="text-xs font-semibold tracking-wider text-[#B27D18] dark:text-[#F5C46B] uppercase">
-                {t.reasons.cards[2].tag}
-              </span>
-              <h3 className="font-display font-semibold text-xl text-neutral-900 dark:text-neutral-100 mt-2 mb-3">
-                {t.reasons.cards[2].title}
-              </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                {t.reasons.cards[2].text}
-              </p>
+              <span className="font-serif italic text-2xl text-olive dark:text-cream-soft">03</span>
             </div>
-            <div className="mt-6 pt-4 border-t border-neutral-200/60 dark:border-neutral-800/60 text-xs text-neutral-500 flex items-center justify-between">
-              <span>{lang === 'ru' ? 'Монтаж за 1 день' : '1-day installation'}</span>
-              <span className="font-mono text-[#B27D18] dark:text-[#F5C46B]">Скидка 50%</span>
-            </div>
+            <span className="eyebrow text-brass-ink dark:text-brass-light">
+              {t.reasons.cards[2].tag}
+            </span>
+            <h3 className="font-serif text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
+              {t.reasons.cards[2].title}
+            </h3>
+            <p className="text-sm sm:text-[15px] leading-relaxed text-ink-soft dark:text-cream-soft">
+              {t.reasons.cards[2].text}
+            </p>
+          </div>
+          <div className="mt-8 pt-4 border-t border-ink/12 dark:border-cream/10 flex items-center justify-between text-xs text-olive dark:text-cream-soft">
+            <span>{lang === 'ru' ? 'Монтаж за 1 день' : '1-day installation'}</span>
+            <span className="font-mono font-semibold text-brass-ink dark:text-brass-light">Скидка 50%</span>
           </div>
         </div>
       </div>

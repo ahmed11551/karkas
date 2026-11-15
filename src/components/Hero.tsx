@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import gsap from 'gsap';
-import { Sparkles, ArrowRight, CheckCircle2, ShieldCheck, Sun, Moon, AlertCircle, MessageCircle, Send } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ShieldCheck, Sun, Moon, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { buildMessengerUrl } from '../config/company';
 import { saveLead } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
 import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
+import { ConsentField } from './ConsentField';
 
 interface HeroProps {
   lang: Language;
@@ -25,6 +26,8 @@ export const Hero: React.FC<HeroProps> = ({
   const [phoneInput, setPhoneInput] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState('');
 
   // Refs for 60fps GSAP Mouse-Parallax Layers
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -167,7 +170,7 @@ export const Hero: React.FC<HeroProps> = ({
     if (formError) setFormError('');
   };
 
-  const handleQuickSubmit = (e: React.FormEvent) => {
+  const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = validateRussianPhone(phoneInput, lang);
     if (!validation.isValid) {
@@ -175,14 +178,30 @@ export const Hero: React.FC<HeroProps> = ({
       setFormError(validation.error || t.hero.quickCallError);
       return;
     }
-    saveLead({
+    if (!consent) {
+      playUiClick('tick');
+      setConsentError(
+        lang === 'ru'
+          ? 'Подтвердите согласие на обработку персональных данных.'
+          : 'Please confirm consent to process your personal data.'
+      );
+      return;
+    }
+    const result = await saveLead({
       source: 'hero_quick',
       phone: validation.normalized || phoneInput,
       giftsSelected: ['Кровля из металлочерепицы', 'Бесплатная доставка 100 км'],
+      consent: true,
     });
+    if (!result.ok) {
+      playUiClick('tick');
+      setFormError(result.error || t.hero.quickCallError);
+      return;
+    }
     playUiClick('success');
     setFormSubmitted(true);
     setFormError('');
+    setConsentError('');
   };
 
   return (
@@ -206,18 +225,16 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Left Column: Value Proposition & Interactive Controls */}
           <div className="lg:col-span-7 flex flex-col items-start z-10">
-            {/* Ambient Kicker */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-[#E6B860] font-medium mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{t.hero.monthlyGift}</span>
+            {/* Editorial kicker: hairline rule + small caps line, no pill */}
+            <div className="flex items-center gap-4 mb-8 text-[#E6B860]">
+              <span className="h-px w-10 bg-[#E6B860]/70" aria-hidden="true" />
+              <span className="eyebrow text-[#E6B860]">{t.hero.monthlyGift}</span>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] leading-[1.12] tracking-tight text-white max-w-2xl text-balance">
+            {/* Main Headline: serif display, the price set in italic */}
+            <h1 className="font-serif font-normal text-[2.9rem] sm:text-6xl md:text-7xl lg:text-[5.25rem] leading-[0.98] tracking-[-0.02em] text-white max-w-3xl text-balance">
               {t.hero.titlePre}
-              <span className="text-[#E6B860] underline decoration-[#E6B860]/40 decoration-wavy underline-offset-8">
-                {t.hero.titleHighlight}
-              </span>
+              <em className="italic text-[#E6B860]">{t.hero.titleHighlight}</em>
               {t.hero.titlePost}
             </h1>
 
@@ -267,7 +284,7 @@ export const Hero: React.FC<HeroProps> = ({
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-semibold transition-all"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Написать в WhatsApp</span>
+                      <span>{lang === 'ru' ? 'Написать в WhatsApp' : 'Message on WhatsApp'}</span>
                     </a>
                     <a
                       href={buildMessengerUrl(
@@ -279,14 +296,18 @@ export const Hero: React.FC<HeroProps> = ({
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#229ED9] hover:bg-[#1C88BD] text-white text-xs font-semibold transition-all"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Написать в Telegram</span>
+                      <span>{lang === 'ru' ? 'Написать в Telegram' : 'Message on Telegram'}</span>
                     </a>
                   </div>
                 </div>
               ) : (
                 <form onSubmit={handleQuickSubmit} noValidate className="space-y-2">
                   <div className="flex flex-col sm:flex-row gap-2.5">
+                    <label htmlFor="hero-phone" className="sr-only">
+                      {lang === 'ru' ? 'Номер телефона для звонка' : 'Phone number'}
+                    </label>
                     <input
+                      id="hero-phone"
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
@@ -296,12 +317,12 @@ export const Hero: React.FC<HeroProps> = ({
                       onChange={handlePhoneChange}
                       placeholder={t.hero.quickCallPlaceholder}
                       aria-invalid={Boolean(formError)}
+                      aria-describedby={formError ? 'hero-phone-error' : undefined}
                       className={`flex-1 px-5 py-3.5 rounded-full bg-white text-neutral-900 placeholder-neutral-400 font-medium text-base focus:outline-none focus:ring-2 transition-shadow shadow-md ${
                         formError
                           ? 'ring-2 ring-rose-400 bg-rose-50'
                           : 'focus:ring-[#E6B860]'
                       }`}
-                      aria-label="Номер телефона для звонка"
                     />
                     <button
                       type="submit"
@@ -312,6 +333,7 @@ export const Hero: React.FC<HeroProps> = ({
                   </div>
                   {formError && (
                     <p
+                      id="hero-phone-error"
                       role="alert"
                       className="text-xs text-rose-300 px-3 font-medium flex items-center gap-1.5"
                     >
@@ -319,6 +341,17 @@ export const Hero: React.FC<HeroProps> = ({
                       <span>{formError}</span>
                     </p>
                   )}
+                  <ConsentField
+                    id="hero-consent"
+                    lang={lang}
+                    checked={consent}
+                    error={consentError}
+                    onChange={(checked) => {
+                      setConsent(checked);
+                      if (checked) setConsentError('');
+                    }}
+                    className="px-2 text-emerald-100"
+                  />
                 </form>
               )}
             </div>
