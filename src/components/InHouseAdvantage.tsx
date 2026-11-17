@@ -18,7 +18,7 @@ export const InHouseAdvantage: React.FC<InHouseAdvantageProps> = ({ lang }) => {
         <span className="eyebrow text-brass-ink dark:text-brass-light">
           08 · {lang === 'ru' ? 'Прямой производитель' : 'Direct Manufacturer'}
         </span>
-        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+        <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
           {t.inHouse.title}
         </h2>
         <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
@@ -37,14 +37,14 @@ export const InHouseAdvantage: React.FC<InHouseAdvantageProps> = ({ lang }) => {
                   <Icon className="w-5 h-5" />
                 </div>
 
-                <h3 className="font-serif text-2xl sm:text-3xl leading-tight text-ink dark:text-cream mb-4">
+                <h3 className="font-light text-2xl sm:text-3xl leading-tight text-ink dark:text-cream mb-4">
                   {card.title}
                 </h3>
                 <p className="text-sm text-ink-soft dark:text-cream-soft leading-relaxed">{card.text}</p>
               </div>
 
               <div className="pt-5 border-t border-ink/12 dark:border-cream/10">
-                <span className="block font-serif text-5xl leading-none text-ink dark:text-cream tabular-nums">
+                <span className="block font-light text-5xl leading-none text-ink dark:text-cream tabular-nums">
                   {card.kpi}
                 </span>
                 <span className="eyebrow block mt-3 text-olive dark:text-cream-soft">{card.kpiLabel}</span>

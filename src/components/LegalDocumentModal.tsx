@@ -42,11 +42,11 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
       aria-modal="true"
       aria-label={doc.title[lang]}
       data-lenis-prevent
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-forest/75 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-forest/75  animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-paper text-ink w-full max-w-3xl rounded-2xl shadow-2xl border border-ink/15 overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-paper text-ink w-full max-w-3xl rounded-[20px]  border border-ink/15 overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Bar */}
@@ -58,7 +58,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
               <FileText className="w-5 h-5 text-brass-light shrink-0" />
             )}
             <div>
-              <span className="font-serif text-xl sm:text-2xl leading-tight block">{doc.title[lang]}</span>
+              <span className="font-light text-xl sm:text-2xl leading-tight block">{doc.title[lang]}</span>
               <span className="text-[11px] text-cream-soft/80">
                 {COMPANY_CONFIG.legalName[lang]} · {COMPANY_CONFIG.regDetails[lang]} · {LEGAL_UPDATED[lang]}
               </span>
@@ -135,7 +135,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
 
           {doc.sections.map((section) => (
             <section key={section.heading.ru} className="space-y-2">
-              <h4 className="font-serif text-xl sm:text-2xl leading-snug text-ink">{section.heading[lang]}</h4>
+              <h4 className="font-light text-xl sm:text-2xl leading-snug text-ink">{section.heading[lang]}</h4>
               {section.paragraphs?.map((p) => (
                 <p key={p.ru}>{p[lang]}</p>
               ))}
@@ -173,7 +173,7 @@ export const LegalDocumentModal: React.FC<LegalDocumentModalProps> = ({
               playUiClick('tap');
               onClose();
             }}
-            className="px-6 py-3 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-xs transition-all gold-glow self-end sm:self-auto"
+            className="px-6 py-3 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-semibold text-xs transition-all self-end sm:self-auto"
           >
             {lang === 'ru' ? 'Понятно, закрыть' : 'Close Document'}
           </button>

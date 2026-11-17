@@ -67,12 +67,12 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
       aria-modal="true"
       aria-label={tx('Персональная смета', 'Personal estimate')}
       data-print-root
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-forest/75 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-forest/75  overflow-y-auto"
       onClick={onClose}
     >
       <div
         data-print-area
-        className="bg-paper text-ink w-full max-w-3xl rounded-2xl shadow-2xl border border-ink/15 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+        className="bg-paper text-ink w-full max-w-3xl rounded-[20px]  border border-ink/15 overflow-hidden my-auto max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top bar */}
@@ -80,7 +80,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
           <div className="flex items-center gap-3 min-w-0">
             <FileText className="w-5 h-5 text-brass-light shrink-0" />
             <div className="min-w-0">
-              <span className="font-serif text-lg block truncate">
+              <span className="font-light text-lg block truncate">
                 {tx('Персональная смета', 'Personal estimate')} № {estimateNumber}
               </span>
               <span className="text-[11px] text-cream-soft/80">
@@ -93,7 +93,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
             <button
               type="button"
               onClick={handlePrintPdf}
-              className="px-3.5 py-2 rounded-full border border-cream/35 text-cream hover:bg-cream hover:text-forest font-semibold text-xs flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-[12px] border border-cream/35 text-cream hover:bg-cream hover:text-forest font-semibold text-xs flex items-center gap-1.5 transition-colors"
             >
               <Printer className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{tx('Печать / PDF', 'Print / PDF')}</span>
@@ -114,7 +114,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
           {/* Document header & company credentials */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 pb-6 border-b border-ink/15">
             <div>
-              <div className="flex items-center gap-2.5 font-serif text-2xl text-ink">
+              <div className="flex items-center gap-2.5 font-light text-2xl text-ink">
                 <span className="w-2.5 h-2.5 rounded-full bg-brass" aria-hidden="true" />
                 <span>{COMPANY_CONFIG.shortBrand[lang]}</span>
               </div>
@@ -132,7 +132,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
             </div>
 
             <div className="sm:text-right shrink-0">
-              <span className="inline-block eyebrow px-3 py-1.5 rounded-full border border-ink/25 text-ink">
+              <span className="inline-block eyebrow px-3 py-1.5 rounded-[12px] border border-ink/25 text-ink">
                 {tx('Оплата 100% после сборки', 'Full payment after assembly')}
               </span>
               <p className="text-xs text-olive mt-2">
@@ -301,7 +301,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
               <span className="eyebrow block text-cream-soft/80 mb-1">
                 {tx('Итого к оплате после сборки', 'Total payable after assembly')}
               </span>
-              <span className="font-serif text-4xl sm:text-5xl text-brass-light tabular-nums leading-none">
+              <span className="font-light text-4xl sm:text-5xl text-brass-light tabular-nums leading-none">
                 {totalPrice.toLocaleString('ru-RU')} ₽
               </span>
             </div>
@@ -326,7 +326,7 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
                 onClose();
                 onLockPrice();
               }}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-all gold-glow whitespace-nowrap"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-semibold text-sm transition-all whitespace-nowrap"
             >
               {tx('Закрепить эту смету за номером', 'Lock this estimate to my number')}
             </button>

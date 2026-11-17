@@ -255,32 +255,32 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
             <rect x="176" y="44" width="4" height="24" fill="#A9CFD8" stroke="#2F5A4B" strokeWidth="1" />
 
             {/* Entrance Door with swing radius arc */}
-            <rect x="36" y="106" width="18" height="4" fill="#E6B860" />
-            <path d="M 36 106 A 18 18 0 0 1 54 88" fill="none" stroke="#E6B860" strokeWidth="1.2" strokeDasharray="2,2" />
+            <rect x="36" y="106" width="18" height="4" fill="#FCBD1C" />
+            <path d="M 36 106 A 18 18 0 0 1 54 88" fill="none" stroke="#FCBD1C" strokeWidth="1.2" strokeDasharray="2,2" />
 
             {/* Room Labels & Dimensions */}
-            <text x="140" y="58" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7.5" fontWeight="bold" textAnchor="middle">
+            <text x="140" y="58" fill={isNight ? '#FCBD1C' : '#142E25'} fontSize="7.5" fontWeight="bold" textAnchor="middle">
               {L.living}
             </text>
             <text x="140" y="68" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
               18.4 {L.m2}
             </text>
 
-            <text x="63" y="44" fill={isNight ? '#E6B860' : '#142E25'} fontSize="7" fontWeight="bold" textAnchor="middle">
+            <text x="63" y="44" fill={isNight ? '#FCBD1C' : '#142E25'} fontSize="7" fontWeight="bold" textAnchor="middle">
               {L.bedroom}
             </text>
             <text x="63" y="53" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="6" textAnchor="middle">
               10.2 {L.m2}
             </text>
 
-            <text x="45" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
+            <text x="45" y="86" fill={isNight ? '#FCBD1C' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
               {L.hall}
             </text>
             <text x="45" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
               4.1 {L.m2}
             </text>
 
-            <text x="86" y="86" fill={isNight ? '#E6B860' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
+            <text x="86" y="86" fill={isNight ? '#FCBD1C' : '#142E25'} fontSize="6.5" fontWeight="bold" textAnchor="middle">
               {L.bath}
             </text>
             <text x="86" y="94" fill={isNight ? '#A5D6C1' : '#476356'} fontSize="5.5" textAnchor="middle">
@@ -292,7 +292,7 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
               <line x1="22" y1="12" x2="178" y2="12" />
               <line x1="22" y1="9" x2="22" y2="15" />
               <line x1="178" y1="9" x2="178" y2="15" />
-              <text x="100" y="11" fill={isNight ? '#E6B860' : '#2F5A4B'} fontSize="5.5" textAnchor="middle" fontWeight="bold">
+              <text x="100" y="11" fill={isNight ? '#FCBD1C' : '#2F5A4B'} fontSize="5.5" textAnchor="middle" fontWeight="bold">
                 6.00 {L.m}
               </text>
             </g>

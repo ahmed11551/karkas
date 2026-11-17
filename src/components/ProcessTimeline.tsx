@@ -53,7 +53,7 @@ export const ProcessTimeline: React.FC<ProcessTimelineProps> = ({ lang }) => {
         <span className="eyebrow text-brass-ink dark:text-brass-light">
           07 · {lang === 'ru' ? 'Простой и прозрачный путь' : 'Simple & Transparent Path'}
         </span>
-        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+        <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
           {t.stepsSection.title}
         </h2>
         <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed max-w-2xl">
@@ -87,7 +87,7 @@ export const ProcessTimeline: React.FC<ProcessTimelineProps> = ({ lang }) => {
 
               <div>
                 <div className="flex items-start justify-between gap-4 mb-8">
-                  <span className="font-serif italic text-6xl leading-none text-olive dark:text-cream-soft transition-colors duration-500 group-hover:text-brass-ink dark:group-hover:text-brass-light">
+                  <span className="font-light text-6xl leading-none text-olive dark:text-cream-soft transition-colors duration-500 group-hover:text-brass-ink dark:group-hover:text-brass-light">
                     {numeral}
                   </span>
                   <span className="eyebrow text-olive dark:text-cream-soft pt-2">
@@ -95,7 +95,7 @@ export const ProcessTimeline: React.FC<ProcessTimelineProps> = ({ lang }) => {
                   </span>
                 </div>
 
-                <h3 className="font-serif text-2xl sm:text-[1.7rem] leading-tight text-ink dark:text-cream mb-3">
+                <h3 className="font-light text-2xl sm:text-[1.7rem] leading-tight text-ink dark:text-cream mb-3">
                   {st.title}
                 </h3>
                 <p className="text-sm text-ink-soft dark:text-cream-soft leading-relaxed">{st.desc}</p>

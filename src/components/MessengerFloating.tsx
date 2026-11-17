@@ -45,7 +45,7 @@ export const MessengerFloating: React.FC<MessengerFloatingProps> = ({ lang, show
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="p-4 rounded-2xl bg-paper text-ink border border-ink/15 shadow-2xl mb-2 w-64 space-y-2.5 origin-bottom-right"
+            className="p-4 rounded-[20px] bg-paper text-ink border border-ink/15  mb-2 w-64 space-y-2.5 origin-bottom-right"
           >
             <div className="flex items-center justify-between pb-2.5 border-b border-ink/12">
               <span className="eyebrow text-olive">{t.title}</span>
@@ -100,7 +100,7 @@ export const MessengerFloating: React.FC<MessengerFloatingProps> = ({ lang, show
           playUiClick('tick');
           setIsOpen((prev) => !prev);
         }}
-        className="w-14 h-14 rounded-full bg-forest hover:bg-forest-raised text-cream border border-cream/15 shadow-xl flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 relative"
+        className="w-14 h-14 rounded-full bg-forest hover:bg-forest-raised text-cream border border-cream/15  flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 relative"
         aria-label={t.open}
         aria-expanded={isOpen}
         aria-controls={panelId}

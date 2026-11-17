@@ -106,7 +106,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
           <span className="eyebrow text-brass-ink dark:text-brass-light">
             09 · {lang === 'ru' ? 'География и отзывы' : 'Built Projects & Locations'}
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {lang === 'ru'
               ? 'Наши дома по всей Москве и Подмосковью'
               : 'Our Completed Homes Across Moscow Region'}
@@ -129,7 +129,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
       </div>
 
       {/* 2-column dossier: map on the left, selected project on the right */}
-      <div className="rounded-2xl border border-ink/15 dark:border-cream/12 p-5 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+      <div className="rounded-[20px] border border-ink/15 dark:border-cream/12 p-5 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
         {/* Left: map canvas */}
         <div className="lg:col-span-7 relative bg-forest rounded-xl p-6 sm:p-8 min-h-[360px] sm:min-h-[420px] flex items-center justify-center border border-cream/10 overflow-hidden">
           {/* Regional ring contours (MKAD, A107, A108) */}
@@ -191,7 +191,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
               </span>
             </div>
 
-            <h3 className="font-serif text-3xl sm:text-4xl leading-tight text-ink dark:text-cream">
+            <h3 className="font-light text-3xl sm:text-4xl leading-tight text-ink dark:text-cream">
               {selectedPlot.location}
             </h3>
 
@@ -224,7 +224,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
               </div>
             </div>
 
-            <blockquote className="font-serif italic text-xl sm:text-2xl leading-snug text-ink dark:text-cream">
+            <blockquote className="font-light text-xl sm:text-2xl leading-snug text-ink dark:text-cream">
               «{selectedPlot.review}»
             </blockquote>
 

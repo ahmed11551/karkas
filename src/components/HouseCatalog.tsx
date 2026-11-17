@@ -123,14 +123,14 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   };
 
   return (
-    <section id="catalog" className="pt-16 sm:pt-20 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="catalog" className="pt-20 sm:pt-24 pb-20 sm:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10">
         <div className="max-w-2xl">
           <span className="eyebrow text-brass-ink dark:text-brass-light">
             02 · {lang === 'ru' ? 'Каталог типовых проектов' : 'Standard project catalog'}
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.03em] text-ink dark:text-cream mt-4 text-balance">
             {t.catalog.title}
           </h2>
           <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
@@ -178,13 +178,13 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
           return (
             <MagneticBentoCard
               key={house.id}
-              className={`rounded-2xl overflow-hidden flex flex-col ${
+              className={`rounded-[20px] overflow-hidden flex flex-col ${
                 isWide ? 'sm:col-span-2 lg:col-span-2 lg:flex-row' : 'col-span-1'
               } ${
                 isFeaturedBestSeller
                   ? 'bg-forest text-cream border border-cream/10'
                   : 'bg-paper dark:bg-forest-raised border border-ink/12 dark:border-cream/10'
-              } transition-shadow duration-500 group hover:shadow-[0_30px_60px_-35px_rgba(11,21,18,0.45)]`}
+              } group`}
             >
               {/* Architectural Visualizer + Optimized WebP Render Area */}
               <div
@@ -232,7 +232,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                         [house.id]: prev[house.id] === 'plan' ? 'facade' : 'plan',
                       }));
                     }}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur-md transition-colors flex items-center gap-1 ${chipClass(
+                    className={`px-2.5 py-1 rounded-[8px] text-[11px] font-semibold border transition-colors flex items-center gap-1 ${chipClass(
                       false,
                       onDark
                     )}`}
@@ -260,7 +260,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                         [house.id]: prev[house.id] === 'webp' ? 'facade' : 'webp',
                       }));
                     }}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold border backdrop-blur-md transition-colors flex items-center gap-1 ${chipClass(
+                    className={`px-2.5 py-1 rounded-[8px] text-[11px] font-mono font-semibold border transition-colors flex items-center gap-1 ${chipClass(
                       currentMode === 'webp',
                       isFeaturedBestSeller
                     )}`}
@@ -276,7 +276,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       setModalViewMode('facade');
                       setSelectedSpecHouse(house);
                     }}
-                    className={`p-1.5 rounded-full border backdrop-blur-md transition-colors ${chipClass(
+                    className={`p-1.5 rounded-[8px] border transition-colors ${chipClass(
                       false,
                       onDark
                     )}`}
@@ -340,7 +340,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       </span>
                     </div>
                     <span
-                      className={`font-serif italic text-lg shrink-0 ${
+                      className={`font-mono text-xs tracking-[0.04em] shrink-0 pt-0.5 ${
                         isFeaturedBestSeller ? 'text-brass-light' : 'text-olive dark:text-cream-soft'
                       }`}
                     >
@@ -349,7 +349,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                   </div>
 
                   <h3
-                    className={`font-serif leading-tight mt-3 ${
+                    className={`font-light leading-tight mt-3 ${
                       isWide ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
                     } ${
                       isFeaturedBestSeller
@@ -375,7 +375,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                     {house.specs[lang].map((spec, sIdx) => (
                       <span
                         key={sIdx}
-                        className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+                        className={`inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.02em] px-2 py-1 rounded-[6px] border ${
                           isFeaturedBestSeller
                             ? 'border-cream/20 text-cream'
                             : 'border-ink/12 dark:border-cream/12 text-ink dark:text-cream'
@@ -409,7 +409,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       {t.catalog.from}
                     </span>
                     <span
-                      className={`font-serif whitespace-nowrap ${
+                      className={`font-light whitespace-nowrap ${
                         isWide ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
                       } leading-none tabular-nums ${
                         isFeaturedBestSeller ? 'text-cream' : 'text-ink dark:text-cream'
@@ -426,7 +426,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                         playUiClick('tap');
                         onSelectHouse(house);
                       }}
-                      className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] text-sm font-semibold transition-colors gold-glow whitespace-nowrap active:scale-95"
+                      className="inline-flex items-center gap-1.5 px-5 py-3 rounded-[12px] bg-brass hover:bg-brass-hover text-ink text-sm font-medium transition-colors whitespace-nowrap active:scale-[0.98]"
                     >
                       <span>{t.catalog.calculateExact}</span>
                       <ArrowUpRight className="w-4 h-4" />
@@ -458,7 +458,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
               playUiClick('tap');
               setShowAll((prev) => !prev);
             }}
-            className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full border border-ink/30 dark:border-cream/30 text-ink dark:text-cream hover:bg-ink hover:text-paper dark:hover:bg-cream dark:hover:text-forest font-medium text-sm transition-colors active:scale-95"
+            className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-[12px] border border-ink/30 dark:border-cream/30 text-ink dark:text-cream hover:bg-ink hover:text-paper dark:hover:bg-cream dark:hover:text-forest font-medium text-sm transition-colors active:scale-95"
           >
             {showAll ? (
               <>
@@ -489,11 +489,11 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
           role="dialog"
           aria-modal="true"
           data-lenis-prevent
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/70 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/80 animate-fade-in"
           onClick={() => setSelectedSpecHouse(null)}
         >
           <div
-            className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl p-6 sm:p-8 bg-paper dark:bg-forest-raised border border-ink/10 dark:border-cream/10 shadow-2xl relative"
+            className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[20px] p-6 sm:p-8 bg-paper dark:bg-forest-raised border border-ink/10 dark:border-cream/10 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -506,7 +506,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
 
             <span className="eyebrow text-brass-ink dark:text-brass-light">{t.catalog.viewSpecs}</span>
             <div className="flex flex-col gap-4 mt-3 mb-5">
-              <h3 className="font-serif text-3xl leading-tight text-ink dark:text-cream pr-8">
+              <h3 className="font-light text-3xl leading-tight text-ink dark:text-cream pr-8">
                 {selectedSpecHouse.name[lang]}
               </h3>
 
@@ -582,7 +582,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
               ].map((cell) => (
                 <div key={cell.label} className="bg-paper dark:bg-forest-raised p-3.5 text-center">
                   <span className="eyebrow block text-[10px] text-olive dark:text-cream-soft">{cell.label}</span>
-                  <span className="font-serif text-xl text-ink dark:text-cream tabular-nums block mt-1">
+                  <span className="font-light text-xl text-ink dark:text-cream tabular-nums block mt-1">
                     {cell.value}
                   </span>
                 </div>
@@ -607,7 +607,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
             <div className="flex items-end justify-between gap-4 pt-5 border-t border-ink/12 dark:border-cream/10">
               <div>
                 <span className="eyebrow block mb-1 text-olive dark:text-cream-soft">{t.catalog.from}</span>
-                <span className="font-serif text-3xl leading-none tabular-nums text-ink dark:text-cream">
+                <span className="font-light text-3xl leading-none tabular-nums text-ink dark:text-cream">
                   {formatPrice(selectedSpecHouse.price)} {t.catalog.rub}
                 </span>
               </div>
@@ -618,7 +618,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                   setSelectedSpecHouse(null);
                   onSelectHouse(house);
                 }}
-                className="px-5 py-3 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-colors gold-glow whitespace-nowrap"
+                className="px-5 py-3 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm transition-colors whitespace-nowrap"
               >
                 {t.catalog.calculateExact}
               </button>

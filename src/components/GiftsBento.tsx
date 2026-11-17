@@ -21,7 +21,7 @@ export const GiftsBento: React.FC<GiftsBentoProps> = ({ lang, onOpenQuiz }) => {
               10 · {lang === 'ru' ? 'Специальное предложение' : 'Limited Promotion'}
             </span>
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {t.giftsSection.title}
           </h2>
           <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-2xl leading-relaxed">
@@ -32,7 +32,7 @@ export const GiftsBento: React.FC<GiftsBentoProps> = ({ lang, onOpenQuiz }) => {
         {/* The one gold CTA of this section */}
         <button
           onClick={onOpenQuiz}
-          className="self-start md:self-auto px-6 py-3.5 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-all gold-glow flex items-center gap-2 active:scale-95 whitespace-nowrap"
+          className="self-start md:self-auto px-6 py-3.5 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-semibold text-sm transition-all flex items-center gap-2 active:scale-95 whitespace-nowrap"
         >
           <span>{t.giftsSection.lockBtn}</span>
           <ArrowRight className="w-4 h-4" />
@@ -44,7 +44,7 @@ export const GiftsBento: React.FC<GiftsBentoProps> = ({ lang, onOpenQuiz }) => {
         {t.giftsSection.cards.map((gift, idx) => (
           <div
             key={idx}
-            className={`p-7 rounded-2xl border flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 ${
+            className={`p-7 rounded-[20px] border flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 ${
               gift.alt
                 ? 'bg-paper-deep dark:bg-cream text-ink dark:text-forest border-ink/20'
                 : 'bg-forest text-cream border-cream/10 dark:border-cream/12'
@@ -52,14 +52,14 @@ export const GiftsBento: React.FC<GiftsBentoProps> = ({ lang, onOpenQuiz }) => {
           >
             <div>
               <span
-                className={`block font-serif italic text-6xl leading-none mb-6 tabular-nums ${
+                className={`block font-light text-6xl leading-none mb-6 tabular-nums ${
                   gift.alt ? 'text-ink dark:text-forest' : 'text-brass-light'
                 }`}
               >
                 {gift.badge}
               </span>
 
-              <h3 className="font-serif text-2xl leading-tight mb-3">{gift.title}</h3>
+              <h3 className="font-light text-2xl leading-tight mb-3">{gift.title}</h3>
 
               <p
                 className={`text-sm leading-relaxed ${

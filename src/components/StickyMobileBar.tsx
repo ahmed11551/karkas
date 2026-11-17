@@ -28,7 +28,7 @@ export const StickyMobileBar: React.FC<StickyMobileBarProps> = ({ lang, onOpenQu
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="md:hidden fixed left-3 right-3 z-40 bottom-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
-          <div className="p-2 rounded-2xl bg-forest border border-cream/10 shadow-2xl flex items-center gap-2">
+          <div className="p-2 rounded-[20px] bg-forest border border-cream/10  flex items-center gap-2">
             <a
               href={COMPANY_CONFIG.phoneHref}
               onClick={() => playUiClick('tap')}

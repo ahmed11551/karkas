@@ -33,9 +33,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         role="alert"
         className="min-h-screen flex items-center justify-center p-6 bg-paper text-ink"
       >
-        <div className="max-w-md w-full rounded-3xl border border-ink/15 bg-paper-deep p-8 text-center shadow-xl">
+        <div className="max-w-md w-full rounded-[20px] border border-ink/15 bg-paper-deep p-8 text-center">
           <p className="eyebrow text-brass-ink mb-4">{isRu ? 'Что-то пошло не так' : 'Something went wrong'}</p>
-          <h1 className="font-serif text-4xl leading-tight mb-4">
+          <h1 className="font-light text-4xl leading-tight mb-4">
             {isRu ? 'Страница временно недоступна' : 'The page is temporarily unavailable'}
           </h1>
           <p className="text-sm text-ink-soft leading-relaxed mb-8">
@@ -46,7 +46,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="px-6 py-3 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-colors gold-glow"
+            className="px-6 py-3 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm transition-colors"
           >
             {isRu ? 'Обновить страницу' : 'Reload page'}
           </button>

@@ -182,7 +182,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
             <span className="eyebrow text-brass-ink dark:text-brass-light">
               05 · {lang === 'ru' ? 'Интерактивный 3D-разрез конструкции' : 'Interactive 3D Structural Cutaway'}
             </span>
-            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+            <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
               {t.specsSection.title}
             </h2>
             <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-2xl leading-relaxed">
@@ -199,7 +199,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                 playUiClick('tap');
                 setFocusMode((prev) => !prev);
               }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-semibold border transition-all ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[12px] text-xs font-semibold border transition-all ${
                 focusMode
                   ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream'
                   : 'bg-transparent text-ink-soft dark:text-cream-soft border-ink/20 dark:border-cream/20 hover:text-ink dark:hover:text-cream'
@@ -213,7 +213,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
               </span>
             </button>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-ink/20 dark:border-cream/20 text-ink dark:text-cream text-xs font-semibold">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-[12px] border border-ink/20 dark:border-cream/20 text-ink dark:text-cream text-xs font-semibold">
               <ThermometerSnowflake className="w-4 h-4" />
               <span>{lang === 'ru' ? 'Зимний контур до −35 °C' : 'Winter-rated to −35 °C'}</span>
             </div>
@@ -223,7 +223,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Left Column: Interactive 3D Isometric Wall/Roof/Foundation Cut-Away SVG + Pop-up Tooltips */}
           <div className="lg:col-span-6 flex flex-col">
-            <div className="relative rounded-2xl bg-forest border border-cream/10 p-4 sm:p-6 overflow-hidden">
+            <div className="relative rounded-[20px] bg-forest border border-cream/10 p-4 sm:p-6 overflow-hidden">
               {/* Blueprint subtle grid */}
               <div className="absolute inset-0 bg-[radial-gradient(#EFE9DC_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.07] pointer-events-none" />
 
@@ -255,8 +255,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                 >
                   <defs>
                     <filter id="goldLayerGlow" x="-25%" y="-25%" width="150%" height="150%">
-                      <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#E6B860" floodOpacity="0.85" />
-                      <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#E6B860" floodOpacity="0.45" />
+                      <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#FCBD1C" floodOpacity="0.85" />
+                      <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#FCBD1C" floodOpacity="0.45" />
                     </filter>
                   </defs>
 
@@ -279,10 +279,10 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       height="65"
                       rx="2"
                       fill="#64748B"
-                      stroke={displayedLayerIndex === 5 ? '#E6B860' : '#94A3B8'}
+                      stroke={displayedLayerIndex === 5 ? '#FCBD1C' : '#94A3B8'}
                       strokeWidth={displayedLayerIndex === 5 ? '2.5' : '1'}
                     />
-                    <path d="M114 318 L138 324 M115 326 L137 331" stroke="#E6B860" strokeWidth="2" />
+                    <path d="M114 318 L138 324 M115 326 L137 331" stroke="#FCBD1C" strokeWidth="2" />
                     <rect
                       x="218"
                       y="282"
@@ -290,10 +290,10 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       height="66"
                       rx="2"
                       fill="#64748B"
-                      stroke={displayedLayerIndex === 5 ? '#E6B860' : '#94A3B8'}
+                      stroke={displayedLayerIndex === 5 ? '#FCBD1C' : '#94A3B8'}
                       strokeWidth={displayedLayerIndex === 5 ? '2.5' : '1'}
                     />
-                    <path d="M210 332 L240 338 M212 340 L238 345" stroke="#E6B860" strokeWidth="2.5" />
+                    <path d="M210 332 L240 338 M212 340 L238 345" stroke="#FCBD1C" strokeWidth="2.5" />
                     <rect x="114" y="264" width="24" height="5" rx="1" fill="#334155" />
                     <rect x="212" y="278" width="26" height="5" rx="1" fill="#334155" />
                   </g>
@@ -312,7 +312,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <polygon
                       points="85,245 215,288 325,248 195,208"
                       fill="#C99A52"
-                      stroke={displayedLayerIndex === 4 ? '#E6B860' : '#8C6226'}
+                      stroke={displayedLayerIndex === 4 ? '#FCBD1C' : '#8C6226'}
                       strokeWidth={displayedLayerIndex === 4 ? '3' : '1.5'}
                     />
                     <polygon
@@ -350,7 +350,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                           width="14"
                           height="135"
                           fill="#E8C994"
-                          stroke={displayedLayerIndex === 2 ? '#E6B860' : '#9B7338'}
+                          stroke={displayedLayerIndex === 2 ? '#FCBD1C' : '#9B7338'}
                           strokeWidth={displayedLayerIndex === 2 ? '2.5' : '1.2'}
                         />
                       );
@@ -372,7 +372,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <polygon
                       points="170,132 295,172 295,254 170,214"
                       fill="#3E6E5B"
-                      stroke={displayedLayerIndex === 3 ? '#E6B860' : '#264A3C'}
+                      stroke={displayedLayerIndex === 3 ? '#FCBD1C' : '#264A3C'}
                       strokeWidth={displayedLayerIndex === 3 ? '3' : '1.5'}
                     />
                     <line x1="185" y1="155" x2="280" y2="185" stroke="#89B59F" strokeWidth="1.5" strokeDasharray="6,4" />
@@ -395,13 +395,13 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       points="100,115 205,148 205,250 100,215"
                       fill="#7FB3C2"
                       opacity="0.88"
-                      stroke={displayedLayerIndex === 1 ? '#E6B860' : '#4E8291'}
+                      stroke={displayedLayerIndex === 1 ? '#FCBD1C' : '#4E8291'}
                       strokeWidth={displayedLayerIndex === 1 ? '2.5' : '1'}
                     />
                     <polygon
                       points="82,125 172,155 172,258 82,226"
                       fill="#F6E3C0"
-                      stroke={displayedLayerIndex === 1 ? '#E6B860' : '#C99A52'}
+                      stroke={displayedLayerIndex === 1 ? '#FCBD1C' : '#C99A52'}
                       strokeWidth={displayedLayerIndex === 1 ? '3' : '1.5'}
                     />
                     {[145, 165, 185, 205, 225].map((y) => (
@@ -423,7 +423,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     <polygon
                       points="65,112 200,26 335,112 210,148"
                       fill="#2F5A4B"
-                      stroke={displayedLayerIndex === 0 ? '#E6B860' : '#1E3F33'}
+                      stroke={displayedLayerIndex === 0 ? '#FCBD1C' : '#1E3F33'}
                       strokeWidth={displayedLayerIndex === 0 ? '3' : '1.5'}
                     />
                     <line x1="110" y1="85" x2="235" y2="122" stroke="#4D8C76" strokeWidth="2" />
@@ -456,7 +456,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                               cx={spot.pinX}
                               cy={spot.pinY}
                               r={isHovered ? '24' : '20'}
-                              fill="#E6B860"
+                              fill="#FCBD1C"
                               opacity={isHovered ? '0.38' : '0.24'}
                               className="transition-all duration-300"
                             />
@@ -465,7 +465,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                               cy={spot.pinY}
                               r="17"
                               fill="none"
-                              stroke="#E6B860"
+                              stroke="#FCBD1C"
                               strokeWidth="1.2"
                               strokeDasharray="3,3"
                             />
@@ -475,8 +475,8 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                           cx={spot.pinX}
                           cy={spot.pinY}
                           r={isFocused ? '14' : '12'}
-                          fill={isFocused ? '#E6B860' : '#142E25'}
-                          stroke="#E6B860"
+                          fill={isFocused ? '#FCBD1C' : '#142E25'}
+                          stroke="#FCBD1C"
                           strokeWidth="2"
                           className="transition-all duration-200"
                         />
@@ -484,7 +484,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                           x={spot.pinX}
                           y={spot.pinY + 4}
                           textAnchor="middle"
-                          fill={isFocused ? '#1E1705' : '#FFFFFF'}
+                          fill={isFocused ? '#14231E' : '#FFFFFF'}
                           fontSize="10"
                           fontWeight="bold"
                           fontFamily="JetBrains Mono, monospace"
@@ -511,7 +511,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                       exit={{ opacity: 0, scale: 0.94, y: 4 }}
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                     >
-                      <div className="p-4 rounded-2xl bg-forest/95 backdrop-blur-xl border border-cream/20 shadow-2xl text-cream space-y-2.5">
+                      <div className="p-4 rounded-[20px] bg-forest/95  border border-cream/20  text-cream space-y-2.5">
                         {/* Header row: Code + GOST + Lifespan (wraps instead of clipping) */}
                         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-b border-white/10 pb-2">
                           <span className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[11px] font-bold leading-snug text-brass-light">
@@ -520,14 +520,14 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                             </span>
                             <span className="break-words">{currentSpot.gost}</span>
                           </span>
-                          <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cream/10 text-cream-soft">
+                          <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-[12px] bg-cream/10 text-cream-soft">
                             {currentSpot.lifespan[lang]}
                           </span>
                         </div>
 
                         {/* Title */}
                         <div>
-                          <h5 className="font-serif text-base sm:text-lg text-cream leading-snug break-words">
+                          <h5 className="font-light text-base sm:text-lg text-cream leading-snug break-words">
                             {currentSpot.title[lang]}
                           </h5>
                           <p className="text-[11px] text-cream-soft mt-0.5 leading-snug">
@@ -575,11 +575,11 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                   <span className="min-w-0 font-mono text-xs font-bold leading-snug text-brass-light break-words">
                     УЗЕЛ {currentSpot.code} · {currentSpot.gost}
                   </span>
-                  <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-full bg-brass/20 text-brass-light font-semibold">
+                  <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-[12px] bg-brass/20 text-brass-light font-semibold">
                     {currentSpot.lifespan[lang]}
                   </span>
                 </div>
-                <h4 className="font-serif text-2xl leading-tight text-cream">
+                <h4 className="font-light text-2xl leading-tight text-cream">
                   {currentSpot.title[lang]}
                 </h4>
                 <p className="text-xs text-cream-soft mt-1 leading-relaxed">
@@ -632,16 +632,16 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                     playUiClick('tap');
                     setActiveLayer(spot.id);
                   }}
-                  className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-200 flex items-start gap-4 ${
+                  className={`w-full text-left p-4 sm:p-5 rounded-[20px] border transition-all duration-200 flex items-start gap-4 ${
                     isSelected
-                      ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream shadow-lg -translate-y-0.5'
+                      ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream  -translate-y-0.5'
                       : 'bg-transparent border-ink/12 dark:border-cream/10 hover:border-ink/40 dark:hover:border-cream/40 text-ink dark:text-cream'
                   }`}
                 >
                   <span
                     className={`w-9 h-9 rounded-xl font-mono font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                       isSelected
-                        ? 'bg-brass text-[#1E1705]'
+                        ? 'bg-brass text-ink'
                         : 'bg-brass/15 text-brass-ink dark:text-brass-light'
                     }`}
                   >
@@ -651,7 +651,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({ lang }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <h3
-                        className={`font-serif text-lg sm:text-xl leading-snug ${
+                        className={`font-light text-lg sm:text-xl leading-snug ${
                           isSelected ? 'text-paper dark:text-forest' : 'text-ink dark:text-cream'
                         }`}
                       >

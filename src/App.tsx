@@ -12,6 +12,8 @@ import { Language, Theme, HouseItem } from './types';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { HouseCatalog } from './components/HouseCatalog';
+import { ReviewsSection } from './components/ReviewsSection';
+import { GallerySection } from './components/GallerySection';
 import { Footer } from './components/Footer';
 import { StickyMobileBar } from './components/StickyMobileBar';
 import { MessengerFloating } from './components/MessengerFloating';
@@ -342,10 +344,10 @@ export default function App() {
   };
 
   return (
-    <div id="main-content" className="min-h-screen bg-[#F4F2EC] dark:bg-[#0B1512] text-[#14231E] dark:text-[#E8F1EC] transition-colors duration-300 font-sans selection:bg-[#E6B860]/30 selection:text-[#B27D18] relative">
+    <div id="main-content" className="min-h-screen bg-paper dark:bg-forest text-ink dark:text-cream transition-colors duration-300 font-sans selection:bg-brass/30 selection:text-pine relative">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#14231E]"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] focus:rounded-[12px] focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
       >
         Перейти к содержанию
       </a>
@@ -359,7 +361,7 @@ export default function App() {
       {/* Updated imperatively from the Lenis scroll handler (no React re-render per frame) */}
       <div
         ref={progressBarRef}
-        className="fixed top-0 left-0 w-full h-[3px] origin-left bg-[#E6B860] z-50 will-change-transform"
+        className="fixed top-0 left-0 w-full h-[3px] origin-left bg-[#FCBD1C] z-50 will-change-transform"
         style={{ transform: 'scaleX(0)' }}
         role="progressbar"
         aria-label={lang === 'ru' ? 'Прогресс чтения страницы' : 'Page reading progress'}
@@ -377,15 +379,15 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -16, scale: 0.95 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-20 right-4 sm:right-6 z-50 w-80 sm:w-96 p-4 rounded-2xl bg-[#122A21]/95 backdrop-blur-xl border border-[#E6B860] text-white shadow-2xl"
+            className="fixed top-20 right-4 sm:right-6 z-50 w-80 sm:w-96 p-4 rounded-[20px] bg-[#122A21]/95  border border-[#FCBD1C] text-white"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-[#E6B860] text-[#1E1705] flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-xl bg-[#FCBD1C] text-ink flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4 animate-bounce" />
                 </span>
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#E6B860] font-bold block">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#FCBD1C] font-bold block">
                     REAL-TIME LEAD · {realtimeToastLead.id}
                   </span>
                   <h4 className="font-display font-bold text-xs sm:text-sm text-white">
@@ -405,7 +407,7 @@ export default function App() {
             <div className="mt-2.5 text-xs text-emerald-100/90 space-y-1 bg-black/25 p-2.5 rounded-xl border border-white/10">
               <div className="flex justify-between">
                 <span className="text-emerald-200/60">Сумма сметы:</span>
-                <span className="font-mono font-bold text-[#E6B860]">
+                <span className="font-mono font-bold text-[#FCBD1C]">
                   ≈ {(realtimeToastLead.calculatedPrice || 707000).toLocaleString('ru-RU')} ₽
                 </span>
               </div>
@@ -432,7 +434,7 @@ export default function App() {
                   setSelectedLeadIdForCrm(id);
                   setIsCrmOpen(true);
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-[#E6B860] hover:bg-[#D4A043] text-[#1E1705] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                className="w-full py-2 px-3 rounded-xl bg-[#FCBD1C] hover:bg-[#D4A043] text-ink font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
               >
                 <span>Открыть карточку лида в CRM</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -488,6 +490,18 @@ export default function App() {
             isNightScene={isNightScene}
           />
         </motion.div>
+
+        <LazyMount anchorId="reviews" minHeight="800px">
+          <motion.div {...sectionMotionProps}>
+            <ReviewsSection lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="gallery" minHeight="900px">
+          <motion.div {...sectionMotionProps}>
+            <GallerySection lang={lang} />
+          </motion.div>
+        </LazyMount>
 
         <LazyMount anchorId="calculator" minHeight="900px">
           <motion.div {...sectionMotionProps}>
@@ -582,7 +596,7 @@ export default function App() {
               playUiClick('tap');
               setIsAdminLoginOpen(true);
             }}
-            className="px-3 py-1.5 rounded-full bg-[#183B30]/90 text-[#E6B860] border border-[#E6B860]/40 text-[11px] font-mono hover:scale-105 transition-all shadow-md backdrop-blur-md flex items-center gap-1.5 opacity-80 hover:opacity-100"
+            className="px-3 py-1.5 rounded-[12px] bg-[#183B30]/90 text-[#FCBD1C] border border-[#FCBD1C]/40 text-[11px] font-mono hover:scale-105 transition-all   flex items-center gap-1.5 opacity-80 hover:opacity-100"
             title="Авторизация администратора (/login)"
           >
             <Lock className="w-3 h-3" />
@@ -594,7 +608,7 @@ export default function App() {
               playUiClick('tap');
               setIsCrmOpen(true);
             }}
-            className="px-3 py-1.5 rounded-full bg-[#E6B860] text-[#1E1705] font-semibold text-[11px] font-mono hover:scale-105 transition-all shadow-md flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-[12px] bg-[#FCBD1C] text-ink font-semibold text-[11px] font-mono hover:scale-105 transition-all  flex items-center gap-1.5"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>CRM Активна ({newLeadsCount})</span>

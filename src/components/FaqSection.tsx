@@ -21,7 +21,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang }) => {
         <span className="eyebrow text-brass-ink dark:text-brass-light">
           11 · {lang === 'ru' ? 'Ответы на главные вопросы' : 'Answers & Clarity'}
         </span>
-        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+        <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
           {t.faq.title}
         </h2>
         <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
@@ -41,11 +41,11 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang }) => {
                 aria-expanded={isOpen}
               >
                 <span className="flex items-baseline gap-4 sm:gap-6">
-                  <span className="font-serif italic text-lg sm:text-xl text-olive dark:text-cream-soft tabular-nums shrink-0 w-8 sm:w-10">
+                  <span className="font-light text-lg sm:text-xl text-olive dark:text-cream-soft tabular-nums shrink-0 w-8 sm:w-10">
                     {String(idx + 1).padStart(2, '0')}
                   </span>
                   <span
-                    className={`font-serif text-2xl sm:text-3xl leading-snug transition-colors ${
+                    className={`font-light text-2xl sm:text-3xl leading-snug transition-colors ${
                       isOpen ? 'text-ink dark:text-cream' : 'text-ink-soft dark:text-cream-soft group-hover:text-ink dark:group-hover:text-cream'
                     }`}
                   >

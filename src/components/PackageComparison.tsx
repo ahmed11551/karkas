@@ -45,9 +45,9 @@ const PackageCta: React.FC<{ tier: Tier; lang: Language; onSelect: (price: numbe
         playUiClick('tap');
         onSelect(tier.price);
       }}
-      className={`inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-full text-sm font-semibold transition-colors active:scale-95 ${
+      className={`inline-flex items-center justify-center gap-2 w-full py-3.5 px-5 rounded-[12px] text-sm font-medium transition-colors active:scale-[0.98] ${
         tier.popular
-          ? 'bg-brass hover:bg-brass-hover text-[#1E1705] gold-glow'
+          ? 'bg-brass hover:bg-brass-hover text-ink'
           : 'border border-ink/30 text-ink hover:bg-ink hover:text-paper dark:border-cream/30 dark:text-cream dark:hover:bg-cream dark:hover:text-forest'
       }`}
     >
@@ -157,7 +157,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
         <span className="eyebrow text-brass-ink dark:text-brass-light">
           04 · {lang === 'ru' ? 'Прозрачное сравнение комплектаций' : 'Turnkey Package Comparison'}
         </span>
-        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+        <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.03em] text-ink dark:text-cream mt-4 text-balance">
           {lang === 'ru'
             ? 'Выберите комплектацию под ваш режим отдыха или жизни'
             : 'Choose the Insulation Package for Your Lifestyle'}
@@ -170,7 +170,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
       </div>
 
       {/* Desktop: one comparison table, rows = specs, columns = packages */}
-      <div className="hidden md:block rounded-2xl overflow-hidden border border-ink/15 dark:border-cream/12">
+      <div className="hidden md:block rounded-[20px] overflow-hidden border border-ink/15 dark:border-cream/12">
         <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">
             {lang === 'ru' ? 'Сравнение тепловых комплектаций' : 'Comparison of thermal packages'}
@@ -207,7 +207,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
                       aria-pressed={isSelected}
                       className="text-left group"
                     >
-                      <span className="font-serif text-3xl leading-tight block">{tier.name}</span>
+                      <span className="font-light text-3xl leading-tight block">{tier.name}</span>
                       <span
                         className={`block h-[2px] mt-3 origin-left transition-transform duration-500 ease-out-soft ${
                           tier.popular ? 'bg-brass-light' : 'bg-ink dark:bg-brass-light'
@@ -237,7 +237,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
               {tiers.map((tier) => (
                 <td
                   key={tier.id}
-                  className={`p-5 border-t font-serif text-3xl tabular-nums ${
+                  className={`p-5 border-t font-light text-3xl tabular-nums ${
                     tier.popular
                       ? 'bg-forest text-cream border-cream/12'
                       : 'bg-paper dark:bg-forest-raised text-ink dark:text-cream border-ink/15 dark:border-cream/12'
@@ -297,7 +297,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
             <div
               key={tier.id}
               onClick={() => selectTier(tier.id)}
-              className={`rounded-2xl p-6 border transition-colors cursor-pointer ${
+              className={`rounded-[20px] p-6 border transition-colors cursor-pointer ${
                 tier.popular
                   ? 'bg-forest text-cream border-cream/10'
                   : `bg-paper dark:bg-forest-raised ${
@@ -314,7 +314,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
               >
                 {tier.badge}
               </span>
-              <h3 className="font-serif text-3xl leading-tight">{tier.name}</h3>
+              <h3 className="font-light text-3xl leading-tight">{tier.name}</h3>
               <p className={`text-xs mt-2 ${tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'}`}>
                 {tempPrefix}: <span className="font-semibold">{tier.temp}</span>
               </p>
@@ -327,7 +327,7 @@ export const PackageComparison: React.FC<PackageComparisonProps> = ({
                 <span className={`eyebrow block mb-1 ${tier.popular ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'}`}>
                   {priceLabel}
                 </span>
-                <span className="font-serif text-3xl tabular-nums">{tier.priceDisplay}</span>
+                <span className="font-light text-3xl tabular-nums">{tier.priceDisplay}</span>
               </div>
 
               <dl className="space-y-3">

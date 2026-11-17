@@ -157,7 +157,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
           <span className="eyebrow text-brass-ink dark:text-brass-light">
             06 · {lang === 'ru' ? 'Видео-хроника и фоторепортажи со стройки (.webp)' : 'Live Construction Timelapse & Reportage (.webp)'}
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {lang === 'ru'
               ? 'Посмотрите, как растёт дом на участке за 1–3 дня'
               : 'Watch How a Turnkey House Rises in 1–3 Days'}
@@ -175,7 +175,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
               playUiClick('tap');
               setShowWebpPhoto((prev) => !prev);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-full border border-ink/25 dark:border-cream/25 text-ink dark:text-cream hover:bg-ink hover:text-paper dark:hover:bg-cream dark:hover:text-forest font-medium text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-[12px] border border-ink/25 dark:border-cream/25 text-ink dark:text-cream hover:bg-ink hover:text-paper dark:hover:bg-cream dark:hover:text-forest font-medium text-xs transition-colors"
           >
             <ImageIcon className="w-3.5 h-3.5 text-brass-ink dark:text-brass-light" />
             <span>
@@ -187,7 +187,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
 
           <button
             onClick={handleTogglePlay}
-            className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full bg-ink hover:bg-ink-soft text-paper dark:bg-cream dark:text-forest dark:hover:bg-cream-soft font-semibold text-sm transition-colors active:scale-95"
+            className="inline-flex items-center gap-2.5 px-5 py-3 rounded-[12px] bg-ink hover:bg-ink-soft text-paper dark:bg-cream dark:text-forest dark:hover:bg-cream-soft font-semibold text-sm transition-colors active:scale-95"
           >
             {isPlaying ? (
               <>
@@ -205,7 +205,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
       </div>
 
       {/* Main Interactive Video/Timelapse Player + Stage Dossier */}
-      <div className="rounded-2xl border border-ink/15 dark:border-cream/12 p-5 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+      <div className="rounded-[20px] border border-ink/15 dark:border-cream/12 p-5 sm:p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
         {/* Left 7 Cols: Interactive Animated Construction Timelapse Viewport */}
         <div className="lg:col-span-7 flex flex-col">
           <div className="relative rounded-xl overflow-hidden bg-forest border border-cream/10 aspect-[16/10] flex flex-col justify-between p-5">
@@ -227,14 +227,14 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
 
             {/* Top Camera HUD */}
             <div className="flex items-center justify-between text-xs text-white/90 z-10">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/15">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-[12px] bg-black/50  border border-white/15">
                 <Camera className="w-3.5 h-3.5 text-brass-light" />
                 <span className="font-mono font-semibold">{stage.dayLabel}</span>
                 <span className="text-white/40">|</span>
                 <span className="font-mono text-brass-light">{stage.timeLabel}</span>
               </div>
 
-              <div className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/15 font-mono text-[11px] text-cream">
+              <div className="px-3 py-1 rounded-[12px] bg-black/50  border border-white/15 font-mono text-[11px] text-cream">
                 {tx('Готовность', 'Progress')}: {stage.progress}%
               </div>
             </div>
@@ -248,7 +248,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
                 aria-label={tx('Таймлапс сборки каркасного дома', 'Timelapse of the frame house assembly')}
               >
                 <path d="M0 185 Q 120 178 240 185 T 400 182 V 220 H 0 Z" fill="#1E4033" />
-                <line x1="20" y1="184" x2="380" y2="184" stroke="#E6B860" strokeWidth="1" strokeDasharray="4,4" opacity="0.5" />
+                <line x1="20" y1="184" x2="380" y2="184" stroke="#FCBD1C" strokeWidth="1" strokeDasharray="4,4" opacity="0.5" />
 
                 <g className="transition-all duration-500">
                   {[80, 140, 200, 260, 320].map((x) => (
@@ -278,7 +278,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
                 {activeStage >= 2 && (
                   <g className="transition-all duration-500">
                     <rect x="76" y="90" width="246" height="68" fill="#3D6B58" opacity="0.9" />
-                    <path d="M54 88 L200 18 L346 88 Z" fill="#2F5A4B" stroke="#E6B860" strokeWidth="1.5" />
+                    <path d="M54 88 L200 18 L346 88 Z" fill="#2F5A4B" stroke="#FCBD1C" strokeWidth="1.5" />
                     <line x1="100" y1="66" x2="300" y2="66" stroke="#4D8C76" strokeWidth="1.5" />
                     <line x1="145" y1="44" x2="255" y2="44" stroke="#4D8C76" strokeWidth="1.5" />
                   </g>
@@ -315,7 +315,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
                     />
                     <line x1="192" y1="102" x2="192" y2="140" stroke="#2F5A4B" strokeWidth="2" />
                     <rect x="256" y="102" width="34" height="56" rx="2" fill="#214237" />
-                    <circle cx="283" cy="130" r="2.5" fill="#E6B860" />
+                    <circle cx="283" cy="130" r="2.5" fill="#FCBD1C" />
                   </g>
                 )}
               </svg>
@@ -341,7 +341,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
                     className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold transition-all text-center truncate ${
                       activeStage === st.id
                         ? 'bg-cream text-forest shadow'
-                        : 'bg-black/40 backdrop-blur-sm text-white/85 hover:bg-white/20'
+                        : 'bg-black/40  text-white/85 hover:bg-white/20'
                     }`}
                   >
                     {st.dayLabel}
@@ -363,7 +363,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
               <span>{stage.timeLabel}</span>
             </div>
 
-            <h3 className="font-serif text-3xl sm:text-4xl leading-tight text-ink dark:text-cream">
+            <h3 className="font-light text-3xl sm:text-4xl leading-tight text-ink dark:text-cream">
               {stage.title}
             </h3>
 
@@ -397,7 +397,7 @@ export const ConstructionMedia: React.FC<ConstructionMediaProps> = ({ lang, onOp
                 playUiClick('tap');
                 onOpenQuiz();
               }}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm gold-glow transition-all whitespace-nowrap"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-semibold text-sm transition-all whitespace-nowrap"
             >
               {tx('Заказать расчёт со сборкой', 'Order an estimate with assembly')}
             </button>

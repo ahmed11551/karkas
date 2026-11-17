@@ -7,3 +7,8 @@ coverage/
 .env*
 !.env.example
 data/
+
+# Local-only: raw client photos, Refero skill install, skill lockfile
+incoming/
+.agents/
+skills-lock.json

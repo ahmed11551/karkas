@@ -8,29 +8,36 @@
  * paper it fails AA, so text accents use --color-brass-ink.
  */
 @theme {
-  --font-display: 'Unbounded', sans-serif;
-  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
+  /* Type: one grotesque for headings and text (light 300 on display sizes),
+     JetBrains Mono for technical labels, Instrument Serif only for the logo. */
+  --font-display: 'Onest', system-ui, -apple-system, sans-serif;
+  /* `font-serif` is kept as a legacy class name for headings: it now maps to the grotesque. */
+  --font-serif: 'Onest', system-ui, -apple-system, sans-serif;
+  --font-logo: 'Instrument Serif', 'Times New Roman', serif;
   --font-sans: 'Onest', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Light surfaces */
-  --color-paper: #F7F4ED;
-  --color-paper-deep: #F2EFE6;
+  /* Light surfaces: warm paper (Raus), never pure white or cold grey */
+  --color-paper: #F7F0E1;
+  --color-paper-deep: #EFE6D2;
   --color-ink: #14231E;
-  --color-ink-soft: #4A5A53;      /* secondary text, 6.6:1 on paper */
-  --color-olive: #5E6450;         /* tertiary labels, 5.6:1 on paper */
+  --color-ink-soft: #4A5A53;      /* secondary text on paper */
+  --color-olive: #5E6450;         /* tertiary labels on paper */
 
-  /* Dark surfaces */
+  /* Dark surfaces: hero band, footer, dark theme */
   --color-forest: #0B1512;
   --color-forest-raised: #142A21;
-  --color-cream: #EFE9DC;         /* primary text on forest, 15.4:1 */
-  --color-cream-soft: #B9C4BE;    /* secondary text on forest, 10.4:1 */
+  --color-cream: #F3EDDF;         /* primary text on forest */
+  --color-cream-soft: #B9C4BE;    /* secondary text on forest */
 
-  /* Brass: fill for CTA and progress; text accents on light use -ink */
-  --color-brass: #C9A35A;         /* fill, dark text on it is 7.5:1 */
-  --color-brass-hover: #B8944A;
-  --color-brass-ink: #6F5520;     /* text accent on paper, 6.4:1 */
-  --color-brass-light: #E0C27F;   /* text accent on forest, 10.8:1 */
+  /* Primary CTA accent: Marigold (Raus). Fill only; text on it is ink. */
+  --color-brass: #FCBD1C;
+  --color-brass-hover: #EDAA0C;
+  --color-brass-light: #FDD45C;   /* accent on forest */
+
+  /* Identity and links: Pine (Raus). Text accents on paper use pine. */
+  --color-pine: #006434;
+  --color-brass-ink: #006434;     /* legacy token name: text accent on paper */
 
   /* Status */
   --color-danger: #B42318;        /* form errors on paper, 6.0:1 */
@@ -104,59 +111,32 @@ html.lenis body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
 }
 
-/* Surfaces: warm paper on light, raised forest on dark. */
+/* Surfaces: flat sheets of paper on light, raised forest on dark.
+   No blur, no glow: depth comes from layout and hairline borders. */
 .glass-panel {
-  background: rgba(247, 244, 237, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(20, 35, 30, 0.08);
+  background: var(--color-paper-deep);
+  border: 1px solid rgba(20, 35, 30, 0.12);
 }
 
 .dark .glass-panel {
-  background: rgba(20, 42, 33, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(239, 233, 220, 0.08);
+  background: var(--color-forest-raised);
+  border: 1px solid rgba(243, 237, 223, 0.12);
 }
 
 .glass-card {
-  background: rgba(247, 244, 237, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(20, 35, 30, 0.07);
+  background: var(--color-paper-deep);
+  border: 1px solid rgba(20, 35, 30, 0.1);
 }
 
 .dark .glass-card {
-  background: rgba(20, 42, 33, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(239, 233, 220, 0.07);
+  background: var(--color-forest-raised);
+  border: 1px solid rgba(243, 237, 223, 0.1);
 }
 
-/* Touch devices: backdrop blur is the costliest thing to repaint while scrolling. Surfaces keep their
-   opaque backgrounds (0.85-0.96 alpha), so removing the blur changes only what is behind them. */
-@media (pointer: coarse) {
-  .glass-panel,
-  .dark .glass-panel,
-  .glass-card,
-  .dark .glass-card,
-  .backdrop-blur-sm,
-  .backdrop-blur-md,
-  .backdrop-blur-xl {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
-/* Brass CTA lift. Used only on primary buttons. */
+/* Primary CTA: flat marigold, no shadow. Kept as a class so existing markup needs no change. */
 .gold-glow {
-  box-shadow: 0 10px 28px -10px rgba(201, 163, 90, 0.55);
-  transition: box-shadow var(--duration-base) var(--ease-out-soft),
+  transition: background-color var(--duration-base) var(--ease-out-soft),
     transform var(--duration-base) var(--ease-out-soft);
-}
-
-.gold-glow:hover {
-  box-shadow: 0 14px 34px -10px rgba(201, 163, 90, 0.7);
 }
 
 /* Header over the dark hero (transparent state): light ink.
@@ -197,13 +177,38 @@ html.lenis body {
   }
 }
 
-/* Editorial label: small uppercase, wide tracking. */
+/* Technical label (70Materia spec-sheet style): mono, small, uppercase, tight tracking. */
 .eyebrow {
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   line-height: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Headings: light grotesque with tight tracking (Samara, Raus). */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+h1,
+h2 {
+  font-weight: 300;
+}
+
+/* No italic in the system: decorative italic word swaps were removed in the redesign. */
+.italic {
+  font-style: normal;
+}
+
+/* Outlined secondary button (70Materia): 1px hairline, no fill. */
+.btn-outline {
+  border: 1px solid currentColor;
+  background: transparent;
 }
 
 /* Reduced motion: keep state changes, drop movement. */

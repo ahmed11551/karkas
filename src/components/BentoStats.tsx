@@ -77,7 +77,7 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
               i > 0 ? 'lg:border-l lg:border-ink/15 dark:lg:border-cream/12' : ''
             }`}
           >
-            <span className="block font-serif text-4xl sm:text-5xl lg:text-6xl leading-none tracking-[-0.02em] text-ink dark:text-cream tabular-nums">
+            <span className="block font-light text-4xl sm:text-5xl lg:text-6xl leading-none tracking-[-0.02em] text-ink dark:text-cream tabular-nums">
               {kpi.value}
             </span>
             <span className="block text-xs sm:text-sm text-ink-soft dark:text-cream-soft mt-3">
@@ -93,7 +93,7 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
           <span className="eyebrow text-brass-ink dark:text-brass-light">
             01 · {lang === 'ru' ? 'Почему дешевле' : 'Why it costs less'}
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
             {t.reasons.title}
           </h2>
         </div>
@@ -113,7 +113,7 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
           onMouseLeave={() => {
             lottieRef1.current?.setSpeed(0.65);
           }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
         >
           <div>
             <div className="flex items-start justify-between mb-8">
@@ -126,12 +126,12 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="font-serif italic text-2xl text-olive dark:text-cream-soft">01</span>
+              <span className="font-light text-2xl text-olive dark:text-cream-soft">01</span>
             </div>
             <span className="eyebrow text-brass-ink dark:text-brass-light">
               {t.reasons.cards[0].tag}
             </span>
-            <h3 className="font-serif text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
+            <h3 className="font-light text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
               {t.reasons.cards[0].title}
             </h3>
             <p className="text-sm sm:text-[15px] leading-relaxed text-ink-soft dark:text-cream-soft">
@@ -154,7 +154,7 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
           onMouseLeave={() => {
             lottieRef2.current?.setSpeed(0.55);
           }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-cream/10 bg-forest text-cream dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-cream/10 bg-forest text-cream dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
         >
           <div>
             <div className="flex items-start justify-between mb-8">
@@ -167,10 +167,10 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="font-serif italic text-2xl text-cream-soft">02</span>
+              <span className="font-light text-2xl text-cream-soft">02</span>
             </div>
             <span className="eyebrow text-brass-light">{t.reasons.cards[1].tag}</span>
-            <h3 className="font-serif text-3xl leading-tight text-cream mt-3 mb-3">
+            <h3 className="font-light text-3xl leading-tight text-cream mt-3 mb-3">
               {t.reasons.cards[1].title}
             </h3>
             <p className="text-sm sm:text-[15px] leading-relaxed text-cream-soft">
@@ -193,7 +193,7 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
           onMouseLeave={() => {
             lottieRef3.current?.setSpeed(0.65);
           }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-2xl border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
+          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
         >
           <div>
             <div className="flex items-start justify-between mb-8">
@@ -206,12 +206,12 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
                   className="w-14 h-14"
                 />
               </div>
-              <span className="font-serif italic text-2xl text-olive dark:text-cream-soft">03</span>
+              <span className="font-light text-2xl text-olive dark:text-cream-soft">03</span>
             </div>
             <span className="eyebrow text-brass-ink dark:text-brass-light">
               {t.reasons.cards[2].tag}
             </span>
-            <h3 className="font-serif text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
+            <h3 className="font-light text-3xl leading-tight text-ink dark:text-cream mt-3 mb-3">
               {t.reasons.cards[2].title}
             </h3>
             <p className="text-sm sm:text-[15px] leading-relaxed text-ink-soft dark:text-cream-soft">

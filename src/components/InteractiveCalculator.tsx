@@ -30,7 +30,7 @@ interface InteractiveCalculatorProps {
 
 /** Option button in the spec sheet: ink fill when selected, hairline otherwise. */
 const optionClass = (active: boolean): string =>
-  `px-3 py-3 rounded-lg text-xs sm:text-sm font-medium border text-center transition-colors duration-300 ${
+  `px-3 py-3 rounded-[10px] text-xs sm:text-sm font-medium border text-center transition-colors duration-300 ${
     active
       ? 'bg-ink text-paper border-ink dark:bg-cream dark:text-forest dark:border-cream'
       : 'bg-transparent text-ink-soft border-ink/15 hover:border-ink/50 hover:text-ink dark:text-cream-soft dark:border-cream/15 dark:hover:border-cream/50 dark:hover:text-cream'
@@ -46,7 +46,7 @@ const SpecGroup: React.FC<{
   <div>
     <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-ink/12 dark:border-cream/10">
       <div className="flex items-baseline gap-3">
-        <span className="font-serif italic text-base text-olive dark:text-cream-soft">{index}</span>
+        <span className="font-mono text-xs tracking-[0.04em] text-olive dark:text-cream-soft">{index}</span>
         <span className="eyebrow text-ink dark:text-cream">{label}</span>
       </div>
       {value !== undefined && (
@@ -156,7 +156,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
           <span className="eyebrow text-brass-ink dark:text-brass-light">
             03 · {lang === 'ru' ? 'Конфигуратор за 1 минуту' : '1-Minute Estimator'}
           </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-ink dark:text-cream mt-4 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.03em] text-ink dark:text-cream mt-4 text-balance">
             {t.calculator.title}
           </h2>
           <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
@@ -200,7 +200,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
       </div>
 
       {/* One panel: spec sheet on paper, price card on forest */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden border border-ink/15 dark:border-cream/12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 rounded-[20px] overflow-hidden border border-ink/15 dark:border-cream/12">
         {/* Left: spec options */}
         <div className="lg:col-span-7 bg-paper dark:bg-forest-raised p-6 sm:p-10 lg:p-12 flex flex-col justify-between gap-9">
           {/* Group 1: House Size */}
@@ -284,7 +284,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
           </SpecGroup>
 
           {/* Group 5: Delivery Distance from MKAD */}
-          <div className="p-4 rounded-lg border border-ink/12 dark:border-cream/10 space-y-3">
+          <div className="p-4 rounded-[12px] border border-ink/12 dark:border-cream/10 space-y-3">
             <div className="flex items-center justify-between gap-3 text-xs font-semibold text-ink dark:text-cream">
               <span className="flex items-center gap-1.5">
                 <Truck className="w-4 h-4 text-brass-ink dark:text-brass-light shrink-0" />
@@ -311,7 +311,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                 playUiClick('tick');
                 setDistanceKm(+e.target.value);
               }}
-              className="w-full accent-[#B8944A] cursor-pointer"
+              className="w-full accent-[#006434] cursor-pointer"
             />
             <div className="flex justify-between text-[11px] text-olive dark:text-cream-soft">
               <span>{lang === 'ru' ? '0 км (МКАД)' : '0 km (MKAD)'}</span>
@@ -324,7 +324,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
 
           {/* Mortgage Mode Sub-deck */}
           {config.mortgageMode && (
-            <div className="p-5 rounded-lg border border-ink/12 dark:border-cream/10 space-y-5">
+            <div className="p-5 rounded-[12px] border border-ink/12 dark:border-cream/10 space-y-5">
               <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream">
                 <span>
                   {t.calculator.downPayment}: {config.downPaymentPercent}%
@@ -344,7 +344,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                   playUiClick('tick');
                   setConfig((prev) => ({ ...prev, downPaymentPercent: +e.target.value }));
                 }}
-                className="w-full accent-[#B8944A] cursor-pointer"
+                className="w-full accent-[#006434] cursor-pointer"
               />
 
               <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream pt-1">
@@ -364,7 +364,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                   playUiClick('tick');
                   setConfig((prev) => ({ ...prev, mortgageYears: +e.target.value }));
                 }}
-                className="w-full accent-[#B8944A] cursor-pointer"
+                className="w-full accent-[#006434] cursor-pointer"
               />
 
               <p className="text-[11px] text-olive dark:text-cream-soft leading-relaxed">
@@ -415,7 +415,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                   value={monthlyPayment}
                   prefix="≈ "
                   suffix=" ₽ / мес"
-                  font="font-serif"
+                  font="font-light"
                   className="text-5xl sm:text-6xl leading-none text-cream"
                 />
                 <div className="mt-3 text-xs text-cream-soft">
@@ -431,7 +431,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                   value={totalPrice}
                   prefix="≈ "
                   suffix=" ₽"
-                  font="font-serif"
+                  font="font-light"
                   className="text-5xl sm:text-6xl leading-none text-cream"
                 />
               </div>
@@ -443,7 +443,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
               {t.calculator.giftRoofText}
             </p>
 
-            <div className="p-4 rounded-lg border border-brass-light/30 text-sm text-brass-light leading-relaxed">
+            <div className="p-4 rounded-[12px] border border-brass-light/30 text-sm text-brass-light leading-relaxed">
               {config.foundation === 1
                 ? t.calculator.saveTextWithPiles
                 : t.calculator.saveTextWithoutPiles}
@@ -452,7 +452,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
             {/* Strictly Validated Phone Input + Buttons: Lock In, Download PDF Estimate, Share */}
             <div className="space-y-3 pt-1">
               {calcLockedSuccess ? (
-                <div className="p-4 sm:p-5 rounded-2xl border border-cream/20 bg-forest-raised/60 space-y-4 text-cream">
+                <div className="p-4 sm:p-5 rounded-[12px] border border-cream/20 bg-forest-raised/60 space-y-4 text-cream">
                   <SuccessNotice
                     tone="dark"
                     title={lang === 'ru' ? 'Цена закреплена' : 'Price locked'}
@@ -478,7 +478,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[10px] bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-colors"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
@@ -490,7 +490,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[10px] bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Telegram</span>
@@ -520,7 +520,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     id="calc-phone"
                     aria-invalid={Boolean(calcPhoneError)}
                     aria-describedby={calcPhoneError ? 'calc-phone-error' : undefined}
-                    className={`w-full px-4 py-3 rounded-full bg-cream text-forest placeholder:text-olive font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
+                    className={`w-full h-12 px-4 rounded-[12px] bg-cream text-forest placeholder:text-olive font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
                       calcPhoneError ? 'ring-2 ring-rose-400 bg-rose-50' : 'focus:ring-brass-light'
                     }`}
                   />
@@ -632,7 +632,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       : 'Please enter a valid phone number above to lock this price.'
                   );
                 }}
-                className="w-full py-4 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-colors gold-glow text-center active:scale-95"
+                className="w-full py-4 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm transition-colors text-center active:scale-[0.98]"
               >
                 {t.calculator.lockPriceBtn}
               </button>
@@ -643,7 +643,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     playUiClick('tap');
                     setIsEstimateModalOpen(true);
                   }}
-                  className="w-full py-2.5 px-3 rounded-full border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-[12px] border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FileDown className="w-3.5 h-3.5 text-brass-light shrink-0" />
                   <span>{lang === 'ru' ? 'Скачать PDF-смету' : 'Download PDF Quote'}</span>
@@ -651,7 +651,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
 
                 <button
                   onClick={handleShareEstimate}
-                  className="w-full py-2.5 px-3 rounded-full border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-[12px] border border-cream/25 hover:bg-cream/10 text-cream text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                 >
                   {copiedShare ? (
                     <>

@@ -39,14 +39,14 @@ export const Footer: React.FC<FooterProps> = ({
     'text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream underline-offset-4 hover:underline transition-colors';
 
   return (
-    <footer className="border-t border-ink/15 dark:border-cream/12 pt-16 pb-24 lg:pb-16 text-xs text-ink-soft dark:text-cream-soft relative">
+    <footer className="border-t border-ink/15 dark:border-cream/12 pt-20 pb-24 lg:pb-16 text-xs text-ink-soft dark:text-cream-soft relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8 mb-14">
           {/* Col 1: Brand & Registration */}
           <div>
             <a
               href="#"
-              className="flex items-center gap-2.5 font-serif text-2xl text-ink dark:text-cream mb-4"
+              className="flex items-center gap-2.5 font-logo text-2xl text-ink dark:text-cream mb-4"
             >
               <span className="w-2.5 h-2.5 rounded-full bg-brass" aria-hidden="true" />
               <span>{t.brandName}</span>
@@ -69,14 +69,14 @@ export const Footer: React.FC<FooterProps> = ({
             <span className={labelClass}>{lang === 'ru' ? 'Контакты' : 'Contact'}</span>
             <a
               href={COMPANY_CONFIG.phoneHref}
-              className="font-serif text-2xl text-ink dark:text-cream hover:text-brass-ink dark:hover:text-brass-light transition-colors block"
+              className="font-light text-2xl text-ink dark:text-cream hover:text-pine dark:hover:text-brass-light transition-colors block"
             >
               {COMPANY_CONFIG.phoneDisplay}
             </a>
             <p className="mt-2">{t.footer.schedule}</p>
             <a
               href={`mailto:${COMPANY_CONFIG.email}`}
-              className="mt-3 inline-flex items-center gap-2 text-ink dark:text-cream hover:text-brass-ink dark:hover:text-brass-light transition-colors"
+              className="mt-3 inline-flex items-center gap-2 text-ink dark:text-cream hover:text-pine dark:hover:text-brass-light transition-colors"
             >
               <Mail className="w-3.5 h-3.5 text-brass-ink dark:text-brass-light" />
               <span>{COMPANY_CONFIG.email}</span>

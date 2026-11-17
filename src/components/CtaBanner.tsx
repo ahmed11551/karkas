@@ -13,7 +13,7 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ lang, onOpenQuiz }) => {
 
   return (
     <section className="py-12 sm:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="relative overflow-hidden rounded-2xl bg-forest text-cream border border-cream/10 px-7 py-14 sm:px-14 sm:py-20 lg:px-20 lg:py-24">
+      <div className="relative overflow-hidden rounded-[20px] bg-forest text-cream border border-cream/10 px-7 py-14 sm:px-14 sm:py-20 lg:px-20 lg:py-24">
         {/* Blueprint grid, same motif as the hero */}
         <div
           className="absolute inset-0 opacity-[0.07] pointer-events-none"
@@ -31,7 +31,7 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ lang, onOpenQuiz }) => {
             {lang === 'ru' ? 'Акция текущего месяца' : 'Monthly Special'}
           </span>
 
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-cream mt-6 text-balance">
+          <h2 className="font-light text-4xl sm:text-5xl md:text-6xl leading-[1.02] tracking-[-0.02em] text-cream mt-6 text-balance">
             {t.ctaBanner.title}
           </h2>
 
@@ -43,7 +43,7 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ lang, onOpenQuiz }) => {
             {/* The one gold CTA of this section */}
             <button
               onClick={onOpenQuiz}
-              className="px-8 py-4 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-all gold-glow inline-flex items-center gap-2 active:scale-95"
+              className="px-8 py-4 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-semibold text-sm transition-all inline-flex items-center gap-2 active:scale-95"
             >
               <span>{t.ctaBanner.btn}</span>
               <ArrowRight className="w-4 h-4" />

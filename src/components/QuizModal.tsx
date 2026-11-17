@@ -149,11 +149,11 @@ export const QuizModal: React.FC<QuizModalProps> = ({
       role="dialog"
       aria-modal="true"
       data-lenis-prevent
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest/70  animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl p-6 sm:p-9 shadow-2xl bg-paper text-ink border border-ink/15 relative max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg rounded-[20px] p-6 sm:p-9  bg-paper text-ink border border-ink/15 relative max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -191,7 +191,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
             {step < totalQuestions && currentQ && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-serif text-3xl sm:text-4xl leading-tight text-ink">
+                  <h3 className="font-light text-3xl sm:text-4xl leading-tight text-ink">
                     {currentQ.question[lang]}
                   </h3>
                   {currentQ.hint && (
@@ -222,7 +222,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                     <Gift className="w-3.5 h-3.5" />
                     <span>{lang === 'ru' ? '4 подарка закреплены' : '4 Gifts Reserved'}</span>
                   </span>
-                  <h3 className="font-serif text-3xl sm:text-4xl leading-tight text-ink mt-3">
+                  <h3 className="font-light text-3xl sm:text-4xl leading-tight text-ink mt-3">
                     {lang === 'ru' ? 'Куда прислать точный расчёт?' : 'Where should we send your quote?'}
                   </h3>
                   <p className="mt-3 text-sm text-ink-soft leading-relaxed">
@@ -306,7 +306,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 {/* The one gold CTA of the modal */}
                 <button
                   type="submit"
-                  className="w-full py-4 rounded-full bg-brass hover:bg-brass-hover text-[#1E1705] font-semibold text-sm transition-all gold-glow text-center active:scale-95"
+                  className="w-full py-4 rounded-full bg-brass hover:bg-brass-hover text-ink font-semibold text-sm transition-all text-center active:scale-95"
                 >
                   {lang === 'ru' ? 'Получить расчёт и подарки' : 'Get Detailed Calculation'}
                 </button>
@@ -322,11 +322,11 @@ export const QuizModal: React.FC<QuizModalProps> = ({
         ) : (
           /* Confirmation */
           <div className="py-4 text-center space-y-5" role="status" aria-live="polite">
-            <div className="w-14 h-14 rounded-full bg-forest text-brass-light mx-auto flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-full bg-forest text-brass-light mx-auto flex items-center justify-center">
               <Check className="w-7 h-7" strokeWidth={2.5} aria-hidden="true" />
             </div>
 
-            <h3 className="font-serif text-4xl leading-tight text-ink">
+            <h3 className="font-light text-4xl leading-tight text-ink">
               {lang === 'ru' ? 'Заявка принята!' : 'Inquiry Submitted!'}
             </h3>
 
@@ -368,7 +368,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-[12px] bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs transition-all"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>{lang === 'ru' ? 'Получить в WhatsApp' : 'Send to WhatsApp'}</span>
@@ -381,7 +381,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-[12px] bg-[#229ED9] hover:bg-[#1C88BD] text-white font-semibold text-xs transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{lang === 'ru' ? 'Написать в Telegram' : 'Message on Telegram'}</span>
@@ -389,7 +389,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-ink/30 text-ink hover:bg-ink hover:text-paper font-semibold text-xs transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-[12px] border border-ink/30 text-ink hover:bg-ink hover:text-paper font-semibold text-xs transition-colors"
               >
                 {lang === 'ru' ? 'Вернуться к сайту' : 'Close'}
               </button>
