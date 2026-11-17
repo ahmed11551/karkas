@@ -6,7 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
-data/
+# Lead store at repo root only (do not ignore src/data/* source modules)
+/data/
 
 # Local-only: raw client photos, Refero skill install, skill lockfile
 incoming/

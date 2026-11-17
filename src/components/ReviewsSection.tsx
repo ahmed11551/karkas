@@ -31,7 +31,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ lang }) => {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-cream">{review.name}</p>
-                <p className="text-xs text-cream-soft mt-0.5">{review.date}</p>
+                <p className="text-xs text-cream-soft mt-0.5">
+                  {[review.place, review.date].filter(Boolean).join(' · ')}
+                </p>
               </div>
               <div className="flex gap-0.5 shrink-0" role="img" aria-label={`${review.rating} из 5`}>
                 {Array.from({ length: 5 }, (_, i) => (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, ShieldCheck, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
@@ -16,8 +16,46 @@ interface HeroProps {
   onToggleScene?: () => void;
 }
 
-// Real finished house from the client's archive (square source, cropped to 4:5 on the page).
-const HERO_PHOTO = '/gallery/houses/hou-018.webp';
+/** Real finished objects from the client archive. Quiet auto-fade in the hero frame. */
+const HERO_SLIDES = [
+  {
+    src: '/gallery/houses/hou-018.webp',
+    alt: {
+      ru: 'Готовый каркасный дом Каркасник с верандой',
+      en: 'Finished Karkasnik timber-frame house with a porch',
+    },
+  },
+  {
+    src: '/gallery/houses/hou-002.webp',
+    alt: {
+      ru: 'Каркасный дом на свайном фундаменте с крыльцом',
+      en: 'Timber-frame house on screw piles with a front porch',
+    },
+  },
+  {
+    src: '/gallery/houses/hou-010.webp',
+    alt: {
+      ru: 'Серый каркасный дом после сдачи объекта',
+      en: 'Grey timber-frame house after handover',
+    },
+  },
+  {
+    src: '/gallery/houses/hou-024.webp',
+    alt: {
+      ru: 'Каркасный дом с открытой верандой на участке',
+      en: 'Timber-frame house with an open veranda on the plot',
+    },
+  },
+  {
+    src: '/gallery/houses/hou-026.webp',
+    alt: {
+      ru: 'Каркасный дом среди зелени на готовом участке',
+      en: 'Timber-frame house among garden greenery',
+    },
+  },
+] as const;
+
+const HERO_SLIDE_MS = 5200;
 
 export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
   const t = TRANSLATIONS[lang];
@@ -26,6 +64,32 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
   const [formError, setFormError] = useState('');
   const [consent, setConsent] = useState(false);
   const [consentError, setConsentError] = useState('');
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [tabHidden, setTabHidden] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onVisibility = () => setTabHidden(document.visibilityState === 'hidden');
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // Quiet auto-advance. Pauses on hover/focus, while the tab is hidden, or when the user prefers less motion.
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || paused || tabHidden) return;
+
+    const id = window.setInterval(() => {
+      setSlideIndex((i) => (i + 1) % HERO_SLIDES.length);
+    }, HERO_SLIDE_MS);
+    return () => window.clearInterval(id);
+  }, [paused, tabHidden]);
+
+  const goToSlide = (index: number) => {
+    setSlideIndex(((index % HERO_SLIDES.length) + HERO_SLIDES.length) % HERO_SLIDES.length);
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatRussianPhoneInput(e.target.value);
@@ -205,21 +269,85 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
             </div>
           </div>
 
-          {/* Right column: one real finished house, flat frame, no effects */}
+          {/* Right column: quiet fade of real finished houses */}
           <div className="lg:col-span-5 relative">
-            <figure className="relative w-full max-w-[460px] mx-auto lg:ml-auto">
-              <div className="aspect-[4/5] overflow-hidden rounded-[20px] bg-forest-raised">
-                <img
-                  src={HERO_PHOTO}
-                  alt={lang === 'ru' ? 'Готовый каркасный дом Каркасник с верандой' : 'Finished Karkasnik timber-frame house with a porch'}
-                  width={1024}
-                  height={1024}
-                  fetchPriority="high"
-                  decoding="async"
-                  className="w-full h-full object-cover object-[50%_45%]"
-                />
+            <figure
+              className="relative w-full max-w-[460px] mx-auto lg:ml-auto"
+              aria-roledescription="carousel"
+              aria-label={lang === 'ru' ? 'Фото готовых домов' : 'Photos of finished houses'}
+              onMouseEnter={() => setPaused(true)}
+              onMouseLeave={() => setPaused(false)}
+              onFocusCapture={() => setPaused(true)}
+              onBlurCapture={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+              }}
+              onTouchStart={(e) => {
+                touchStartX.current = e.changedTouches[0]?.clientX ?? null;
+                setPaused(true);
+              }}
+              onTouchEnd={(e) => {
+                const start = touchStartX.current;
+                touchStartX.current = null;
+                setPaused(false);
+                if (start == null) return;
+                const delta = (e.changedTouches[0]?.clientX ?? start) - start;
+                if (Math.abs(delta) < 40) return;
+                goToSlide(slideIndex + (delta < 0 ? 1 : -1));
+              }}
+            >
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[20px] bg-forest-raised">
+                {HERO_SLIDES.map((slide, index) => {
+                  const active = index === slideIndex;
+                  return (
+                    <img
+                      key={slide.src}
+                      src={slide.src}
+                      alt={slide.alt[lang]}
+                      width={900}
+                      height={1200}
+                      fetchPriority={index === 0 ? 'high' : 'low'}
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      aria-hidden={!active}
+                      className={`absolute inset-0 w-full h-full object-cover object-[50%_45%] transition-opacity duration-700 ease-out ${
+                        active ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    />
+                  );
+                })}
+
+                <div
+                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-[10px] bg-forest/55 px-2 py-1.5"
+                  role="tablist"
+                  aria-label={lang === 'ru' ? 'Выбор фото' : 'Choose photo'}
+                >
+                  {HERO_SLIDES.map((slide, index) => {
+                    const active = index === slideIndex;
+                    return (
+                      <button
+                        key={slide.src}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        aria-label={
+                          lang === 'ru'
+                            ? `Фото ${index + 1} из ${HERO_SLIDES.length}`
+                            : `Photo ${index + 1} of ${HERO_SLIDES.length}`
+                        }
+                        onClick={() => {
+                          playUiClick('tick');
+                          goToSlide(index);
+                        }}
+                        className={`h-1.5 rounded-full transition-all ${
+                          active ? 'w-5 bg-brass' : 'w-1.5 bg-cream/45 hover:bg-cream/75'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-              <figcaption className="absolute left-4 bottom-4 right-4 sm:right-auto sm:w-auto flex items-end gap-4 rounded-[12px] bg-paper text-ink px-5 py-4">
+
+              <figcaption className="absolute left-4 bottom-4 right-4 sm:right-auto sm:w-auto z-10 flex items-end gap-4 rounded-[12px] bg-paper text-ink px-5 py-4">
                 <span className="font-light text-3xl sm:text-4xl leading-none tabular-nums tracking-[-0.02em]">38 000</span>
                 <span className="text-xs sm:text-sm text-ink-soft leading-snug max-w-[11rem] pb-0.5">
                   {t.hero.housesBuiltBadge}

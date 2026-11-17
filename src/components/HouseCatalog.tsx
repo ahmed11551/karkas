@@ -123,7 +123,9 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
         {displayedHouses.map((house, idx) => {
           const isFeaturedBestSeller = idx === 0;
           const isWide = isBentoWide(idx);
-          const currentMode: CardViewMode = activeViewModes[house.id] || 'facade';
+          const hasPhoto = !!house.imageWebp && !failedWebpIds[house.id];
+          // Visualisation is the default view when it exists; schema and plan stay as toggles.
+          const currentMode: CardViewMode = activeViewModes[house.id] || (hasPhoto ? 'webp' : 'facade');
           const onDark = isFeaturedBestSeller || currentMode === 'webp';
           const index = `№ ${String(idx + 1).padStart(2, '0')}`;
 
@@ -158,7 +160,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                     <source srcSet={house.imageWebp} type="image/webp" />
                     <img
                       src={house.imageWebp}
-                      alt={`${house.name[lang]} — проект каркасного дома ${house.dimensions} (${house.area} м²)`}
+                      alt={`${house.name[lang]} — визуализация каркасного дома ${house.dimensions} (${house.area} м²)`}
                       width={800}
                       height={480}
                       loading="lazy"
@@ -216,16 +218,16 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                       currentMode === 'webp',
                       isFeaturedBestSeller
                     )}`}
-                    title="Рендер проекта в формате .webp"
+                    title={lang === 'ru' ? 'Визуализация проекта' : 'Project visualisation'}
                   >
                     <ImageIcon className="w-3 h-3" />
-                    <span>.webp</span>
+                    <span>{lang === 'ru' ? 'Визуализация' : 'Visual'}</span>
                   </button>
 
                   <button
                     onClick={() => {
                       playUiClick('tick');
-                      setModalViewMode('facade');
+                      setModalViewMode(house.imageWebp && !failedWebpIds[house.id] ? 'webp' : 'facade');
                       setSelectedSpecHouse(house);
                     }}
                     className={`p-1.5 rounded-[8px] border transition-colors ${chipClass(
@@ -464,7 +466,11 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
 
               <div className="flex items-center gap-5 text-sm">
                 {[
-                  { id: 'webp' as CardViewMode, label: 'Фото (.webp)', show: !!selectedSpecHouse.imageWebp && !failedWebpIds[selectedSpecHouse.id] },
+                  {
+                    id: 'webp' as CardViewMode,
+                    label: lang === 'ru' ? 'Визуализация' : 'Visual',
+                    show: !!selectedSpecHouse.imageWebp && !failedWebpIds[selectedSpecHouse.id],
+                  },
                   { id: 'facade' as CardViewMode, label: lang === 'ru' ? '3D Схема' : '3D Facade', show: true },
                   { id: 'plan' as CardViewMode, label: lang === 'ru' ? 'План' : 'Plan', show: true },
                 ]
