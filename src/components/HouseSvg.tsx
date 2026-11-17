@@ -229,9 +229,9 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
         {viewMode === 'plan' ? (
           <motion.svg
             key="plan-svg"
-            initial={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 1.04, filter: 'blur(4px)' }}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
             transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
             viewBox="0 0 200 126"
             className="w-full h-full font-sans"
@@ -300,9 +300,9 @@ export const HouseSvg: React.FC<HouseSvgProps> = ({
         ) : (
           <motion.svg
             key="facade-svg"
-            initial={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 1.04, filter: 'blur(4px)' }}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
             transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
             viewBox="0 0 200 126"
             className="w-full h-full"

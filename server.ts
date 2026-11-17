@@ -34,13 +34,15 @@ const DATA_DIR = process.env.DATA_DIR?.trim()
   : path.resolve(process.cwd(), 'data');
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 
-export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed';
+export const LEAD_STATUSES = ['new', 'contacted', 'negotiation', 'contract', 'completed', 'lost'] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
+/** Every field is optional: only values the client actually sent are stored. */
 export interface LeadCalculatorParams {
-  size: number; // e.g. 36 m²
-  insulation: string; // e.g. '150 мм (Осень-Зима)'
-  foundation: string; // e.g. 'Свайно-винтовой (−50%)'
-  veranda: string; // e.g. 'С верандой' | 'Без веранды'
+  size?: number; // e.g. 36 m²
+  insulation?: string; // e.g. '150 мм (Осень-Зима)'
+  foundation?: string; // e.g. 'Свайно-винтовой (−50%)'
+  veranda?: string; // e.g. 'С верандой' | 'Без веранды'
   distanceKm?: number; // e.g. 45 км от МКАД
   mortgageMode?: boolean;
   monthlyPayment?: number;
@@ -49,12 +51,12 @@ export interface LeadCalculatorParams {
 export interface CalculationHistoryItem {
   timestamp: string;
   action: string;
-  houseTitle: string;
-  calculatedPrice: number;
-  size: number;
-  insulation: string;
-  foundation: string;
-  veranda: string;
+  houseTitle?: string;
+  calculatedPrice?: number;
+  size?: number;
+  insulation?: string;
+  foundation?: string;
+  veranda?: string;
   distanceKm?: number;
 }
 
@@ -68,6 +70,8 @@ export interface ServerLead {
   houseTitle?: string;
   calculatedPrice?: number;
   status: LeadStatus;
+  /** Manager's follow-up date (YYYY-MM-DD, local). Empty when no callback is planned. */
+  followUpAt?: string;
   calculatorParams?: LeadCalculatorParams;
   calculationHistory?: CalculationHistoryItem[];
   giftsSelected?: string[];
@@ -79,218 +83,20 @@ export interface ServerLead {
 // Connected SSE clients for real-time lead notifications
 const sseClients = new Set<Response>();
 
-// Initial seed leads with full 5-stage statuses and calculation history
-const INITIAL_LEADS: ServerLead[] = [
-  {
-    id: 'LD-94A8K',
-    timestamp: '30.10.2026, 14:18',
-    createdAtMs: Date.now() - 1000 * 60 * 18,
-    source: 'calculator',
-    clientName: 'Алексей Смирнов',
-    phone: '+7 (916) 482-19-40',
-    houseTitle: 'Дачный дом 6×6 (Хит продаж)',
-    calculatedPrice: 707000,
-    status: 'new',
-    calculatorParams: {
-      size: 36,
-      insulation: '150 мм (Осень-Зима)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'Без веранды',
-      distanceKm: 45,
-      mortgageMode: false,
-    },
-    calculationHistory: [
-      {
-        timestamp: '30.10.2026, 14:14',
-        action: 'Предварительный расчёт в конфигураторе',
-        houseTitle: 'Дачный дом 6×6 (базовый)',
-        calculatedPrice: 672000,
-        size: 36,
-        insulation: '100 мм (Лето)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'Без веранды',
-        distanceKm: 45,
-      },
-      {
-        timestamp: '30.10.2026, 14:18',
-        action: 'Фиксация сметы («Закрепить цену»)',
-        houseTitle: 'Дачный дом 6×6 (Хит продаж)',
-        calculatedPrice: 707000,
-        size: 36,
-        insulation: '150 мм (Осень-Зима)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'Без веранды',
-        distanceKm: 45,
-      },
-    ],
-    giftsSelected: ['Металлочерепица 0 ₽', 'Сваи −50%', 'Доставка до 100 км 0 ₽'],
-    managerNotes: 'Клиент зафиксировал цену в калькуляторе. Участок в Истринском районе (45 км от МКАД).',
-  },
-  {
-    id: 'LD-91M3P',
-    timestamp: '30.10.2026, 12:05',
-    createdAtMs: Date.now() - 1000 * 60 * 145,
-    source: 'quiz_modal',
-    clientName: 'Елена Волкова',
-    phone: '+7 (926) 773-04-12',
-    houseTitle: 'Дом с панорамной верандой 6×8',
-    calculatedPrice: 836000,
-    status: 'contacted',
-    calculatorParams: {
-      size: 48,
-      insulation: '200 мм (Арктика ПМЖ)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'С террасой / верандой (+60 000 ₽)',
-      distanceKm: 65,
-      mortgageMode: true,
-      monthlyPayment: 7415,
-    },
-    calculationHistory: [
-      {
-        timestamp: '30.10.2026, 11:58',
-        action: 'Выбор в каталоге проектов',
-        houseTitle: 'Дом с панорамной верандой 6×8',
-        calculatedPrice: 776000,
-        size: 48,
-        insulation: '150 мм (Осень-Зима)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'Без веранды',
-        distanceKm: 65,
-      },
-      {
-        timestamp: '30.10.2026, 12:05',
-        action: 'Заполнение квиза + ипотечный контур 200 мм',
-        houseTitle: 'Дом с панорамной верандой 6×8',
-        calculatedPrice: 836000,
-        size: 48,
-        insulation: '200 мм (Арктика ПМЖ)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'С террасой / верандой (+60 000 ₽)',
-        distanceKm: 65,
-      },
-    ],
-    giftsSelected: ['Металлочерепица 0 ₽', 'Сборка 0 ₽', 'Сваи −50%', 'Шпунтованный пол 36 мм'],
-    quizAnswers: {
-      '0': 'Для круглогодичного проживания (ПМЖ)',
-      '1': '45–60 м² (оптимально для семьи)',
-      '2': '200 мм (максимальное энергосбережение)',
-      '3': 'В ближайший месяц',
-      '4': 'Шпунтованный пол 36 мм камерной сушки',
-    },
-    managerNotes: 'Связались по телефону. Интересует льготная ипотека 6%. Отправлена PDF-смета в WhatsApp.',
-  },
-  {
-    id: 'LD-89B4V',
-    timestamp: '29.10.2026, 19:30',
-    createdAtMs: Date.now() - 1000 * 60 * 60 * 16,
-    source: 'calculator',
-    clientName: 'Сергей Антонов',
-    phone: '+7 (985) 334-12-90',
-    houseTitle: 'А-Фрейм Шале 6×8',
-    calculatedPrice: 801000,
-    status: 'negotiation',
-    calculatorParams: {
-      size: 48,
-      insulation: '150 мм (Осень-Зима)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'С террасой / верандой (+60 000 ₽)',
-      distanceKm: 80,
-      mortgageMode: false,
-    },
-    calculationHistory: [
-      {
-        timestamp: '29.10.2026, 19:30',
-        action: 'Расчет с террасой и свайным полем',
-        houseTitle: 'А-Фрейм Шале 6×8',
-        calculatedPrice: 801000,
-        size: 48,
-        insulation: '150 мм (Осень-Зима)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'С террасой / верандой (+60 000 ₽)',
-        distanceKm: 80,
-      },
-    ],
-    giftsSelected: ['Металлочерепица 0 ₽', 'Сваи −50%', 'Окна ПВХ двухкамерные'],
-    managerNotes: 'На этапе переговоров: согласовываем дату выезда инженера на участок под Серпуховом.',
-  },
-  {
-    id: 'LD-87C2R',
-    timestamp: '29.10.2026, 17:42',
-    createdAtMs: Date.now() - 1000 * 60 * 60 * 21,
-    source: 'catalog_spec',
-    clientName: 'Дмитрий Ковалев',
-    phone: '+7 (903) 519-88-23',
-    houseTitle: 'Барнхаус Сканди 6×9',
-    calculatedPrice: 928000,
-    status: 'contract',
-    calculatorParams: {
-      size: 54,
-      insulation: '200 мм (Арктика ПМЖ)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'С террасой / верандой (+60 000 ₽)',
-      distanceKm: 30,
-      mortgageMode: false,
-    },
-    calculationHistory: [
-      {
-        timestamp: '29.10.2026, 17:42',
-        action: 'Заказ комплектации ПМЖ 200 мм из каталога',
-        houseTitle: 'Барнхаус Сканди 6×9',
-        calculatedPrice: 928000,
-        size: 54,
-        insulation: '200 мм (Арктика ПМЖ)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'С террасой / верандой (+60 000 ₽)',
-        distanceKm: 30,
-      },
-    ],
-    giftsSelected: ['Металлочерепица 0 ₽', 'Сваи −50%', 'Антисептирование Неомид'],
-    managerNotes: 'Договор №КД-1042 подписан. Выезд бригады на закрутку свай назначен на субботу.',
-  },
-  {
-    id: 'LD-79F5T',
-    timestamp: '27.10.2026, 10:15',
-    createdAtMs: Date.now() - 1000 * 60 * 60 * 72,
-    source: 'hero_quick',
-    clientName: 'Игорь Романов',
-    phone: '+7 (915) 204-61-09',
-    houseTitle: 'Дачный дом 6×6',
-    calculatedPrice: 672000,
-    status: 'completed',
-    calculatorParams: {
-      size: 36,
-      insulation: '150 мм (Осень-Зима)',
-      foundation: 'Свайно-винтовой (−50% акция)',
-      veranda: 'Без веранды',
-      distanceKm: 55,
-      mortgageMode: false,
-    },
-    calculationHistory: [
-      {
-        timestamp: '27.10.2026, 10:15',
-        action: 'Фиксация базовой сметы 6×6 (150 мм)',
-        houseTitle: 'Дачный дом 6×6',
-        calculatedPrice: 672000,
-        size: 36,
-        insulation: '150 мм (Осень-Зима)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'Без веранды',
-        distanceKm: 55,
-      },
-    ],
-    giftsSelected: ['Металлочерепица 0 ₽', 'Сваи −50%', 'Электроконвектор в подарок'],
-    managerNotes: 'Дом сдан за 2 дня в Дмитровском районе. Акт подписан, оплата 100% получена.',
-  },
-];
+// No seed data: the CRM starts empty. Demo leads with invented names and phones are never written.
+const INITIAL_LEADS: ServerLead[] = [];
+
+function isLeadStatus(value: unknown): value is LeadStatus {
+  return typeof value === 'string' && (LEAD_STATUSES as readonly string[]).includes(value);
+}
 
 function normalizeStatus(st?: string): LeadStatus {
   if (st === 'in_progress') return 'contacted';
   if (st === 'done') return 'completed';
-  if (st === 'new' || st === 'contacted' || st === 'negotiation' || st === 'contract' || st === 'completed') {
-    return st;
-  }
-  return 'new';
+  return isLeadStatus(st) ? st : 'new';
 }
+
+const FOLLOW_UP_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function ensureLeadsFile(): ServerLead[] {
   try {
@@ -462,15 +268,11 @@ async function startServer() {
         lead.source === 'calculator'
           ? 'Фиксация цены в калькуляторе'
           : lead.source === 'quiz_modal'
-            ? 'Завершение квиза с подбором комплектации'
-            : 'Быстрая заявка с фиксацией акции',
+            ? 'Завершение квиза'
+            : 'Быстрая заявка (без расчёта)',
       houseTitle: lead.houseTitle,
       calculatedPrice: lead.calculatedPrice,
-      size: calcParams.size,
-      insulation: calcParams.insulation,
-      foundation: calcParams.foundation,
-      veranda: calcParams.veranda,
-      distanceKm: calcParams.distanceKm,
+      ...calcParams,
     };
 
     const newLead: ServerLead = {
@@ -510,14 +312,15 @@ async function startServer() {
     res.status(201).json({ lead: newLead });
   });
 
-  // 6. Protected PATCH /api/leads/:id (Status Dropdown & Notes Update — 403 without token)
+  // 6. Protected PATCH /api/leads/:id (status, notes, client name, follow-up date).
+  // Invalid values are rejected with 400; the client must never believe a change was saved when it was not.
   app.patch('/api/leads/:id', requireAdminAuth, (req: Request, res: Response) => {
     const id = String(req.params.id || '');
     if (!/^LD-[A-F0-9]{8}$/.test(id) && !/^LD-[A-Z0-9]{5}$/.test(id)) {
       res.status(400).json({ error: 'Некорректный идентификатор заявки.', code: 'INVALID_ID' });
       return;
     }
-    const { status, managerNotes, clientName } = req.body || {};
+    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
 
     const idx = leadsStore.findIndex((l) => l.id === id);
     if (idx === -1) {
@@ -525,16 +328,27 @@ async function startServer() {
       return;
     }
 
-    const allowedStatus =
-      status === 'new' ||
-      status === 'contacted' ||
-      status === 'negotiation' ||
-      status === 'contract' ||
-      status === 'completed';
-    const notes = sanitizeManagerNotes(managerNotes);
+    if (body.status !== undefined && !isLeadStatus(body.status)) {
+      res.status(400).json({ error: 'Неизвестный статус заявки.', code: 'INVALID_STATUS' });
+      return;
+    }
+
+    let followUpAt: string | undefined | null;
+    if (body.followUpAt !== undefined) {
+      if (body.followUpAt === null || body.followUpAt === '') {
+        followUpAt = null;
+      } else if (typeof body.followUpAt === 'string' && FOLLOW_UP_PATTERN.test(body.followUpAt)) {
+        followUpAt = body.followUpAt;
+      } else {
+        res.status(400).json({ error: 'Некорректная дата перезвона.', code: 'INVALID_FOLLOW_UP' });
+        return;
+      }
+    }
+
+    const notes = sanitizeManagerNotes(body.managerNotes);
     let nextName: string | undefined;
-    if (typeof clientName === 'string') {
-      const nameCheck = validateClientName(clientName, 'ru');
+    if (typeof body.clientName === 'string') {
+      const nameCheck = validateClientName(body.clientName, 'ru');
       if (!nameCheck.ok) {
         res.status(400).json({ error: nameCheck.error, code: 'INVALID_NAME' });
         return;
@@ -542,12 +356,20 @@ async function startServer() {
       nextName = nameCheck.value || leadsStore[idx].clientName;
     }
 
+    const current = leadsStore[idx];
     const updated: ServerLead = {
-      ...leadsStore[idx],
-      ...(allowedStatus ? { status } : {}),
+      ...current,
+      ...(body.status !== undefined ? { status: body.status as LeadStatus } : {}),
       ...(notes !== null ? { managerNotes: notes } : {}),
       ...(nextName !== undefined ? { clientName: nextName } : {}),
     };
+    if (followUpAt !== undefined) {
+      if (followUpAt === null) {
+        delete updated.followUpAt;
+      } else {
+        updated.followUpAt = followUpAt;
+      }
+    }
 
     leadsStore[idx] = updated;
     saveLeadsToDisk(leadsStore);

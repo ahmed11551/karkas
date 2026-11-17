@@ -1,13 +1,13 @@
 import { parsePublicLead } from './leadPayload';
 import { reachGoal } from './analytics';
 
-export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed';
+export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed' | 'lost';
 
 export interface LeadCalculatorParams {
-  size: number; // e.g. 36 m²
-  insulation: string; // e.g. '150 мм (Осень-Зима)'
-  foundation: string; // e.g. 'Свайно-винтовой (−50%)'
-  veranda: string; // e.g. 'С верандой' | 'Без веранды'
+  size?: number; // e.g. 36 m²
+  insulation?: string; // e.g. '150 мм (Осень-Зима)'
+  foundation?: string; // e.g. 'Свайно-винтовой (−50%)'
+  veranda?: string; // e.g. 'С верандой' | 'Без веранды'
   distanceKm?: number; // e.g. 45
   mortgageMode?: boolean;
   monthlyPayment?: number;
@@ -16,12 +16,12 @@ export interface LeadCalculatorParams {
 export interface CalculationHistoryItem {
   timestamp: string;
   action: string;
-  houseTitle: string;
-  calculatedPrice: number;
-  size: number;
-  insulation: string;
-  foundation: string;
-  veranda: string;
+  houseTitle?: string;
+  calculatedPrice?: number;
+  size?: number;
+  insulation?: string;
+  foundation?: string;
+  veranda?: string;
   distanceKm?: number;
 }
 
@@ -44,6 +44,8 @@ export interface StoredLead {
   houseTitle?: string;
   calculatedPrice?: number;
   status: LeadStatus;
+  /** Planned callback date, YYYY-MM-DD (local). */
+  followUpAt?: string;
   calculatorParams?: LeadCalculatorParams;
   calculationHistory?: CalculationHistoryItem[];
   giftsSelected?: string[];
@@ -135,20 +137,22 @@ if (crmChannel) {
   };
 }
 
+export const LEAD_STATUS_ORDER: LeadStatus[] = [
+  'new',
+  'contacted',
+  'negotiation',
+  'contract',
+  'completed',
+  'lost',
+];
+
 export function normalizeLeadStatus(st?: string): LeadStatus {
   if (st === 'in_progress') return 'contacted';
   if (st === 'done') return 'completed';
-  if (
-    st === 'new' ||
-    st === 'contacted' ||
-    st === 'negotiation' ||
-    st === 'contract' ||
-    st === 'completed'
-  ) {
-    return st;
-  }
-  return 'new';
+  return (LEAD_STATUS_ORDER as string[]).includes(st ?? '') ? (st as LeadStatus) : 'new';
 }
+
+export type LeadWriteResult = { ok: true; lead: StoredLead } | { ok: false; error: string };
 
 /** Non-secret UI hint. The session itself lives in an HttpOnly cookie. */
 export const markAdminUiSession = () => {
@@ -296,8 +300,8 @@ export const testUnauthorizedRequest = async (): Promise<{ status: number; messa
 
 export const updateLeadOnServer = async (
   id: string,
-  patch: Partial<Pick<StoredLead, 'status' | 'managerNotes' | 'clientName'>>
-): Promise<StoredLead | null> => {
+  patch: Partial<Pick<StoredLead, 'status' | 'managerNotes' | 'clientName' | 'followUpAt'>>
+): Promise<LeadWriteResult> => {
   try {
     const res = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -308,33 +312,42 @@ export const updateLeadOnServer = async (
       },
       body: JSON.stringify(patch),
     });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    const existing = getStoredLeads().map((l) => (l.id === id ? { ...l, ...patch } : l));
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 403 || res.status === 401) {
+      clearAdminUiSession();
+      return { ok: false, error: 'Сессия истекла. Войдите снова.' };
+    }
+    if (!res.ok || !data.lead) {
+      return { ok: false, error: safeApiError(data, 'Не удалось сохранить изменения.') };
+    }
+    const lead = data.lead as StoredLead;
+    const existing = getStoredLeads().map((l) => (l.id === id ? { ...l, ...lead } : l));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
     window.dispatchEvent(new CustomEvent('leads_updated'));
     crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
-    return data.lead;
+    return { ok: true, lead };
   } catch {
-    return null;
+    return { ok: false, error: 'Нет связи с сервером. Изменения не сохранены.' };
   }
 };
 
-export const deleteLeadOnServer = async (id: string): Promise<boolean> => {
+export const deleteLeadOnServer = async (id: string): Promise<{ ok: true } | { ok: false; error: string }> => {
   try {
     const res = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       credentials: 'same-origin',
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: safeApiError(data, 'Не удалось удалить заявку.') };
+    }
     const updated = getStoredLeads().filter((l) => l.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('leads_updated'));
     crmChannel?.postMessage({ type: 'LEADS_UPDATED' });
-    return true;
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: 'Нет связи с сервером. Заявка не удалена.' };
   }
 };
 
@@ -379,8 +392,9 @@ export const saveLead = async (
       Notification.permission === 'granted'
     ) {
       try {
+        const priceText = newLead.calculatedPrice ? ` — ${newLead.calculatedPrice.toLocaleString('ru-RU')} ₽` : '';
         new Notification('Новая заявка: Каркасник CRM', {
-          body: `${newLead.houseTitle || 'Расчёт'} — ${(newLead.calculatedPrice || 0).toLocaleString('ru-RU')} ₽`,
+          body: `${newLead.houseTitle || newLead.clientName || newLead.phone}${priceText}`,
         });
       } catch {
         // ignore notification errors in iframe
@@ -397,92 +411,7 @@ export const saveLead = async (
 export const getStoredLeads = (): StoredLead[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const initialArchive: StoredLead[] = [
-        {
-          id: 'LD-94A8K',
-          timestamp: '30.10.2026, 14:18',
-          createdAtMs: Date.now() - 1000 * 60 * 18,
-          source: 'calculator',
-          clientName: 'Алексей Смирнов',
-          phone: '+7 (916) 482-19-40',
-          houseTitle: 'Дачный дом 6×6 (Хит продаж)',
-          calculatedPrice: 707000,
-          status: 'new',
-          calculatorParams: {
-            size: 36,
-            insulation: '150 мм (Осень-Зима)',
-            foundation: 'Свайно-винтовой (−50% акция)',
-            veranda: 'Без веранды',
-            distanceKm: 45,
-            mortgageMode: false,
-          },
-          calculationHistory: [
-            {
-              timestamp: '30.10.2026, 14:14',
-              action: 'Предварительный расчёт в конфигураторе',
-              houseTitle: 'Дачный дом 6×6 (базовый)',
-              calculatedPrice: 672000,
-              size: 36,
-              insulation: '100 мм (Лето)',
-              foundation: 'Свайно-винтовой (−50% акция)',
-              veranda: 'Без веранды',
-              distanceKm: 45,
-            },
-            {
-              timestamp: '30.10.2026, 14:18',
-              action: 'Фиксация сметы («Закрепить цену»)',
-              houseTitle: 'Дачный дом 6×6 (Хит продаж)',
-              calculatedPrice: 707000,
-              size: 36,
-              insulation: '150 мм (Осень-Зима)',
-              foundation: 'Свайно-винтовой (−50% акция)',
-              veranda: 'Без веранды',
-              distanceKm: 45,
-            },
-          ],
-          giftsSelected: ['Металлочерепица 0 ₽', 'Сваи −50%', 'Доставка до 100 км 0 ₽'],
-          managerNotes: 'Клиент зафиксировал цену в калькуляторе. Участок в Истринском районе (45 км от МКАД).',
-        },
-        {
-          id: 'LD-91M3P',
-          timestamp: '30.10.2026, 12:05',
-          createdAtMs: Date.now() - 1000 * 60 * 145,
-          source: 'quiz_modal',
-          clientName: 'Елена Волкова',
-          phone: '+7 (926) 773-04-12',
-          houseTitle: 'Дом с панорамной верандой 6×8',
-          calculatedPrice: 836000,
-          status: 'contacted',
-          calculatorParams: {
-            size: 48,
-            insulation: '200 мм (Арктика ПМЖ)',
-            foundation: 'Свайно-винтовой (−50% акция)',
-            veranda: 'С террасой / верандой (+60 000 ₽)',
-            distanceKm: 65,
-            mortgageMode: true,
-            monthlyPayment: 7415,
-          },
-          calculationHistory: [
-            {
-              timestamp: '30.10.2026, 12:05',
-              action: 'Заполнение квиза + ипотечный контур 200 мм',
-              houseTitle: 'Дом с панорамной верандой 6×8',
-              calculatedPrice: 836000,
-              size: 48,
-              insulation: '200 мм (Арктика ПМЖ)',
-              foundation: 'Свайно-винтовой (−50% акция)',
-              veranda: 'С террасой / верандой (+60 000 ₽)',
-              distanceKm: 65,
-            },
-          ],
-          giftsSelected: ['Металлочерепица 0 ₽', 'Сборка 0 ₽', 'Сваи −50%', 'Шпунтованный пол 36 мм'],
-          managerNotes: 'Интересует льготная ипотека 6%. Отправлена PDF-смета в WhatsApp.',
-        },
-      ];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialArchive));
-      return initialArchive;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed)
       ? parsed.map((l: StoredLead) => ({ ...l, status: normalizeLeadStatus(l.status) }))
@@ -495,8 +424,9 @@ export const getStoredLeads = (): StoredLead[] => {
 export const exportLeadsCsv = (leads: StoredLead[]) => {
   const headers = [
     'ID',
-    'Дата',
+    'Дата создания',
     'Статус',
+    'Перезвонить',
     'Имя клиента',
     'Телефон',
     'Проект',
@@ -504,21 +434,23 @@ export const exportLeadsCsv = (leads: StoredLead[]) => {
     'Утепление',
     'Фундамент',
     'Веранда',
-    'Сумма (₽)',
-    'Бонусы',
+    'Сумма сметы (₽)',
+    'Подарки',
     'UTM / Источник',
     'Заметки менеджера',
   ];
   const statusMap: Record<LeadStatus, string> = {
-    new: 'Новый (New)',
-    contacted: 'Связались (Contacted)',
-    negotiation: 'Переговоры (Negotiation)',
-    contract: 'Договор (Contract)',
-    completed: 'Сдан (Completed)',
+    new: 'Новый',
+    contacted: 'Связались',
+    negotiation: 'Переговоры',
+    contract: 'Договор',
+    completed: 'Сдан',
+    lost: 'Отказ',
   };
 
+  // Empty cell when the lead has no such value: never an invented number or label.
   const csvCell = (value: unknown) => {
-    const text = String(value ?? '');
+    const text = value === undefined || value === null ? '' : String(value);
     const neutralized = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
     return `"${neutralized.replace(/"/g, '""')}"`;
   };
@@ -529,21 +461,22 @@ export const exportLeadsCsv = (leads: StoredLead[]) => {
           .filter(([, v]) => Boolean(v))
           .map(([k, v]) => `${k}=${v}`)
           .join(' | ')
-      : l.source;
+      : '';
     return [
       csvCell(l.id),
       csvCell(l.timestamp),
-      csvCell(statusMap[l.status] || 'Новый'),
-      csvCell(l.clientName || 'Клиент'),
+      csvCell(statusMap[normalizeLeadStatus(l.status)]),
+      csvCell(l.followUpAt || ''),
+      csvCell(l.clientName || ''),
       csvCell(l.phone),
-      csvCell(l.houseTitle || 'Индивидуальный'),
-      csvCell(l.calculatorParams?.size || 36),
-      csvCell(l.calculatorParams?.insulation || '150 мм'),
-      csvCell(l.calculatorParams?.foundation || 'Свайный'),
-      csvCell(l.calculatorParams?.veranda || 'Без веранды'),
-      csvCell(l.calculatedPrice || 0),
+      csvCell(l.houseTitle || ''),
+      csvCell(l.calculatorParams?.size ?? ''),
+      csvCell(l.calculatorParams?.insulation || ''),
+      csvCell(l.calculatorParams?.foundation || ''),
+      csvCell(l.calculatorParams?.veranda || ''),
+      csvCell(l.calculatedPrice ?? ''),
       csvCell((l.giftsSelected || []).join('; ')),
-      csvCell(utmStr || ''),
+      csvCell(utmStr || l.source),
       csvCell(l.managerNotes || ''),
     ];
   });

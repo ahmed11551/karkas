@@ -114,14 +114,10 @@ export const QuizModal: React.FC<QuizModalProps> = ({
       source: 'quiz_modal',
       clientName: nameCheck.value,
       phone: validation.normalized || phone,
-      houseTitle: prefilledHouseTitle || answers[1] || 'Индивидуальный проект по квизу',
-      calculatedPrice: prefilledPrice || 707000,
-      calculatorParams: prefilledCalcParams || {
-        size: 36,
-        insulation: answers[2] || '150 мм (Осень-Зима)',
-        foundation: 'Свайно-винтовой (−50% акция)',
-        veranda: 'По выбору проекта',
-      },
+      // Only real values: no invented price, size or configuration when the quiz did not produce them.
+      houseTitle: prefilledHouseTitle || answers[1] || undefined,
+      calculatedPrice: prefilledPrice || undefined,
+      calculatorParams: prefilledCalcParams || (answers[2] ? { insulation: answers[2] } : undefined),
       quizAnswers: answers,
       giftsSelected: [
         'Металлочерепица 0 ₽',

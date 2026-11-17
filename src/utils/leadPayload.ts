@@ -4,11 +4,15 @@ import type { Language } from '../types';
 export const LEAD_SOURCES = ['hero_quick', 'quiz_modal', 'calculator', 'catalog_spec'] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
+/**
+ * Every field is optional: the server stores only what the client actually sent.
+ * Missing values are never filled with defaults (no invented size, price or distance).
+ */
 export interface SanitizedCalculatorParams {
-  size: number;
-  insulation: string;
-  foundation: string;
-  veranda: string;
+  size?: number;
+  insulation?: string;
+  foundation?: string;
+  veranda?: string;
   distanceKm?: number;
   mortgageMode?: boolean;
   monthlyPayment?: number;
@@ -18,9 +22,9 @@ export interface SanitizedPublicLead {
   source: LeadSource;
   clientName: string;
   phone: string;
-  houseTitle: string;
-  calculatedPrice: number;
-  calculatorParams: SanitizedCalculatorParams;
+  houseTitle?: string;
+  calculatedPrice?: number;
+  calculatorParams?: SanitizedCalculatorParams;
   giftsSelected: string[];
   quizAnswers?: Record<string, string>;
   utm?: Record<string, string>;
@@ -40,10 +44,33 @@ export function sanitizePlainText(value: unknown, max: number): string {
     .slice(0, max);
 }
 
-function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
-  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
-  if (!Number.isFinite(numeric)) return fallback;
+/** Returns a clamped number, or undefined when the value is absent or not numeric. */
+function optionalNumber(value: unknown, min: number, max: number): number | undefined {
+  const numeric =
+    typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN;
+  if (!Number.isFinite(numeric)) return undefined;
   return Math.min(max, Math.max(min, numeric));
+}
+
+function optionalText(value: unknown, max: number): string | undefined {
+  return sanitizePlainText(value, max) || undefined;
+}
+
+/** Keeps only fields the client really sent. Returns undefined when nothing was sent. */
+function sanitizeCalculatorParams(paramsRaw: Record<string, unknown>): SanitizedCalculatorParams | undefined {
+  const out: SanitizedCalculatorParams = {
+    size: optionalNumber(paramsRaw.size, 12, 400),
+    insulation: optionalText(paramsRaw.insulation, 80),
+    foundation: optionalText(paramsRaw.foundation, 80),
+    veranda: optionalText(paramsRaw.veranda, 80),
+    distanceKm: optionalNumber(paramsRaw.distanceKm, 0, 3000),
+    mortgageMode: typeof paramsRaw.mortgageMode === 'boolean' ? paramsRaw.mortgageMode : undefined,
+  };
+  if (out.mortgageMode) {
+    out.monthlyPayment = optionalNumber(paramsRaw.monthlyPayment, 0, 5_000_000);
+  }
+  const cleaned = Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined)) as SanitizedCalculatorParams;
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
 }
 
 export function validateClientName(
@@ -103,18 +130,7 @@ export function parsePublicLead(
       ? (raw.calculatorParams as Record<string, unknown>)
       : {};
 
-  const calculatorParams: SanitizedCalculatorParams = {
-    size: clampNumber(paramsRaw.size, 12, 400, 36),
-    insulation: sanitizePlainText(paramsRaw.insulation, 80) || '150 мм (Осень-Зима)',
-    foundation: sanitizePlainText(paramsRaw.foundation, 80) || 'Свайно-винтовой',
-    veranda: sanitizePlainText(paramsRaw.veranda, 80) || 'Без веранды',
-    distanceKm:
-      paramsRaw.distanceKm === undefined ? 45 : clampNumber(paramsRaw.distanceKm, 0, 3000, 45),
-    mortgageMode: paramsRaw.mortgageMode === true,
-  };
-  if (calculatorParams.mortgageMode) {
-    calculatorParams.monthlyPayment = clampNumber(paramsRaw.monthlyPayment, 0, 5_000_000, 0);
-  }
+  const calculatorParams = sanitizeCalculatorParams(paramsRaw);
 
   const gifts = Array.isArray(raw.giftsSelected)
     ? raw.giftsSelected
@@ -151,10 +167,10 @@ export function parsePublicLead(
       source: raw.source as LeadSource,
       clientName: nameCheck.value || 'Клиент сайта',
       phone: phoneCheck.normalized,
-      houseTitle: sanitizePlainText(raw.houseTitle, 140) || 'Индивидуальный проект',
-      calculatedPrice: clampNumber(raw.calculatedPrice, 100_000, 30_000_000, 707_000),
+      houseTitle: optionalText(raw.houseTitle, 140),
+      calculatedPrice: optionalNumber(raw.calculatedPrice, 100_000, 30_000_000),
       calculatorParams,
-      giftsSelected: gifts.length > 0 ? gifts : ['Металлочерепица 0 ₽'],
+      giftsSelected: gifts,
       quizAnswers,
       utm,
     },

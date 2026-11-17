@@ -351,12 +351,6 @@ export default function App() {
       >
         Перейти к содержанию
       </a>
-      {/* Global Subtle Film-Grain Texture Overlay */}
-      <div
-        className="fixed inset-0 bg-grain-overlay pointer-events-none z-40"
-        aria-hidden="true"
-      />
-
       {/* Top Reading Progress Bar (Synced with Lenis) */}
       {/* Updated imperatively from the Lenis scroll handler (no React re-render per frame) */}
       <div
@@ -405,21 +399,32 @@ export default function App() {
             </div>
 
             <div className="mt-2.5 text-xs text-emerald-100/90 space-y-1 bg-black/25 p-2.5 rounded-xl border border-white/10">
-              <div className="flex justify-between">
-                <span className="text-emerald-200/60">Сумма сметы:</span>
-                <span className="font-mono font-bold text-[#FCBD1C]">
-                  ≈ {(realtimeToastLead.calculatedPrice || 707000).toLocaleString('ru-RU')} ₽
-                </span>
-              </div>
-              {realtimeToastLead.calculatorParams && (
+              {realtimeToastLead.calculatedPrice ? (
+                <div className="flex justify-between">
+                  <span className="text-emerald-200/60">Сумма сметы:</span>
+                  <span className="font-mono font-bold text-[#FCBD1C]">
+                    ≈ {realtimeToastLead.calculatedPrice.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-emerald-200/60">Расчёт:</span>
+                  <span className="text-[11px]">не делали, уточнить по телефону</span>
+                </div>
+              )}
+              {realtimeToastLead.calculatorParams?.size || realtimeToastLead.calculatorParams?.insulation ? (
                 <div className="flex justify-between">
                   <span className="text-emerald-200/60">Конфигурация:</span>
                   <span className="font-mono text-[11px]">
-                    {realtimeToastLead.calculatorParams.size} м² ·{' '}
-                    {realtimeToastLead.calculatorParams.insulation}
+                    {[
+                      realtimeToastLead.calculatorParams?.size ? `${realtimeToastLead.calculatorParams.size} м²` : null,
+                      realtimeToastLead.calculatorParams?.insulation,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </div>
-              )}
+              ) : null}
               <div className="flex justify-between">
                 <span className="text-emerald-200/60">Контакт:</span>
                 <span className="font-mono text-[11px]">{realtimeToastLead.phone}</span>

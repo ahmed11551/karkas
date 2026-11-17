@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   X,
   Download,
@@ -9,21 +9,21 @@ import {
   MessageCircle,
   Search,
   ArrowUpDown,
-  Eye,
   LogOut,
-  CheckCircle2,
-  FileText,
-  Sparkles,
-  Terminal,
   Copy,
   Check,
-  History,
-  ChevronDown,
   RotateCcw,
+  RefreshCw,
+  BellRing,
+  ChevronLeft,
+  FileText,
+  History,
+  Sparkles,
 } from 'lucide-react';
 import {
   StoredLead,
   LeadStatus,
+  LEAD_STATUS_ORDER,
   fetchProtectedLeads,
   updateLeadOnServer,
   deleteLeadOnServer,
@@ -32,7 +32,6 @@ import {
   testUnauthorizedRequest,
   normalizeLeadStatus,
 } from '../utils/leads';
-import { COMPANY_CONFIG } from '../config/company';
 import { playUiClick } from '../utils/sound';
 
 interface AdminLeadsDrawerProps {
@@ -42,61 +41,101 @@ interface AdminLeadsDrawerProps {
   initialSelectedLeadId?: string | null;
 }
 
-const STATUS_META: Record<
-  LeadStatus,
-  { label: string; enLabel: string; badgeClass: string; activeBtnClass: string }
-> = {
-  new: {
-    label: 'Новый (New)',
-    enLabel: 'New',
-    badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-    activeBtnClass: 'bg-amber-500 text-neutral-950 border-amber-500 font-bold',
-  },
-  contacted: {
-    label: 'Связались (Contacted)',
-    enLabel: 'Contacted',
-    badgeClass: 'bg-sky-500/15 text-sky-600 border-sky-500/30',
-    activeBtnClass: 'bg-sky-500 text-white border-sky-500 font-bold',
-  },
-  negotiation: {
-    label: 'Переговоры (Negotiation)',
-    enLabel: 'Negotiation',
-    badgeClass: 'bg-indigo-500/15 text-indigo-600 border-indigo-500/30',
-    activeBtnClass: 'bg-indigo-600 text-white border-indigo-600 font-bold',
-  },
-  contract: {
-    label: 'Договор (Contract)',
-    enLabel: 'Contract',
-    badgeClass: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
-    activeBtnClass: 'bg-purple-600 text-white border-purple-600 font-bold',
-  },
-  completed: {
-    label: 'Завершен / Сдан (Completed)',
-    enLabel: 'Completed',
-    badgeClass: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-    activeBtnClass: 'bg-emerald-600 text-white border-emerald-600 font-bold',
-  },
+type LeadSource = StoredLead['source'];
+type SortOrder = 'newest' | 'oldest' | 'price_desc';
+
+const STATUS_META: Record<LeadStatus, { label: string; badge: string; dot: string }> = {
+  new: { label: 'Новый', badge: 'bg-brass/25 text-ink border-brass/70', dot: 'bg-brass' },
+  contacted: { label: 'Связались', badge: 'bg-sky-100 text-sky-900 border-sky-300', dot: 'bg-sky-500' },
+  negotiation: { label: 'Переговоры', badge: 'bg-indigo-100 text-indigo-900 border-indigo-300', dot: 'bg-indigo-500' },
+  contract: { label: 'Договор', badge: 'bg-purple-100 text-purple-900 border-purple-300', dot: 'bg-purple-500' },
+  completed: { label: 'Сдан', badge: 'bg-emerald-100 text-emerald-900 border-emerald-300', dot: 'bg-emerald-600' },
+  lost: { label: 'Отказ', badge: 'bg-ink/10 text-olive border-ink/25', dot: 'bg-olive' },
 };
 
-const ALL_STATUSES: LeadStatus[] = [
-  'new',
-  'contacted',
-  'negotiation',
-  'contract',
-  'completed',
-];
-
-type LeadSource = StoredLead['source'];
-
 const SOURCE_LABELS: Record<LeadSource, string> = {
-  hero_quick: 'Быстрая заявка',
+  hero_quick: 'Быстрая форма',
   quiz_modal: 'Квиз',
   calculator: 'Калькулятор',
   catalog_spec: 'Каталог',
 };
 
+const CLOSED_STATUSES: LeadStatus[] = ['completed', 'lost'];
+
 const dayStartMs = (value: string) => new Date(`${value}T00:00:00`).getTime();
 const dayEndMs = (value: string) => new Date(`${value}T23:59:59.999`).getTime();
+
+/** Local calendar day as YYYY-MM-DD (the format used by date inputs and followUpAt). */
+const todayIso = (): string => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const formatIsoDay = (iso: string): string => {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+};
+
+const formatMoney = (value?: number): string | null =>
+  typeof value === 'number' && value > 0 ? `${value.toLocaleString('ru-RU')} ₽` : null;
+
+/** WhatsApp needs a full Russian mobile/landline number. Returns null when the number is not usable. */
+const whatsappDigits = (phone: string): string | null => {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('8')) digits = `7${digits.slice(1)}`;
+  return digits.length >= 10 && digits.length <= 15 ? digits : null;
+};
+
+const hasCalcData = (lead: StoredLead): boolean =>
+  Boolean(
+    lead.calculatedPrice ||
+      lead.calculatorParams?.size ||
+      lead.calculatorParams?.insulation ||
+      lead.calculatorParams?.foundation ||
+      lead.calculatorParams?.veranda
+  );
+
+/** Message text only uses facts from the lead. Missing parts are left out, never replaced by guesses. */
+const buildWhatsAppText = (lead: StoredLead): string => {
+  const greeting = `Здравствуйте${lead.clientName ? `, ${lead.clientName}` : ''}!`;
+  const project = lead.houseTitle ? ` проект «${lead.houseTitle}»` : '';
+  const price = formatMoney(lead.calculatedPrice);
+  const calc = price ? `, расчёт ≈ ${price}` : '';
+  return `${greeting} Это инженер компании «Каркасник». Вижу вашу заявку ${lead.id}${project ? `:${project}` : ''}${calc}. Подскажите, когда удобно обсудить детали участка и расчёт?`;
+};
+
+/** Call script built only from recorded values. Returns null when the lead has no calculation. */
+const buildCallScript = (lead: StoredLead): string | null => {
+  if (!hasCalcData(lead)) return null;
+  const p = lead.calculatorParams || {};
+  const parts = [
+    lead.houseTitle ? `проект «${lead.houseTitle}»` : null,
+    p.size ? `площадь ${p.size} м²` : null,
+    p.insulation ? `утепление ${p.insulation}` : null,
+    p.foundation ? `фундамент: ${p.foundation}` : null,
+    p.veranda ? `комплектация: ${p.veranda}` : null,
+  ].filter(Boolean);
+  const price = formatMoney(lead.calculatedPrice);
+  const priceText = price ? ` Расчёт на сайте: ${price}.` : '';
+  return `Здравствуйте! Вижу ваш расчёт на сайте: ${parts.join(', ')}.${priceText} Давайте уточним детали и подъездные пути к участку.`;
+};
+
+const matchesQuery = (lead: StoredLead, query: string): boolean => {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const digitsQuery = q.replace(/\D/g, '');
+  const phoneDigits = lead.phone.replace(/\D/g, '');
+  if (digitsQuery.length >= 4 && phoneDigits.includes(digitsQuery)) return true;
+  return [lead.id, lead.clientName, lead.houseTitle, lead.managerNotes, lead.phone]
+    .filter(Boolean)
+    .some((field) => String(field).toLowerCase().includes(q));
+};
+
+const isDue = (lead: StoredLead, today: string): boolean =>
+  Boolean(lead.followUpAt) && !CLOSED_STATUSES.includes(normalizeLeadStatus(lead.status)) && (lead.followUpAt as string) <= today;
+
+type Toast = { tone: 'ok' | 'err'; text: string } | null;
 
 export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
   isOpen,
@@ -105,84 +144,216 @@ export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
   initialSelectedLeadId,
 }) => {
   const [leads, setLeads] = useState<StoredLead[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [forbiddenError, setForbiddenError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LeadStatus>('all');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'price_desc'>('newest');
   const [sourceFilter, setSourceFilter] = useState<'all' | LeadSource>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [selectedLead, setSelectedLead] = useState<StoredLead | null>(null);
-  const [notesDraft, setNotesDraft] = useState('');
-  const [forbiddenError, setForbiddenError] = useState<string | null>(null);
-  const [apiTestToast, setApiTestToast] = useState<string | null>(null);
-  const [copiedScript, setCopiedScript] = useState(false);
+  const [dueOnly, setDueOnly] = useState(false);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
 
-  const loadLeadsFromApi = async () => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [copied, setCopied] = useState<'phone' | 'script' | null>(null);
+  const [toast, setToast] = useState<Toast>(null);
+
+  const today = todayIso();
+
+  const showToast = useCallback((tone: 'ok' | 'err', text: string) => {
+    setToast({ tone, text });
+    window.setTimeout(() => setToast((current) => (current?.text === text ? null : current)), 3500);
+  }, []);
+
+  const loadLeads = useCallback(async () => {
+    setLoading(true);
     const res = await fetchProtectedLeads();
-    if (res.status === 403) {
-      setForbiddenError(res.error || '403 Forbidden: Access denied without valid admin_token');
+    setLoading(false);
+    if (res.status === 403 || res.status === 401) {
+      setForbiddenError(res.error || 'Доступ запрещён: нужна авторизация администратора.');
       setLeads([]);
+      return;
+    }
+    if (res.status !== 200) {
+      showToast('err', res.error || 'Не удалось загрузить заявки.');
       return;
     }
     setForbiddenError(null);
     setLeads(res.leads);
+    setLastUpdated(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+  }, [showToast]);
 
-    if (initialSelectedLeadId) {
-      const found = res.leads.find((l) => l.id === initialSelectedLeadId);
-      if (found) {
-        setSelectedLead(found);
-        setNotesDraft(found.managerNotes || '');
+  useEffect(() => {
+    if (!isOpen) return;
+    void loadLeads();
+    const handleUpdate = () => void loadLeads();
+    window.addEventListener('leads_updated', handleUpdate);
+    return () => window.removeEventListener('leads_updated', handleUpdate);
+  }, [isOpen, loadLeads]);
+
+  useEffect(() => {
+    if (!isOpen || !initialSelectedLeadId) return;
+    setSelectedId(initialSelectedLeadId);
+  }, [isOpen, initialSelectedLeadId]);
+
+  const selectedLead = useMemo(
+    () => leads.find((l) => l.id === selectedId) ?? null,
+    [leads, selectedId]
+  );
+
+  // The notes draft belongs to one lead. It is filled once that lead is actually loaded,
+  // so an id opened before the list arrives cannot start with an empty draft.
+  const [draftOwnerId, setDraftOwnerId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedLead || draftOwnerId === selectedLead.id) return;
+    setDraftOwnerId(selectedLead.id);
+    setNotesDraft(selectedLead.managerNotes || '');
+    setDeleteArmed(false);
+  }, [selectedLead, draftOwnerId]);
+
+  // Escape closes the detail card first, then the whole panel.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (selectedId) {
+        setSelectedId(null);
+      } else {
+        onClose();
       }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, selectedId, onClose]);
+
+  const notesDirty = selectedLead ? notesDraft !== (selectedLead.managerNotes || '') : false;
+
+  const requestSelect = (id: string | null) => {
+    if (id === selectedId) return;
+    if (notesDirty && !window.confirm('Заметка не сохранена. Перейти к другой заявке без сохранения?')) return;
+    playUiClick('tick');
+    setSelectedId(id);
+  };
+
+  const patchLocal = (id: string, patch: Partial<StoredLead>) =>
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+
+  const changeStatus = async (lead: StoredLead, status: LeadStatus) => {
+    if (status === normalizeLeadStatus(lead.status)) return;
+    playUiClick('tick');
+    const previous = lead.status;
+    patchLocal(lead.id, { status });
+    const res = await updateLeadOnServer(lead.id, { status });
+    if (!res.ok) {
+      patchLocal(lead.id, { status: previous });
+      showToast('err', res.error);
+      return;
+    }
+    showToast('ok', `Статус: ${STATUS_META[status].label}`);
+  };
+
+  const changeFollowUp = async (lead: StoredLead, followUpAt: string | null) => {
+    playUiClick('tick');
+    const previous = lead.followUpAt;
+    patchLocal(lead.id, { followUpAt: followUpAt ?? undefined });
+    const res = await updateLeadOnServer(lead.id, { followUpAt: followUpAt ?? '' });
+    if (!res.ok) {
+      patchLocal(lead.id, { followUpAt: previous });
+      showToast('err', res.error);
+      return;
+    }
+    showToast('ok', followUpAt ? `Перезвонить: ${formatIsoDay(followUpAt)}` : 'Дата перезвона снята');
+  };
+
+  const saveNotes = async () => {
+    if (!selectedLead || !notesDirty) return;
+    playUiClick('tap');
+    setSavingNotes(true);
+    const res = await updateLeadOnServer(selectedLead.id, { managerNotes: notesDraft });
+    setSavingNotes(false);
+    if (!res.ok) {
+      showToast('err', res.error);
+      return;
+    }
+    showToast('ok', 'Заметка сохранена');
+  };
+
+  const removeLead = async (lead: StoredLead) => {
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      return;
+    }
+    playUiClick('tick');
+    const res = await deleteLeadOnServer(lead.id);
+    if (!res.ok) {
+      showToast('err', res.error);
+      return;
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+    setSelectedId(null);
+    showToast('ok', `Заявка ${lead.id} удалена`);
+  };
+
+  const copyText = async (text: string, kind: 'phone' | 'script') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 1800);
+    } catch {
+      showToast('err', 'Не удалось скопировать. Выделите текст вручную.');
     }
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      loadLeadsFromApi();
-    }
-    const handleUpdate = () => {
-      if (isOpen) loadLeadsFromApi();
-    };
-    window.addEventListener('leads_updated', handleUpdate);
-    return () => window.removeEventListener('leads_updated', handleUpdate);
-  }, [isOpen, initialSelectedLeadId]);
+  // Filtering and sorting.
+  const counts = useMemo(() => {
+    const byStatus = Object.fromEntries(LEAD_STATUS_ORDER.map((s) => [s, 0])) as Record<LeadStatus, number>;
+    leads.forEach((l) => {
+      byStatus[normalizeLeadStatus(l.status)] += 1;
+    });
+    return byStatus;
+  }, [leads]);
 
-  // Filtered and sorted leads
+  const kpi = useMemo(() => {
+    const startToday = dayStartMs(today);
+    return {
+      createdToday: leads.filter((l) => (l.createdAtMs || 0) >= startToday).length,
+      dueCallbacks: leads.filter((l) => isDue(l, today)).length,
+      open: leads.filter((l) => !CLOSED_STATUSES.includes(normalizeLeadStatus(l.status))).length,
+    };
+  }, [leads, today]);
+
   const filteredLeads = useMemo(() => {
     const fromMs = dateFrom ? dayStartMs(dateFrom) : null;
     const toMs = dateTo ? dayEndMs(dateTo) : null;
-    const q = search.trim().toLowerCase();
-
     const list = leads.filter((l) => {
-      const currentStatus = normalizeLeadStatus(l.status);
-      if (statusFilter !== 'all' && currentStatus !== statusFilter) return false;
+      if (statusFilter !== 'all' && normalizeLeadStatus(l.status) !== statusFilter) return false;
       if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
+      if (dueOnly && !isDue(l, today)) return false;
       if (fromMs !== null || toMs !== null) {
         if (!l.createdAtMs) return false;
         if (fromMs !== null && l.createdAtMs < fromMs) return false;
         if (toMs !== null && l.createdAtMs > toMs) return false;
       }
-      if (!q) return true;
-      const inPhone = l.phone.toLowerCase().includes(q);
-      const inName = (l.clientName || '').toLowerCase().includes(q);
-      const inHouse = (l.houseTitle || '').toLowerCase().includes(q);
-      const inId = l.id.toLowerCase().includes(q);
-      const inNotes = (l.managerNotes || '').toLowerCase().includes(q);
-      return inPhone || inName || inHouse || inId || inNotes;
+      return matchesQuery(l, search);
     });
-
     return [...list].sort((a, b) => {
       if (sortOrder === 'price_desc') {
-        return (b.calculatedPrice || 0) - (a.calculatedPrice || 0);
+        // Leads without a calculated price go to the bottom instead of pretending to be zero.
+        return (b.calculatedPrice || -1) - (a.calculatedPrice || -1);
       }
-      const timeA = a.createdAtMs || 0;
-      const timeB = b.createdAtMs || 0;
-      return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+      const ta = a.createdAtMs || 0;
+      const tb = b.createdAtMs || 0;
+      return sortOrder === 'newest' ? tb - ta : ta - tb;
     });
-  }, [leads, search, statusFilter, sourceFilter, dateFrom, dateTo, sortOrder]);
+  }, [leads, search, statusFilter, sourceFilter, dateFrom, dateTo, dueOnly, sortOrder, today]);
 
   const hasActiveFilters =
-    search.trim() !== '' || statusFilter !== 'all' || sourceFilter !== 'all' || dateFrom !== '' || dateTo !== '';
+    search.trim() !== '' || statusFilter !== 'all' || sourceFilter !== 'all' || dateFrom !== '' || dateTo !== '' || dueOnly;
 
   const resetFilters = () => {
     playUiClick('tick');
@@ -191,724 +362,741 @@ export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
     setSourceFilter('all');
     setDateFrom('');
     setDateTo('');
+    setDueOnly(false);
   };
 
   if (!isOpen) return null;
 
-  const handleStatusChange = async (lead: StoredLead, newStatus: LeadStatus) => {
-    playUiClick('tick');
-    const updated = await updateLeadOnServer(lead.id, { status: newStatus });
-    if (updated) {
-      setLeads((prev) =>
-        prev.map((item) => (item.id === lead.id ? { ...item, status: newStatus } : item))
-      );
-      if (selectedLead?.id === lead.id) {
-        setSelectedLead((prev) => (prev ? { ...prev, status: newStatus } : null));
-      }
-    }
-  };
+  const sortLabel =
+    sortOrder === 'newest' ? 'Сначала новые' : sortOrder === 'oldest' ? 'Сначала старые' : 'По сумме сметы';
 
-  const handleSaveNotes = async () => {
-    if (!selectedLead) return;
-    playUiClick('tap');
-    const updated = await updateLeadOnServer(selectedLead.id, { managerNotes: notesDraft });
-    if (!updated) return;
-    setLeads((prev) =>
-      prev.map((item) =>
-        item.id === selectedLead.id ? { ...item, managerNotes: notesDraft } : item
-      )
+  const renderFollowUpBadge = (lead: StoredLead) => {
+    if (!lead.followUpAt || CLOSED_STATUSES.includes(normalizeLeadStatus(lead.status))) return null;
+    const overdue = lead.followUpAt < today;
+    const isToday = lead.followUpAt === today;
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-semibold border ${
+          overdue
+            ? 'bg-rose-100 text-rose-800 border-rose-300'
+            : isToday
+              ? 'bg-brass/30 text-ink border-brass'
+              : 'bg-ink/5 text-ink-soft border-ink/15'
+        }`}
+      >
+        <BellRing className="w-3 h-3" aria-hidden="true" />
+        {overdue ? `Просрочено ${formatIsoDay(lead.followUpAt)}` : isToday ? 'Перезвонить сегодня' : formatIsoDay(lead.followUpAt)}
+      </span>
     );
-    setSelectedLead((prev) => (prev ? { ...prev, managerNotes: notesDraft } : null));
   };
 
-  const handleDeleteLead = async (id: string) => {
-    playUiClick('tick');
-    const removed = await deleteLeadOnServer(id);
-    if (!removed) return;
-    setLeads((prev) => prev.filter((l) => l.id !== id));
-    if (selectedLead?.id === id) setSelectedLead(null);
-  };
+  const renderPhoneLink = (lead: StoredLead, className: string) => (
+    <a
+      href={`tel:${lead.phone.replace(/\D/g, '')}`}
+      onClick={(e) => e.stopPropagation()}
+      className={className}
+    >
+      <Phone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+      <span className="font-mono">{lead.phone}</span>
+    </a>
+  );
 
-  const buildWhatsAppUrl = (lead: StoredLead) => {
-    let digits = lead.phone.replace(/\D/g, '');
-    if (digits.startsWith('8') && digits.length === 11) {
-      digits = '7' + digits.slice(1);
+  const renderWhatsAppButton = (lead: StoredLead, compact: boolean) => {
+    const digits = whatsappDigits(lead.phone);
+    const base = compact
+      ? 'inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-[10px] text-[11px] font-semibold'
+      : 'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[12px] text-xs font-semibold';
+    if (!digits) {
+      return (
+        <span
+          className={`${base} bg-ink/10 text-olive cursor-not-allowed`}
+          title="Номер не похож на мобильный или городской. Позвоните по телефону."
+        >
+          <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>WhatsApp недоступен</span>
+        </span>
+      );
     }
-    if (!digits || digits.length < 10) {
-      digits = COMPANY_CONFIG.phoneRaw;
-    }
-    const sizeText = lead.calculatorParams?.size ? `${lead.calculatorParams.size} м²` : '36 м²';
-    const insText = lead.calculatorParams?.insulation || '150 мм';
-    const priceText = lead.calculatedPrice
-      ? `${lead.calculatedPrice.toLocaleString('ru-RU')} ₽`
-      : 'по смете';
-
-    const message = `Здравствуйте${lead.clientName ? `, ${lead.clientName}` : ''}! Это инженер компании «Каркасник». Вижу вашу заявку ${lead.id}: проект «${lead.houseTitle || 'Каркасный дом'}» (${sizeText}, утепление ${insText}) на сумму ≈ ${priceText}. Подскажите, когда удобно обсудить детали участка и закрепить 4 подарка?`;
-    return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+    return (
+      <a
+        href={`https://wa.me/${digits}?text=${encodeURIComponent(buildWhatsAppText(lead))}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => {
+          e.stopPropagation();
+          playUiClick('tap');
+        }}
+        className={`${base} bg-[#25D366] hover:bg-[#1EBE5D] text-white transition-colors`}
+        title="Написать в WhatsApp"
+      >
+        <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+        <span>WhatsApp</span>
+      </a>
+    );
   };
 
-  const buildManagerScript = (lead: StoredLead) => {
-    const size = lead.calculatorParams?.size || 36;
-    const ins = lead.calculatorParams?.insulation || '150 мм (Осень-Зима)';
-    const found = lead.calculatorParams?.foundation || 'Свайно-винтовой (−50%)';
-    const ver = lead.calculatorParams?.veranda || 'Без веранды';
-    const price = (lead.calculatedPrice || 707000).toLocaleString('ru-RU');
-    return `«Здравствуйте! Вижу ваш расчет на сайте: проект "${lead.houseTitle || 'Дачный дом'}", площадь ${size} м², утепление ${ins}, фундамент: ${found}, комплектация: ${ver}. Итоговая зафиксированная смета составляет ${price} ₽ вместе с металлочерепицей в подарок. Давайте проверим подъездные пути к вашему участку!»`;
+  const renderStatusSelect = (lead: StoredLead, className: string) => {
+    const st = normalizeLeadStatus(lead.status);
+    return (
+      <select
+        value={st}
+        onChange={(e) => void changeStatus(lead, e.target.value as LeadStatus)}
+        aria-label={`Статус заявки ${lead.id}`}
+        className={`${className} rounded-[10px] text-[11px] font-semibold border focus:outline-none focus:ring-2 focus:ring-brass/60 cursor-pointer ${STATUS_META[st].badge}`}
+      >
+        {LEAD_STATUS_ORDER.map((opt) => (
+          <option key={opt} value={opt} className="bg-white text-ink">
+            {STATUS_META[opt].label}
+          </option>
+        ))}
+      </select>
+    );
   };
 
-  const handleTest403 = async () => {
-    playUiClick('tick');
-    const res = await testUnauthorizedRequest();
-    setApiTestToast(`Аудит запроса без токена → HTTP ${res.status}: ${res.message}`);
-    setTimeout(() => setApiTestToast(null), 5000);
-  };
-
-  const counts = {
-    all: leads.length,
-    new: leads.filter((l) => normalizeLeadStatus(l.status) === 'new').length,
-    contacted: leads.filter((l) => normalizeLeadStatus(l.status) === 'contacted').length,
-    negotiation: leads.filter((l) => normalizeLeadStatus(l.status) === 'negotiation').length,
-    contract: leads.filter((l) => normalizeLeadStatus(l.status) === 'contract').length,
-    completed: leads.filter((l) => normalizeLeadStatus(l.status) === 'completed').length,
-  };
+  const selectedScript = selectedLead ? buildCallScript(selectedLead) : null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="CRM-Панель управления лидами"
+      aria-label="CRM: заявки"
       data-lenis-prevent
-      className="fixed inset-0 z-50 flex justify-end bg-forest/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex justify-end bg-forest/70 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-paper text-ink w-full max-w-7xl h-full shadow-2xl border-l border-ink/15 p-4 sm:p-7 flex flex-col justify-between overflow-hidden"
+        className="relative bg-paper text-ink w-full max-w-7xl h-full border-l border-ink/15 flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top CRM Header */}
-        <div className="pb-4 border-b border-ink/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-forest text-brass-light flex items-center justify-center border border-forest">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-serif text-lg sm:text-xl text-ink ">
-                  CRM-Система · Реестр заявок отдела продаж
-                </h3>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-mono text-[10px] font-bold border border-emerald-500/30">
-                  СЕССИЯ ПОДТВЕРЖДЕНА
-                </span>
+        {/* Header: identity, live numbers, global actions */}
+        <header className="px-4 sm:px-6 pt-4 pb-3 border-b border-ink/15 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-[10px] bg-forest text-brass-light flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-xs text-olive ">
-                Защищенный контур {COMPANY_CONFIG.legalName.ru} · Синхронизация API + резервный архив · Всего заявок: {leads.length}
-              </p>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold leading-tight truncate">CRM: заявки клиентов</h2>
+                <p className="text-[11px] text-olive font-mono">
+                  {lastUpdated ? `обновлено ${lastUpdated}` : 'загрузка…'}
+                </p>
+              </div>
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={handleTest403}
-              className="px-3 py-1.5 rounded-xl bg-ink/10 hover:bg-ink/15 text-ink-soft text-xs font-mono flex items-center gap-1.5 transition-colors"
-              title="Проверить ответ сервера 403 Forbidden при запросе без токена"
-            >
-              <Terminal className="w-3.5 h-3.5 text-brass-ink " />
-              <span>Аудит 403 API</span>
-            </button>
-
-            <button
-              onClick={() => {
-                playUiClick('tick');
-                exportLeadsCsv(filteredLeads);
-              }}
-              disabled={filteredLeads.length === 0}
-              title="Экспорт заявок, которые видны с текущими фильтрами"
-              className="px-3.5 py-1.5 rounded-xl bg-ink hover:bg-ink-soft disabled:opacity-40 disabled:cursor-not-allowed text-paper text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Экспорт CSV ({filteredLeads.length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                playUiClick('tap');
-                void logoutAdmin().then(() => {
-                  onLogout();
-                  onClose();
-                });
-              }}
-              className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              title="Выйти и удалить кнопку CRM из DOM"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Выйти</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-olive hover:text-ink "
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* 403 Diagnostic Toast Banner */}
-        {apiTestToast && (
-          <div className="mt-3 p-3 rounded-2xl bg-forest text-emerald-400 font-mono text-xs flex items-center justify-between border border-emerald-500/30">
-            <span>🛡️ {apiTestToast}</span>
-            <button onClick={() => setApiTestToast(null)} className="text-cream-soft hover:text-cream">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Filter Bar: 5-Stage Status Pipeline Tabs + Search + Date/Price Sort */}
-        <div className="my-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Status Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(
-              [
-                { id: 'all', label: 'Все', count: counts.all },
-                { id: 'new', label: 'Новые (New)', count: counts.new },
-                { id: 'contacted', label: 'Связались (Contacted)', count: counts.contacted },
-                { id: 'negotiation', label: 'Переговоры (Negotiation)', count: counts.negotiation },
-                { id: 'contract', label: 'Договор (Contract)', count: counts.contract },
-                { id: 'completed', label: 'Сдан (Completed)', count: counts.completed },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  playUiClick('tick');
-                  setStatusFilter(tab.id);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
-                  statusFilter === tab.id
-                    ? 'bg-ink text-paper border-ink shadow-sm'
-                    : 'bg-white/70 text-ink-soft border-ink/15 '
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-black/10 font-mono text-[10px]">
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Search & Sort Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-3.5 h-3.5 text-olive absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Поиск по заявкам"
-                placeholder="Поиск по имени, телефону, проекту, заметкам, ID..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/50"
-              />
-            </div>
-
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as 'all' | LeadSource)}
-              aria-label="Фильтр по источнику заявки"
-              className="px-3 py-2 rounded-xl bg-white border border-ink/15 text-xs font-semibold text-ink-soft focus:outline-none focus:ring-2 focus:ring-brass/50"
-            >
-              <option value="all">Все источники</option>
-              {(Object.keys(SOURCE_LABELS) as LeadSource[]).map((src) => (
-                <option key={src} value={src}>
-                  {SOURCE_LABELS[src]}
-                </option>
-              ))}
-            </select>
-
-            <label className="flex items-center gap-1.5 text-xs text-ink-soft">
-              <span className="sr-only sm:not-sr-only">с</span>
-              <input
-                type="date"
-                value={dateFrom}
-                max={dateTo || undefined}
-                onChange={(e) => setDateFrom(e.target.value)}
-                aria-label="Заявки с даты"
-                className="px-2.5 py-2 rounded-xl bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/50"
-              />
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-ink-soft">
-              <span className="sr-only sm:not-sr-only">по</span>
-              <input
-                type="date"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(e) => setDateTo(e.target.value)}
-                aria-label="Заявки по дату"
-                className="px-2.5 py-2 rounded-xl bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/50"
-              />
-            </label>
-
-            {hasActiveFilters && (
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={resetFilters}
-                className="px-3 py-2 rounded-xl bg-ink/10 hover:bg-ink/15 text-xs font-semibold text-ink-soft flex items-center gap-1.5 transition-colors"
+                onClick={() => void loadLeads()}
+                disabled={loading}
+                className="p-2 rounded-[10px] text-olive hover:text-ink hover:bg-ink/5 disabled:opacity-50 transition-colors"
+                aria-label="Обновить список"
+                title="Обновить список"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Сбросить</span>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
               </button>
-            )}
-
-            <button
-              onClick={() => {
-                playUiClick('tick');
-                setSortOrder((prev) =>
-                  prev === 'newest' ? 'oldest' : prev === 'oldest' ? 'price_desc' : 'newest'
-                );
-              }}
-              className="px-3 py-2 rounded-xl bg-white border border-ink/15 text-xs font-semibold text-ink-soft flex items-center gap-1.5 hover:border-brass transition-colors"
-            >
-              <ArrowUpDown className="w-3.5 h-3.5 text-brass-ink " />
-              <span>
-                {sortOrder === 'newest'
-                  ? 'Дата: сначала новые'
-                  : sortOrder === 'oldest'
-                    ? 'Дата: сначала старые'
-                    : 'По сумме сметы'}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playUiClick('tick');
+                  void logoutAdmin().then(() => {
+                    onLogout();
+                    onClose();
+                  });
+                }}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Выйти</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-[10px] text-olive hover:text-ink hover:bg-ink/5 transition-colors"
+                aria-label="Закрыть CRM"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Main Workspace Split: Lead Table + Detail View Side Panel */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl">
+            {[
+              { label: 'Новых сегодня', value: kpi.createdToday, tone: 'text-ink' },
+              { label: 'К перезвону', value: kpi.dueCallbacks, tone: kpi.dueCallbacks > 0 ? 'text-rose-700' : 'text-ink' },
+              { label: 'В работе', value: kpi.open, tone: 'text-ink' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-[12px] border border-ink/15 bg-paper-deep px-3 py-2">
+                <div className={`text-xl sm:text-2xl font-light tabular-nums leading-none ${item.tone}`}>{item.value}</div>
+                <div className="text-[11px] text-olive mt-1 leading-tight">{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </header>
+
         {forbiddenError ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-            <div className="p-6 rounded-3xl bg-rose-500/10 border border-rose-500/30 max-w-md space-y-3">
-              <div className="font-mono text-2xl font-bold text-rose-500">403 FORBIDDEN</div>
-              <p className="text-xs text-ink-soft ">{forbiddenError}</p>
+            <div className="p-6 rounded-[20px] bg-rose-50 border border-rose-300 max-w-md space-y-3">
+              <div className="font-mono text-2xl font-bold text-rose-700">403 FORBIDDEN</div>
+              <p className="text-sm text-ink-soft">{forbiddenError}</p>
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-[10px] bg-ink text-paper text-sm font-semibold">
+                Закрыть
+              </button>
             </div>
           </div>
         ) : (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden min-h-0">
-            {/* Left / Main Column: Detailed CRM Lead Table */}
-            <div
-              className={`${
-                selectedLead ? 'lg:col-span-7' : 'lg:col-span-12'
-              } overflow-y-auto rounded-2xl border border-ink/15 bg-white/60 `}
-            >
-              {filteredLeads.length === 0 ? (
-                <div className="py-16 text-center text-xs text-olive">
-                  По выбранным фильтрам заявок не найдено
+          <>
+            {/* Toolbar */}
+            <div className="px-4 sm:px-6 py-3 border-b border-ink/10 space-y-3">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Фильтр по статусу">
+                {(
+                  [{ id: 'all' as const, label: 'Все', count: leads.length }, ...LEAD_STATUS_ORDER.map((s) => ({ id: s, label: STATUS_META[s].label, count: counts[s] }))]
+                ).map((tab) => {
+                  const active = statusFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        playUiClick('tick');
+                        setStatusFilter(tab.id);
+                      }}
+                      className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-xs font-semibold border transition-colors ${
+                        active ? 'bg-ink text-paper border-ink' : 'bg-white text-ink-soft border-ink/15 hover:border-ink/40'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`font-mono text-[10px] ${active ? 'text-paper/80' : 'text-olive'}`}>{tab.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[200px] sm:max-w-xs">
+                  <Search className="w-3.5 h-3.5 text-olive absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    aria-label="Поиск по заявкам"
+                    placeholder="Имя, телефон, проект, заметка, ID"
+                    className="w-full h-9 pl-9 pr-3 rounded-[10px] bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/60"
+                  />
                 </div>
-              ) : (
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="sticky top-0 z-10 bg-paper-deep backdrop-blur-md text-[11px] uppercase tracking-wider text-olive border-b border-ink/15 ">
-                    <tr>
-                      <th className="py-3 px-3.5">Дата (Date)</th>
-                      <th className="py-3 px-3.5">Телефон (Phone)</th>
-                      <th className="py-3 px-3.5">Проект (Project Name)</th>
-                      <th className="py-3 px-3.5">Параметры (Size / Insulation)</th>
-                      <th className="py-3 px-3.5">Статус (Status)</th>
-                      <th className="py-3 px-3.5 text-right">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-ink/15 ">
-                    {filteredLeads.map((lead) => {
-                      const st: LeadStatus = normalizeLeadStatus(lead.status);
-                      const isSelected = selectedLead?.id === lead.id;
-
-                      return (
-                        <tr
-                          key={lead.id}
-                          onClick={() => {
-                            playUiClick('tick');
-                            setSelectedLead(lead);
-                            setNotesDraft(lead.managerNotes || '');
-                          }}
-                          className={`cursor-pointer transition-colors ${
-                            isSelected
-                              ? 'bg-brass/15'
-                              : 'hover:bg-paper-deep '
-                          }`}
-                        >
-                          {/* Col 1: Date & ID */}
-                          <td className="py-3.5 px-3.5 align-top whitespace-nowrap">
-                            <span className="font-mono font-bold text-brass-ink block">
-                              {lead.id}
-                            </span>
-                            <span className="text-[11px] text-olive flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3" />
-                              {lead.timestamp}
-                            </span>
-                          </td>
-
-                          {/* Col 2: Phone & Name */}
-                          <td className="py-3.5 px-3.5 align-top">
-                            <div className="font-semibold text-ink ">
-                              {lead.clientName || 'Клиент сайта'}
-                            </div>
-                            <a
-                              href={`tel:${lead.phone.replace(/\D/g, '')}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-ink-soft hover:text-brass-ink font-mono text-[11px] inline-flex items-center gap-1 mt-0.5"
-                            >
-                              <Phone className="w-3 h-3 text-brass-ink" />
-                              <span>{lead.phone}</span>
-                            </a>
-                          </td>
-
-                          {/* Col 3: Selected Project & Price */}
-                          <td className="py-3.5 px-3.5 align-top">
-                            <div className="font-semibold text-ink ">
-                              {lead.houseTitle || 'Индивидуальный расчёт'}
-                            </div>
-                            {lead.calculatedPrice && (
-                              <span className="font-mono font-bold text-ink text-xs mt-0.5 block">
-                                ≈ {lead.calculatedPrice.toLocaleString('ru-RU')} ₽
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Col 4: Calculator Choices (Size, Insulation, Foundation, Veranda) */}
-                          <td className="py-3.5 px-3.5 align-top">
-                            {lead.calculatorParams ? (
-                              <div className="flex flex-wrap gap-1">
-                                <span className="px-2 py-0.5 rounded-md bg-ink/10 text-ink font-mono text-[10px] font-semibold">
-                                  {lead.calculatorParams.size} м²
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 font-mono text-[10px]">
-                                  {lead.calculatorParams.insulation}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-brass-ink text-[10px]">
-                                  {lead.calculatorParams.veranda}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-olive">
-                                36 м² · 150 мм (Осень-Зима)
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Col 5: Status Dropdown (New -> Contacted -> Negotiation -> Contract -> Completed) */}
-                          <td
-                            className="py-3.5 px-3.5 align-top"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="relative inline-block w-44">
-                              <select
-                                value={st}
-                                onChange={(e) =>
-                                  handleStatusChange(lead, e.target.value as LeadStatus)
-                                }
-                                aria-label={`Статус заявки ${lead.id}`}
-                                className={`w-full appearance-none pl-2.5 pr-7 py-1.5 rounded-xl text-[11px] font-semibold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-brass/50 transition-colors ${STATUS_META[st].badgeClass} bg-white `}
-                              >
-                                {ALL_STATUSES.map((statusOption) => (
-                                  <option
-                                    key={statusOption}
-                                    value={statusOption}
-                                    className="bg-white text-ink "
-                                  >
-                                    {STATUS_META[statusOption].label}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown className="w-3.5 h-3.5 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 opacity-70" />
-                            </div>
-                          </td>
-
-                          {/* Col 6: Quick WhatsApp & Detail View Trigger */}
-                          <td
-                            className="py-3.5 px-3.5 align-top text-right whitespace-nowrap"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="inline-flex items-center gap-1.5">
-                              <a
-                                href={buildWhatsAppUrl(lead)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => playUiClick('tap')}
-                                className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-[11px] inline-flex items-center gap-1 shadow-xs transition-all"
-                                title="Написать в WhatsApp (Write in WhatsApp)"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                <span className="hidden xl:inline">Написать в WhatsApp</span>
-                              </a>
-                              <button
-                                onClick={() => {
-                                  playUiClick('tick');
-                                  setSelectedLead(lead);
-                                  setNotesDraft(lead.managerNotes || '');
-                                }}
-                                className="p-1.5 rounded-xl bg-ink/10 hover:bg-ink hover:text-paper text-ink-soft transition-colors"
-                                title="Открыть полную историю расчетов (Detail View)"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value as 'all' | LeadSource)}
+                  aria-label="Источник заявки"
+                  className="h-9 px-2.5 rounded-[10px] bg-white border border-ink/15 text-xs font-semibold text-ink-soft focus:outline-none focus:ring-2 focus:ring-brass/60"
+                >
+                  <option value="all">Все источники</option>
+                  {(Object.keys(SOURCE_LABELS) as LeadSource[]).map((src) => (
+                    <option key={src} value={src}>
+                      {SOURCE_LABELS[src]}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  aria-label="Заявки с даты"
+                  className="h-9 px-2 rounded-[10px] bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/60"
+                />
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  aria-label="Заявки по дату"
+                  className="h-9 px-2 rounded-[10px] bg-white border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/60"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    playUiClick('tick');
+                    setDueOnly((v) => !v);
+                  }}
+                  aria-pressed={dueOnly}
+                  className={`h-9 px-3 rounded-[10px] text-xs font-semibold border inline-flex items-center gap-1.5 transition-colors ${
+                    dueOnly ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-ink-soft border-ink/15 hover:border-ink/40'
+                  }`}
+                >
+                  <BellRing className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>К перезвону</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playUiClick('tick');
+                    setSortOrder((prev) => (prev === 'newest' ? 'oldest' : prev === 'oldest' ? 'price_desc' : 'newest'));
+                  }}
+                  className="h-9 px-3 rounded-[10px] bg-white border border-ink/15 text-xs font-semibold text-ink-soft inline-flex items-center gap-1.5 hover:border-ink/40 transition-colors"
+                  title="Сменить сортировку"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 text-olive" aria-hidden="true" />
+                  <span>{sortLabel}</span>
+                </button>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="h-9 px-3 rounded-[10px] bg-ink/10 hover:bg-ink/15 text-xs font-semibold text-ink-soft inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Сбросить</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    playUiClick('tick');
+                    exportLeadsCsv(filteredLeads);
+                  }}
+                  disabled={filteredLeads.length === 0}
+                  className="ml-auto h-9 px-3.5 rounded-[10px] bg-ink hover:bg-ink-soft disabled:opacity-40 text-paper text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                  title="Экспорт заявок с текущими фильтрами"
+                >
+                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>CSV ({filteredLeads.length})</span>
+                </button>
+              </div>
             </div>
 
-            {/* Right Column: Detail View Side Panel (Full Calculation History & Lead Details) */}
-            {selectedLead && (
-              <div className="lg:col-span-5 rounded-2xl border border-brass/50 bg-white p-5 overflow-y-auto flex flex-col justify-between space-y-4 shadow-xl">
-                <div className="space-y-4">
-                  {/* Lead Card Header */}
-                  <div className="flex items-start justify-between gap-2 pb-3 border-b border-ink/15 ">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-brass-ink ">
-                          DETAIL VIEW · {selectedLead.id}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                            STATUS_META[normalizeLeadStatus(selectedLead.status)].badgeClass
-                          }`}
-                        >
-                          {STATUS_META[normalizeLeadStatus(selectedLead.status)].label}
-                        </span>
-                      </div>
-                      <h4 className="font-serif text-base text-ink mt-1">
-                        {selectedLead.clientName || 'Клиент сайта'} · {selectedLead.phone}
-                      </h4>
-                    </div>
+            {/* Workspace: list + detail */}
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-5 p-0 lg:p-5">
+              <section
+                aria-label="Список заявок"
+                className={`${selectedLead ? 'lg:col-span-7' : 'lg:col-span-12'} min-h-0 overflow-y-auto lg:rounded-[20px] lg:border lg:border-ink/15 bg-white/60`}
+              >
+                {filteredLeads.length === 0 ? (
+                  <div className="py-16 px-6 text-center text-sm text-olive">
+                    {leads.length === 0
+                      ? 'Заявок пока нет. Они появятся здесь сразу после отправки с сайта.'
+                      : 'По выбранным фильтрам заявок нет.'}
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop/tablet: table */}
+                    <table className="hidden md:table w-full text-left border-collapse text-xs">
+                      <thead className="sticky top-0 z-10 bg-paper-deep text-[11px] uppercase tracking-wide text-olive border-b border-ink/15">
+                        <tr>
+                          <th scope="col" className="py-2.5 px-3">Поступила</th>
+                          <th scope="col" className="py-2.5 px-3">Клиент</th>
+                          <th scope="col" className="py-2.5 px-3">Проект и смета</th>
+                          <th scope="col" className="py-2.5 px-3">Статус</th>
+                          <th scope="col" className="py-2.5 px-3 text-right">Связь</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-ink/10">
+                        {filteredLeads.map((lead) => {
+                          const isSelected = selectedId === lead.id;
+                          return (
+                            <tr
+                              key={lead.id}
+                              onClick={() => requestSelect(lead.id)}
+                              className={`cursor-pointer transition-colors ${isSelected ? 'bg-brass/15' : 'hover:bg-paper-deep'}`}
+                            >
+                              <td className="py-3 px-3 align-top whitespace-nowrap">
+                                <span className="font-mono text-[11px] text-ink-soft block">{lead.id}</span>
+                                <span className="text-[11px] text-olive flex items-center gap-1 mt-0.5">
+                                  <Clock className="w-3 h-3" aria-hidden="true" />
+                                  {lead.timestamp}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 align-top">
+                                <div className="font-semibold text-ink">{lead.clientName || 'Имя не указано'}</div>
+                                {renderPhoneLink(lead, 'text-ink-soft hover:text-ink inline-flex items-center gap-1 mt-0.5 text-[11px]')}
+                                <div className="mt-1">{renderFollowUpBadge(lead)}</div>
+                              </td>
+                              <td className="py-3 px-3 align-top">
+                                <div className="font-semibold text-ink">{lead.houseTitle || 'Проект не выбран'}</div>
+                                <div className="text-[11px] text-olive mt-0.5">
+                                  {formatMoney(lead.calculatedPrice) ? (
+                                    <span className="font-mono font-semibold text-ink">≈ {formatMoney(lead.calculatedPrice)}</span>
+                                  ) : (
+                                    'расчёта не было'
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
+                                {renderStatusSelect(lead, 'w-36 px-2 py-1.5')}
+                              </td>
+                              <td className="py-3 px-3 align-top text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="inline-flex items-center gap-1.5">
+                                  {renderWhatsAppButton(lead, true)}
+                                  <button
+                                    type="button"
+                                    onClick={() => requestSelect(lead.id)}
+                                    className="px-2.5 py-1.5 rounded-[10px] bg-ink/10 hover:bg-ink hover:text-paper text-ink-soft text-[11px] font-semibold transition-colors"
+                                  >
+                                    Открыть
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    {/* Phone: cards */}
+                    <ul className="md:hidden divide-y divide-ink/10">
+                      {filteredLeads.map((lead) => {
+                        const st = normalizeLeadStatus(lead.status);
+                        return (
+                          <li key={lead.id}>
+                            <div className="p-4 space-y-2.5">
+                              <button type="button" onClick={() => requestSelect(lead.id)} className="w-full text-left space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${STATUS_META[st].badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${STATUS_META[st].dot}`} aria-hidden="true" />
+                                    {STATUS_META[st].label}
+                                  </span>
+                                  <span className="text-[11px] text-olive font-mono">{lead.timestamp}</span>
+                                </div>
+                                <div className="font-semibold text-ink">{lead.clientName || 'Имя не указано'}</div>
+                                <div className="text-xs text-ink-soft">{lead.houseTitle || 'Проект не выбран'}</div>
+                                <div className="text-xs font-mono text-ink">
+                                  {formatMoney(lead.calculatedPrice) ? `≈ ${formatMoney(lead.calculatedPrice)}` : 'расчёта не было'}
+                                </div>
+                              </button>
+                              {renderFollowUpBadge(lead)}
+                              <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                {renderPhoneLink(lead, 'inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] border border-ink/20 text-xs font-semibold text-ink')}
+                                {renderWhatsAppButton(lead, false)}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
+              </section>
+
+              {/* Detail card: side panel on desktop, full-screen sheet on phones */}
+              {selectedLead && (
+                <aside
+                  aria-label={`Заявка ${selectedLead.id}`}
+                  className="fixed inset-0 z-[60] lg:static lg:z-auto lg:col-span-5 min-h-0 overflow-y-auto bg-paper lg:rounded-[20px] lg:border lg:border-ink/15 p-4 sm:p-5 space-y-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
                     <button
-                      onClick={() => setSelectedLead(null)}
-                      className="p-1 rounded-lg text-olive hover:text-ink "
+                      type="button"
+                      onClick={() => requestSelect(null)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-olive hover:text-ink lg:hidden"
                     >
-                      <X className="w-4 h-4" />
+                      <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                      <span>К списку</span>
+                    </button>
+                    <div className="hidden lg:block font-mono text-[11px] text-olive">{selectedLead.id}</div>
+                    <button
+                      type="button"
+                      onClick={() => requestSelect(null)}
+                      className="hidden lg:inline-flex p-1.5 rounded-[10px] text-olive hover:text-ink hover:bg-ink/5"
+                      aria-label="Закрыть карточку"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
 
-                  {/* Ready-to-Read Sales Manager Script */}
-                  <div className="p-3.5 rounded-2xl bg-forest text-cream border border-cream/10 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-brass-light flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        <span>Готовый скрипт для звонка менеджеру</span>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold border ${STATUS_META[normalizeLeadStatus(selectedLead.status)].badge}`}>
+                        {STATUS_META[normalizeLeadStatus(selectedLead.status)].label}
                       </span>
-                      <button
-                        onClick={() => {
-                          playUiClick('tick');
-                          navigator.clipboard?.writeText(buildManagerScript(selectedLead));
-                          setCopiedScript(true);
-                          setTimeout(() => setCopiedScript(false), 2000);
-                        }}
-                        className="text-[10px] text-cream-soft hover:text-cream flex items-center gap-1"
-                      >
-                        {copiedScript ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span>Скопировано</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Копировать</span>
-                          </>
-                        )}
-                      </button>
+                      <span className="text-[11px] text-olive font-mono">
+                        {selectedLead.id} · {selectedLead.timestamp}
+                      </span>
                     </div>
-                    <p className="text-xs text-cream leading-relaxed italic">
-                      {buildManagerScript(selectedLead)}
-                    </p>
+                    <h3 className="text-xl font-light leading-tight">{selectedLead.clientName || 'Имя не указано'}</h3>
+                    {renderPhoneLink(selectedLead, 'inline-flex items-center gap-2 text-base font-semibold text-ink')}
+                    <div className="text-[11px] text-olive">Источник: {SOURCE_LABELS[selectedLead.source]}</div>
                   </div>
 
-                  {/* Current Calculator Parameters Breakdown */}
-                  <div className="p-3.5 rounded-2xl bg-paper-deep border border-ink/15 space-y-2 text-xs">
-                    <div className="font-semibold text-ink flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-brass-ink " />
-                      <span>Текущий выбор в калькуляторе (Calculator Choices)</span>
+                  {/* Contact actions */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`tel:${selectedLead.phone.replace(/\D/g, '')}`}
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-[12px] bg-ink text-paper text-xs font-semibold"
+                    >
+                      <Phone className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Позвонить</span>
+                    </a>
+                    {renderWhatsAppButton(selectedLead, false)}
+                    <button
+                      type="button"
+                      onClick={() => void copyText(selectedLead.phone, 'phone')}
+                      className="col-span-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-[12px] border border-ink/20 text-xs font-semibold text-ink hover:border-ink/50"
+                    >
+                      {copied === 'phone' ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied === 'phone' ? 'Номер скопирован' : 'Копировать номер'}</span>
+                    </button>
+                  </div>
+
+                  {/* Status and callback */}
+                  <div className="p-4 rounded-[12px] border border-ink/15 bg-white space-y-3">
+                    <div>
+                      <label htmlFor="crm-status" className="text-[11px] font-semibold text-olive block mb-1.5">
+                        Статус
+                      </label>
+                      {renderStatusSelect(selectedLead, 'w-full px-3 py-2.5')}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                      <div>
-                        <span className="text-olive block">Проект:</span>
-                        <span className="font-semibold text-ink ">
-                          {selectedLead.houseTitle || 'Индивидуальный'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-olive block">Сумма сметы:</span>
-                        <span className="font-mono font-bold text-brass-ink ">
-                          {(selectedLead.calculatedPrice || 707000).toLocaleString('ru-RU')} ₽
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-olive block">Площадь (Size):</span>
-                        <span className="font-semibold">
-                          {selectedLead.calculatorParams?.size || 36} м²
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-olive block">Утепление (Insulation):</span>
-                        <span className="font-semibold">
-                          {selectedLead.calculatorParams?.insulation || '150 мм (Осень-Зима)'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-olive block">Фундамент:</span>
-                        <span className="font-semibold">
-                          {selectedLead.calculatorParams?.foundation || 'Свайно-винтовой (−50%)'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-olive block">Терраса / Доставка:</span>
-                        <span className="font-semibold">
-                          {selectedLead.calculatorParams?.veranda || 'Без веранды'} (
-                          {selectedLead.calculatorParams?.distanceKm ?? 45} км от МКАД)
-                        </span>
+                    <div>
+                      <label htmlFor="crm-followup" className="text-[11px] font-semibold text-olive block mb-1.5">
+                        Перезвонить
+                      </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          id="crm-followup"
+                          type="date"
+                          value={selectedLead.followUpAt || ''}
+                          min={today}
+                          onChange={(e) => e.target.value && void changeFollowUp(selectedLead, e.target.value)}
+                          className="h-9 px-2.5 rounded-[10px] bg-paper-deep border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/60"
+                        />
+                        {selectedLead.followUpAt && (
+                          <button
+                            type="button"
+                            onClick={() => void changeFollowUp(selectedLead, null)}
+                            className="h-9 px-3 rounded-[10px] text-xs font-semibold text-ink-soft hover:text-ink border border-ink/15"
+                          >
+                            Снять
+                          </button>
+                        )}
+                        {renderFollowUpBadge(selectedLead)}
                       </div>
                     </div>
-                    {selectedLead.utm && Object.keys(selectedLead.utm).length > 0 && (
-                      <div className="pt-2 mt-2 border-t border-ink/15 ">
-                        <span className="text-[10px] font-mono uppercase text-olive block mb-1">
-                          UTM-атрибуция источника:
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(selectedLead.utm).map(([key, val]) =>
-                            val ? (
-                              <span
-                                key={key}
-                                className="px-2 py-0.5 rounded bg-ink/10 font-mono text-[10px] text-ink-soft "
-                              >
-                                {key}: {val}
-                              </span>
-                            ) : null
-                          )}
+                  </div>
+
+                  {/* Calculation: only what was really recorded */}
+                  <div className="p-4 rounded-[12px] border border-ink/15 bg-paper-deep space-y-3">
+                    <div className="text-xs font-semibold flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-olive" aria-hidden="true" />
+                      <span>Расчёт</span>
+                    </div>
+                    {hasCalcData(selectedLead) ? (
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+                        <div className="col-span-2">
+                          <dt className="text-olive text-[11px]">Проект</dt>
+                          <dd className="font-semibold">{selectedLead.houseTitle || 'не выбран'}</dd>
                         </div>
+                        <div>
+                          <dt className="text-olive text-[11px]">Смета</dt>
+                          <dd className="font-mono font-semibold">{formatMoney(selectedLead.calculatedPrice) || 'не посчитана'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-olive text-[11px]">Площадь</dt>
+                          <dd className="font-semibold">{selectedLead.calculatorParams?.size ? `${selectedLead.calculatorParams.size} м²` : 'не указана'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-olive text-[11px]">Утепление</dt>
+                          <dd className="font-semibold">{selectedLead.calculatorParams?.insulation || 'не указано'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-olive text-[11px]">Фундамент</dt>
+                          <dd className="font-semibold">{selectedLead.calculatorParams?.foundation || 'не указан'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-olive text-[11px]">Комплектация</dt>
+                          <dd className="font-semibold">{selectedLead.calculatorParams?.veranda || 'не указана'}</dd>
+                        </div>
+                        {typeof selectedLead.calculatorParams?.distanceKm === 'number' && (
+                          <div>
+                            <dt className="text-olive text-[11px]">Расстояние от МКАД</dt>
+                            <dd className="font-semibold">{selectedLead.calculatorParams.distanceKm} км</dd>
+                          </div>
+                        )}
+                        {selectedLead.calculatorParams?.mortgageMode && (
+                          <div>
+                            <dt className="text-olive text-[11px]">Ипотека, платёж</dt>
+                            <dd className="font-semibold">
+                              {selectedLead.calculatorParams.monthlyPayment
+                                ? `${selectedLead.calculatorParams.monthlyPayment.toLocaleString('ru-RU')} ₽/мес`
+                                : 'не указан'}
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    ) : (
+                      <p className="text-xs text-ink-soft leading-relaxed">
+                        Клиент не делал расчёт на сайте: заявка с быстрой формы. Уточните объект, площадь и участок по телефону.
+                      </p>
+                    )}
+
+                    {selectedScript && (
+                      <div className="pt-3 border-t border-ink/10 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-olive flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" aria-hidden="true" />
+                            Скрипт для звонка
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void copyText(selectedScript, 'script')}
+                            className="text-[11px] font-semibold text-ink-soft hover:text-ink inline-flex items-center gap-1"
+                          >
+                            {copied === 'script' ? <Check className="w-3 h-3 text-emerald-700" /> : <Copy className="w-3 h-3" />}
+                            <span>{copied === 'script' ? 'Скопировано' : 'Копировать'}</span>
+                          </button>
+                        </div>
+                        <p className="text-xs text-ink-soft leading-relaxed">{selectedScript}</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Full Calculation History Timeline */}
-                  <div className="p-3.5 rounded-2xl bg-paper-deep border border-ink/15 space-y-2.5 text-xs">
-                    <div className="font-semibold text-ink flex items-center gap-1.5">
-                      <History className="w-3.5 h-3.5 text-brass-ink " />
-                      <span>Полная история расчетов клиента (Calculation History)</span>
+                  {/* Calculation history, only when the server has entries */}
+                  {selectedLead.calculationHistory && selectedLead.calculationHistory.length > 0 && (
+                    <div className="p-4 rounded-[12px] border border-ink/15 bg-white space-y-2.5">
+                      <div className="text-xs font-semibold flex items-center gap-1.5">
+                        <History className="w-3.5 h-3.5 text-olive" aria-hidden="true" />
+                        <span>История</span>
+                      </div>
+                      <ol className="space-y-2 border-l-2 border-brass/60 pl-3">
+                        {selectedLead.calculationHistory.map((entry, idx) => (
+                          <li key={idx} className="text-[11px] space-y-0.5">
+                            <div className="flex items-center justify-between gap-2 text-olive font-mono">
+                              <span>{entry.timestamp}</span>
+                              {formatMoney(entry.calculatedPrice) && <span className="text-ink font-semibold">{formatMoney(entry.calculatedPrice)}</span>}
+                            </div>
+                            <div className="font-semibold text-ink">{entry.action}</div>
+                            {[entry.houseTitle, entry.size ? `${entry.size} м²` : null, entry.insulation].filter(Boolean).length > 0 && (
+                              <div className="text-olive">
+                                {[entry.houseTitle, entry.size ? `${entry.size} м²` : null, entry.insulation].filter(Boolean).join(' · ')}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
                     </div>
-                    <div className="space-y-2 pl-2 border-l-2 border-brass/50">
-                      {(selectedLead.calculationHistory && selectedLead.calculationHistory.length > 0
-                        ? selectedLead.calculationHistory
-                        : [
-                            {
-                              timestamp: selectedLead.timestamp,
-                              action: 'Фиксация сметы на сайте',
-                              houseTitle: selectedLead.houseTitle || 'Каркасный дом',
-                              calculatedPrice: selectedLead.calculatedPrice || 707000,
-                              size: selectedLead.calculatorParams?.size || 36,
-                              insulation:
-                                selectedLead.calculatorParams?.insulation || '150 мм (Осень-Зима)',
-                              foundation:
-                                selectedLead.calculatorParams?.foundation ||
-                                'Свайно-винтовой (−50%)',
-                              veranda: selectedLead.calculatorParams?.veranda || 'Без веранды',
-                            },
-                          ]
-                      ).map((entry, idx) => (
-                        <div
-                          key={idx}
-                          className="p-2.5 rounded-xl bg-white border border-ink/15 text-[11px]"
-                        >
-                          <div className="flex items-center justify-between text-olive font-mono text-[10px]">
-                            <span>{entry.timestamp}</span>
-                            <span className="text-brass-ink font-bold">
-                              {entry.calculatedPrice.toLocaleString('ru-RU')} ₽
-                            </span>
-                          </div>
-                          <div className="font-semibold text-ink mt-0.5">
-                            {entry.action} — {entry.houseTitle}
-                          </div>
-                          <div className="text-olive font-mono text-[10px] mt-0.5">
-                            {entry.size} м² · {entry.insulation} · {entry.veranda}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  )}
 
-                  {/* 5-Stage Status Dropdown & Pipeline inside Detail Card */}
-                  <div>
-                    <label className="text-[11px] font-semibold text-olive block mb-1.5">
-                      Статус сделки (New → Contacted → Negotiation → Contract → Completed):
+                  {/* Notes */}
+                  <div className="p-4 rounded-[12px] border border-ink/15 bg-white space-y-2">
+                    <label htmlFor="crm-notes" className="text-[11px] font-semibold text-olive block">
+                      Заметка менеджера
                     </label>
-                    <select
-                      value={normalizeLeadStatus(selectedLead.status)}
-                      onChange={(e) =>
-                        handleStatusChange(selectedLead, e.target.value as LeadStatus)
-                      }
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-paper-deep border border-ink/20 text-xs font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brass/50"
-                    >
-                      {ALL_STATUSES.map((stOpt) => (
-                        <option key={stOpt} value={stOpt}>
-                          {STATUS_META[stOpt].label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Manager Notes */}
-                  <div>
-                    <label className="text-[11px] font-semibold text-olive block mb-1">
-                      Комментарий менеджера по участку / договору:
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={notesDraft}
-                        onChange={(e) => setNotesDraft(e.target.value)}
-                        placeholder="Например: Участок в Истре, перезвонить в 18:00..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-paper-deep border border-ink/15 text-xs text-ink "
-                      />
+                    <textarea
+                      id="crm-notes"
+                      value={notesDraft}
+                      onChange={(e) => setNotesDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void saveNotes();
+                      }}
+                      rows={3}
+                      maxLength={2000}
+                      placeholder="Участок, договорённости, когда перезвонить"
+                      className="w-full px-3 py-2 rounded-[10px] bg-paper-deep border border-ink/15 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-brass/60"
+                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-olive">{notesDirty ? 'Есть несохранённые изменения' : 'Всё сохранено'}</span>
                       <button
-                        onClick={handleSaveNotes}
-                        className="px-3 py-2 rounded-xl bg-ink text-paper text-xs font-semibold hover:bg-ink-soft shrink-0"
+                        type="button"
+                        onClick={() => void saveNotes()}
+                        disabled={!notesDirty || savingNotes}
+                        className="h-9 px-4 rounded-[10px] bg-ink text-paper text-xs font-semibold disabled:opacity-40"
                       >
-                        Сохранить
+                        {savingNotes ? 'Сохраняю…' : 'Сохранить'}
                       </button>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Bottom Actions: Write in WhatsApp + Delete */}
-                <div className="pt-3 border-t border-ink/15 flex items-center justify-between gap-2">
-                  <a
-                    href={buildWhatsAppUrl(selectedLead)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Написать в WhatsApp (Write in WhatsApp)</span>
-                  </a>
+                  {selectedLead.giftsSelected && selectedLead.giftsSelected.length > 0 && (
+                    <div className="text-xs text-ink-soft">
+                      <span className="text-[11px] font-semibold text-olive block mb-1">Подарки в заявке</span>
+                      {selectedLead.giftsSelected.join(' · ')}
+                    </div>
+                  )}
 
-                  <button
-                    onClick={() => handleDeleteLead(selectedLead.id)}
-                    className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
-                    title="Удалить заявку"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+                  {selectedLead.utm && Object.values(selectedLead.utm).some(Boolean) && (
+                    <div className="text-[11px] text-ink-soft">
+                      <span className="font-semibold text-olive block mb-1">Источник (UTM)</span>
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(selectedLead.utm)
+                          .filter(([, v]) => Boolean(v))
+                          .map(([key, val]) => (
+                            <span key={key} className="px-2 py-0.5 rounded bg-ink/10 font-mono text-[10px]">
+                              {key}: {val}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Destructive action: two steps */}
+                  <div className="pt-3 border-t border-ink/15 flex items-center justify-between gap-2">
+                    {deleteArmed ? (
+                      <>
+                        <span className="text-xs text-rose-700 font-semibold">Удалить заявку безвозвратно?</span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setDeleteArmed(false)} className="px-3 py-2 rounded-[10px] text-xs font-semibold border border-ink/20">
+                            Отмена
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeLead(selectedLead)}
+                            className="px-3 py-2 rounded-[10px] bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Удалить</span>
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[11px] text-olive">Заявка с сайта, id {selectedLead.id}</span>
+                        <button
+                          type="button"
+                          onClick={() => void removeLead(selectedLead)}
+                          className="px-3 py-2 rounded-[10px] text-xs font-semibold text-rose-700 hover:bg-rose-50 inline-flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Удалить</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </aside>
+              )}
+            </div>
+          </>
         )}
 
-        {/* Footer Info */}
-        <div className="pt-3 border-t border-ink/15 flex flex-wrap items-center justify-between gap-2 text-[11px] text-olive">
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Защита API: все запросы к /api/leads без токена возвращают 403 Forbidden</span>
+        {/* Footer: quiet diagnostics */}
+        <footer className="px-4 sm:px-6 py-2 border-t border-ink/10 flex flex-wrap items-center justify-between gap-2 text-[11px] text-olive">
+          <button
+            type="button"
+            onClick={async () => {
+              const res = await testUnauthorizedRequest();
+              showToast('ok', `Запрос без авторизации → HTTP ${res.status}`);
+            }}
+            className="underline-offset-2 hover:underline"
+          >
+            Проверить защиту API
+          </button>
+          <span>
+            Всего заявок: {leads.length}
+            {hasActiveFilters ? ` · показано: ${filteredLeads.length}` : ''}
           </span>
-          <span className="font-mono">SSE Real-Time Notifications: Active</span>
-        </div>
+        </footer>
+
+        {/* Toast */}
+        {toast && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`absolute bottom-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-[12px] text-xs font-semibold shadow-none border ${
+              toast.tone === 'ok'
+                ? 'bg-forest text-cream border-cream/20'
+                : 'bg-rose-600 text-white border-rose-700'
+            }`}
+          >
+            {toast.text}
+          </div>
+        )}
       </div>
     </div>
   );

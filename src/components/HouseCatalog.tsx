@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import gsap from 'gsap';
+import React, { useState } from 'react';
 import { ArrowUpRight, Check, Maximize2, LayoutGrid, Eye, Image as ImageIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { HouseItem, Language } from '../types';
 import { HOUSES } from '../data/houses';
@@ -20,58 +19,11 @@ interface MagneticCardProps {
 
 type CardViewMode = 'facade' | 'plan' | 'webp';
 
-const MagneticBentoCard: React.FC<MagneticCardProps> = ({ children, className = '' }) => {
-  const cardRef = useRef<HTMLDivElement | null>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Skip 3D tilt on touch/mobile devices to save CPU/GPU on mobile 4G
-    if (!cardRef.current || window.matchMedia('(pointer: coarse)').matches) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    const nx = (x - centerX) / centerX;
-    const ny = (y - centerY) / centerY;
-
-    gsap.to(cardRef.current, {
-      rotateY: nx * 5.5,
-      rotateX: -ny * 5.5,
-      x: nx * 6,
-      y: ny * 6 - 4,
-      transformPerspective: 1000,
-      duration: 0.4,
-      ease: 'power2.out',
-      overwrite: 'auto',
-    });
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current || window.matchMedia('(pointer: coarse)').matches) return;
-    gsap.to(cardRef.current, {
-      rotateY: 0,
-      rotateX: 0,
-      x: 0,
-      y: 0,
-      duration: 0.65,
-      ease: 'elastic.out(1, 0.6)',
-      overwrite: 'auto',
-    });
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{ transformStyle: 'preserve-3d' }}
-      className={className}
-    >
-      {children}
-    </div>
-  );
-};
+// Plain card wrapper. The GSAP 3D tilt was removed: it re-ran a 3D transform on every
+// mouse move over each of the 6-15 cards, which made the catalog heavy to scroll.
+const MagneticBentoCard: React.FC<MagneticCardProps> = ({ children, className = '' }) => (
+  <div className={className}>{children}</div>
+);
 
 export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   lang,
