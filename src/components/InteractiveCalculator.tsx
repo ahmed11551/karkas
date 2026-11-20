@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { CreditCard, ShieldCheck, Truck, Share2, CheckCheck, FileDown, AlertCircle, MessageCircle, Send } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Truck, Share2, CheckCheck, FileDown, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language, CalculatorConfig } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { CALCULATOR_CONSTANTS, buildMessengerUrl } from '../config/company';
@@ -7,6 +7,7 @@ import { HouseSvg } from './HouseSvg';
 import { RollingNumber } from './RollingNumber';
 import { EstimateDocumentModal } from './EstimateDocumentModal';
 import { playUiClick } from '../utils/sound';
+import { track } from '../utils/analytics';
 import { saveLead, LeadCalculatorParams } from '../utils/leads';
 import { SuccessNotice } from './SuccessNotice';
 import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
@@ -19,7 +20,6 @@ const {
   VERANDA_PRICE_THOUSANDS,
   FREE_DELIVERY_RADIUS_KM,
   EXTRA_DELIVERY_RUB_PER_KM,
-  ANNUAL_MORTGAGE_RATE,
 } = CALCULATOR_CONSTANTS;
 
 interface InteractiveCalculatorProps {
@@ -84,6 +84,12 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   const [calcConsent, setCalcConsent] = useState(false);
   const [calcConsentError, setCalcConsentError] = useState('');
   const [calcLockedSuccess, setCalcLockedSuccess] = useState<boolean>(false);
+  const calcStarted = React.useRef(false);
+  const markCalcStart = () => {
+    if (calcStarted.current) return;
+    calcStarted.current = true;
+    track('calc_start');
+  };
 
   // Delivery cost calculation (Free up to 100km, then 50₽/km)
   const deliveryExtraCost = useMemo(() => {
@@ -102,20 +108,6 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
   }, [config.size, config.insulation, config.foundation, config.veranda]);
 
   const totalPrice = totalPriceInThousands * 1000 + deliveryExtraCost;
-
-  // Mortgage calculations
-  const downPaymentAmount = Math.round((totalPrice * config.downPaymentPercent) / 100);
-  const loanPrincipal = totalPrice - downPaymentAmount;
-  const annualInterestRate = ANNUAL_MORTGAGE_RATE;
-  const monthlyInterestRate = annualInterestRate / 12;
-  const totalMonths = config.mortgageYears * 12;
-
-  const monthlyPayment = useMemo(() => {
-    if (loanPrincipal <= 0) return 0;
-    const factor = Math.pow(1 + monthlyInterestRate, totalMonths);
-    const payment = loanPrincipal * ((monthlyInterestRate * factor) / (factor - 1));
-    return Math.round(payment);
-  }, [loanPrincipal, monthlyInterestRate, totalMonths]);
 
   // Preview house scale based on footprint
   const previewScale = useMemo(() => {
@@ -148,6 +140,10 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
 
   const insulationLabel = config.insulation === 0 ? '100 мм' : config.insulation === 35 ? '150 мм' : '200 мм';
 
+  useEffect(() => {
+    markCalcStart();
+  }, [config.size, config.insulation, config.foundation, config.veranda, distanceKm]);
+
   return (
     <section id="calculator" className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Title & Mode Toggles */}
@@ -162,40 +158,6 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
           <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft leading-relaxed">
             {t.calculator.subtitle}
           </p>
-        </div>
-
-        {/* Cash vs Mortgage Mode: underline tabs */}
-        <div className="flex items-center gap-7 border-b border-ink/15 dark:border-cream/12 self-start md:self-auto">
-          {[
-            { mortgage: false, label: t.calculator.modeCash, Icon: ShieldCheck },
-            { mortgage: true, label: t.calculator.modeMortgage, Icon: CreditCard },
-          ].map(({ mortgage, label, Icon }) => {
-            const active = config.mortgageMode === mortgage;
-            return (
-              <button
-                key={label}
-                onClick={() => {
-                  playUiClick('tap');
-                  setConfig((prev) => ({ ...prev, mortgageMode: mortgage }));
-                }}
-                aria-pressed={active}
-                className={`relative pb-3 flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  active
-                    ? 'text-ink dark:text-cream'
-                    : 'text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{label}</span>
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-0 right-0 -bottom-px h-[2px] bg-ink dark:bg-brass-light origin-left transition-transform duration-500 ease-out-soft ${
-                    active ? 'scale-x-100' : 'scale-x-0'
-                  }`}
-                />
-              </button>
-            );
-          })}
         </div>
       </div>
 
@@ -293,7 +255,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                   : `Distance from MKAD: ${distanceKm} km`}
               </span>
               <span className="font-mono text-brass-ink dark:text-brass-light whitespace-nowrap">
-                {distanceKm <= 100
+                {distanceKm <= FREE_DELIVERY_RADIUS_KM
                   ? lang === 'ru'
                     ? '0 ₽ (Бесплатно)'
                     : '0 ₽ (Free)'
@@ -303,7 +265,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
             <input
               type="range"
               min="0"
-              max="200"
+              max="500"
               step="5"
               value={distanceKm}
               aria-label={lang === 'ru' ? 'Расстояние от МКАД' : 'Distance from MKAD'}
@@ -316,62 +278,11 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
             <div className="flex justify-between text-[11px] text-olive dark:text-cream-soft">
               <span>{lang === 'ru' ? '0 км (МКАД)' : '0 km (MKAD)'}</span>
               <span className="font-semibold text-brass-ink dark:text-brass-light">
-                {lang === 'ru' ? 'до 100 км бесплатно' : 'free up to 100 km'}
+                {lang === 'ru' ? 'до 500 км бесплатно' : 'free up to 500 km'}
               </span>
-              <span>200 км</span>
+              <span>500 км</span>
             </div>
           </div>
-
-          {/* Mortgage Mode Sub-deck */}
-          {config.mortgageMode && (
-            <div className="p-5 rounded-[12px] border border-ink/12 dark:border-cream/10 space-y-5">
-              <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream">
-                <span>
-                  {t.calculator.downPayment}: {config.downPaymentPercent}%
-                </span>
-                <span className="font-mono text-brass-ink dark:text-brass-light">
-                  {downPaymentAmount.toLocaleString('ru-RU')} ₽
-                </span>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="50"
-                step="5"
-                value={config.downPaymentPercent}
-                aria-label={t.calculator.downPayment}
-                onChange={(e) => {
-                  playUiClick('tick');
-                  setConfig((prev) => ({ ...prev, downPaymentPercent: +e.target.value }));
-                }}
-                className="w-full accent-[#006434] cursor-pointer"
-              />
-
-              <div className="flex items-center justify-between text-xs font-semibold text-ink dark:text-cream pt-1">
-                <span>
-                  {t.calculator.loanTerm}: {config.mortgageYears} лет
-                </span>
-                <span className="text-olive dark:text-cream-soft">{config.mortgageYears * 12} мес.</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="20"
-                step="1"
-                value={config.mortgageYears}
-                aria-label={t.calculator.loanTerm}
-                onChange={(e) => {
-                  playUiClick('tick');
-                  setConfig((prev) => ({ ...prev, mortgageYears: +e.target.value }));
-                }}
-                className="w-full accent-[#006434] cursor-pointer"
-              />
-
-              <p className="text-[11px] text-olive dark:text-cream-soft leading-relaxed">
-                {t.calculator.rateNotice}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Right: live preview & price on forest */}
@@ -408,40 +319,34 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
 
           {/* Price Numbers & Breakdown */}
           <div className="relative z-10 space-y-5">
-            {config.mortgageMode ? (
-              <div>
-                <span className="eyebrow block text-cream-soft mb-2">{t.calculator.monthlyPayment}</span>
-                <RollingNumber
-                  value={monthlyPayment}
-                  prefix="≈ "
-                  suffix=" ₽ / мес"
-                  font="font-light"
-                  className="text-5xl sm:text-6xl leading-none text-cream"
-                />
-                <div className="mt-3 text-xs text-cream-soft">
-                  {lang === 'ru' ? 'Полная стоимость' : 'Full price'}: {totalPrice.toLocaleString('ru-RU')} ₽
-                </div>
-              </div>
-            ) : (
-              <div>
-                <span className="eyebrow block text-cream-soft mb-2">
-                  {lang === 'ru' ? 'Итого под ключ' : 'Total turnkey'}
-                </span>
-                <RollingNumber
-                  value={totalPrice}
-                  prefix="≈ "
-                  suffix=" ₽"
-                  font="font-light"
-                  className="text-5xl sm:text-6xl leading-none text-cream"
-                />
-              </div>
-            )}
+            <div>
+              <span className="eyebrow block text-cream-soft mb-2">
+                {lang === 'ru' ? 'Итого под ключ' : 'Total turnkey'}
+              </span>
+              <RollingNumber
+                value={totalPrice}
+                prefix="≈ "
+                suffix=" ₽"
+                font="font-light"
+                className="text-5xl sm:text-6xl leading-none text-cream"
+              />
+            </div>
 
-            <p className="text-sm text-cream-soft leading-relaxed">
-              {t.calculator.breakdownBase} {config.size} м²
-              {config.veranda ? ` ${t.calculator.withVerandaText}` : ''}, {t.calculator.paymentAfterText}{' '}
-              {t.calculator.giftRoofText}
-            </p>
+            <dl className="text-sm border-t border-cream/15">
+              {[
+                [lang === 'ru' ? 'Дом' : 'House', (BASE_PRICE_THOUSANDS + PRICE_PER_SQM_THOUSANDS * config.size) * 1000],
+                [lang === 'ru' ? 'Утепление' : 'Insulation', config.insulation * 1000],
+                [lang === 'ru' ? 'Фундамент' : 'Foundation', (config.foundation ? PILES_FOUNDATION_PRICE_THOUSANDS : 0) * 1000],
+                [lang === 'ru' ? 'Веранда' : 'Veranda', (config.veranda ? VERANDA_PRICE_THOUSANDS : 0) * 1000],
+                [lang === 'ru' ? 'Доставка' : 'Delivery', deliveryExtraCost],
+              ].map(([label, amount]) => (
+                <div key={String(label)} className="flex justify-between gap-4 py-2 border-b border-cream/10">
+                  <dt className="text-cream-soft">{label}</dt>
+                  <dd className="tabular-nums">{Number(amount).toLocaleString('ru-RU')} ₽</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-sm text-cream-soft leading-relaxed">{t.calculator.paymentAfterText} {t.calculator.giftRoofText}</p>
 
             <div className="p-4 rounded-[12px] border border-brass-light/30 text-sm text-brass-light leading-relaxed">
               {config.foundation === 1
@@ -520,7 +425,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                     id="calc-phone"
                     aria-invalid={Boolean(calcPhoneError)}
                     aria-describedby={calcPhoneError ? 'calc-phone-error' : undefined}
-                    className={`w-full h-12 px-4 rounded-[12px] bg-cream text-forest placeholder:text-olive font-medium text-sm focus:outline-none focus:ring-2 transition-all ${
+                    className={`w-full h-12 px-4 rounded-[12px] bg-cream text-forest placeholder:text-olive font-medium text-base focus:outline-none focus:ring-2 transition-all ${
                       calcPhoneError ? 'ring-2 ring-rose-400 bg-rose-50' : 'focus:ring-brass-light'
                     }`}
                   />
@@ -569,8 +474,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                         ? 'С террасой / верандой (+60 000 ₽)'
                         : 'Без веранды',
                     distanceKm,
-                    mortgageMode: config.mortgageMode,
-                    monthlyPayment: config.mortgageMode ? monthlyPayment : undefined,
+                    mortgageMode: false,
                   };
                   const title = `Каркасный дом ${config.size} м²${config.veranda ? ' с верандой' : ''}`;
 
@@ -606,7 +510,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       calculatorParams: calcParams,
                       giftsSelected: [
                         'Металлочерепица 0 ₽',
-                        config.foundation === 1 ? 'Сваи −50%' : 'Доставка до 100 км 0 ₽',
+                        config.foundation === 1 ? 'Сваи −50%' : 'Доставка до 500 км 0 ₽',
                       ],
                       consent: true,
                     });
@@ -619,6 +523,7 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
                       return;
                     }
                     playUiClick('success');
+                    track('calc_complete', { price: totalPrice });
                     setCalcLockedSuccess(true);
                     setCalcPhoneError('');
                     return;
@@ -671,6 +576,11 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
         </div>
       </div>
 
+      <div className="lg:hidden sticky bottom-3 z-30 mt-4 rounded-[12px] bg-forest text-cream px-4 py-3 flex items-center justify-between">
+        <span className="text-xs text-cream-soft">{lang === 'ru' ? 'Итого' : 'Total'}</span>
+        <span className="font-light text-2xl tabular-nums">≈ {totalPrice.toLocaleString('ru-RU')} ₽</span>
+      </div>
+
       {/* Official Printable PDF Estimate Modal */}
       <EstimateDocumentModal
         isOpen={isEstimateModalOpen}
@@ -679,7 +589,6 @@ export const InteractiveCalculator: React.FC<InteractiveCalculatorProps> = ({
         distanceKm={distanceKm}
         totalPrice={totalPrice}
         deliveryExtraCost={deliveryExtraCost}
-        monthlyPayment={monthlyPayment}
         lang={lang}
         onLockPrice={() => onOpenQuiz(totalPrice)}
       />

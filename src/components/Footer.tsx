@@ -1,24 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, ShieldCheck, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { COMPANY_CONFIG } from '../config/company';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import { playUiClick } from '../utils/sound';
+import { Logo } from './Logo';
 
 interface FooterProps {
   lang: Language;
-  isAdminAuthenticated?: boolean;
-  onOpenAdminLogin?: () => void;
-  onOpenCrm?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({
-  lang,
-  isAdminAuthenticated,
-  onOpenAdminLogin,
-  onOpenCrm,
-}) => {
+export const Footer: React.FC<FooterProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
   const [activeLegalDoc, setActiveLegalDoc] = useState<LegalDocType | null>(null);
 
@@ -46,10 +39,9 @@ export const Footer: React.FC<FooterProps> = ({
           <div>
             <a
               href="#"
-              className="flex items-center gap-2.5 font-logo text-2xl text-ink dark:text-cream mb-4"
+              className="text-[1.7rem] text-ink dark:text-cream mb-4"
             >
-              <span className="w-2.5 h-2.5 rounded-full bg-brass" aria-hidden="true" />
-              <span>{t.brandName}</span>
+              <Logo name={t.brandName} />
             </a>
             <p className="leading-relaxed text-sm text-ink dark:text-cream">{t.footer.company}</p>
             <p className="mt-2 font-mono text-[11px] opacity-80">{t.footer.regDetails}</p>
@@ -59,9 +51,6 @@ export const Footer: React.FC<FooterProps> = ({
           <div>
             <span className={labelClass}>{lang === 'ru' ? 'Офис и производство' : 'Office & Factory'}</span>
             <p className="leading-relaxed">{t.footer.address}</p>
-            <p className="mt-1 leading-relaxed text-[11px] opacity-85">
-              {COMPANY_CONFIG.factoryAddress[lang]}
-            </p>
           </div>
 
           {/* Col 3: Direct Telephone, Email & Working hours */}
@@ -83,9 +72,8 @@ export const Footer: React.FC<FooterProps> = ({
             </a>
           </div>
 
-          {/* Col 4: Legal, Policies & Staff /login Portal */}
           <div>
-            <span className={labelClass}>{lang === 'ru' ? 'Документы и доступ' : 'Legal & Staff'}</span>
+            <span className={labelClass}>{lang === 'ru' ? 'Документы' : 'Documents'}</span>
             <ul className="space-y-2.5">
               <li>
                 <a href="/privacy" onClick={(e) => handleOpenLegalDoc(e, 'privacy')} className={linkClass}>
@@ -96,25 +84,6 @@ export const Footer: React.FC<FooterProps> = ({
                 <a href="/terms" onClick={(e) => handleOpenLegalDoc(e, 'terms')} className={linkClass}>
                   {t.footer.terms}
                 </a>
-              </li>
-              <li className="pt-2">
-                {isAdminAuthenticated ? (
-                  <button
-                    onClick={onOpenCrm}
-                    className="inline-flex items-center gap-2 text-ink dark:text-cream font-semibold border-b border-ink/40 dark:border-cream/40 hover:border-ink dark:hover:border-cream pb-0.5 transition-colors"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>{lang === 'ru' ? 'Открыть CRM (Админ)' : 'Open CRM Panel'}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={onOpenAdminLogin}
-                    className="inline-flex items-center gap-2 text-olive dark:text-cream-soft hover:text-ink dark:hover:text-cream transition-colors"
-                  >
-                    <Lock className="w-3 h-3" />
-                    <span>{lang === 'ru' ? 'Вход для сотрудников (/login)' : 'Staff Login (/login)'}</span>
-                  </button>
-                )}
               </li>
             </ul>
           </div>

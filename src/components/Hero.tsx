@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, ShieldCheck, AlertCircle, MessageCircle, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, ShieldCheck, AlertCircle, MessageCircle, Send } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { buildMessengerUrl } from '../config/company';
@@ -16,46 +16,13 @@ interface HeroProps {
   onToggleScene?: () => void;
 }
 
-/** Real finished objects from the client archive. Quiet auto-fade in the hero frame. */
-const HERO_SLIDES = [
-  {
-    src: '/gallery/houses/hou-018.webp',
-    alt: {
-      ru: 'Готовый каркасный дом Каркасник с верандой',
-      en: 'Finished Karkasnik timber-frame house with a porch',
-    },
+const HERO_PHOTO = {
+  src: '/images/hero/hero-house.webp',
+  alt: {
+    ru: 'Каркасный дом с крыльцом в берёзовой роще на закате',
+    en: 'Timber-frame house with a porch in a birch grove at sunset',
   },
-  {
-    src: '/gallery/houses/hou-002.webp',
-    alt: {
-      ru: 'Каркасный дом на свайном фундаменте с крыльцом',
-      en: 'Timber-frame house on screw piles with a front porch',
-    },
-  },
-  {
-    src: '/gallery/houses/hou-010.webp',
-    alt: {
-      ru: 'Серый каркасный дом после сдачи объекта',
-      en: 'Grey timber-frame house after handover',
-    },
-  },
-  {
-    src: '/gallery/houses/hou-024.webp',
-    alt: {
-      ru: 'Каркасный дом с открытой верандой на участке',
-      en: 'Timber-frame house with an open veranda on the plot',
-    },
-  },
-  {
-    src: '/gallery/houses/hou-026.webp',
-    alt: {
-      ru: 'Каркасный дом среди зелени на готовом участке',
-      en: 'Timber-frame house among garden greenery',
-    },
-  },
-] as const;
-
-const HERO_SLIDE_MS = 5200;
+} as const;
 
 export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
   const t = TRANSLATIONS[lang];
@@ -64,32 +31,6 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
   const [formError, setFormError] = useState('');
   const [consent, setConsent] = useState(false);
   const [consentError, setConsentError] = useState('');
-  const [slideIndex, setSlideIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [tabHidden, setTabHidden] = useState(false);
-  const touchStartX = useRef<number | null>(null);
-
-  useEffect(() => {
-    const onVisibility = () => setTabHidden(document.visibilityState === 'hidden');
-    onVisibility();
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
-
-  // Quiet auto-advance. Pauses on hover/focus, while the tab is hidden, or when the user prefers less motion.
-  useEffect(() => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion || paused || tabHidden) return;
-
-    const id = window.setInterval(() => {
-      setSlideIndex((i) => (i + 1) % HERO_SLIDES.length);
-    }, HERO_SLIDE_MS);
-    return () => window.clearInterval(id);
-  }, [paused, tabHidden]);
-
-  const goToSlide = (index: number) => {
-    setSlideIndex(((index % HERO_SLIDES.length) + HERO_SLIDES.length) % HERO_SLIDES.length);
-  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatRussianPhoneInput(e.target.value);
@@ -117,7 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
     const result = await saveLead({
       source: 'hero_quick',
       phone: validation.normalized || phoneInput,
-      giftsSelected: ['Кровля из металлочерепицы', 'Бесплатная доставка 100 км'],
+      giftsSelected: ['Кровля из металлочерепицы', 'Бесплатная доставка 500 км'],
       consent: true,
     });
     if (!result.ok) {
@@ -132,41 +73,67 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-forest pt-28 pb-20 md:pt-36 md:pb-28 text-cream">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-          {/* Left column: offer, form, secondary action */}
-          <div className="lg:col-span-7 flex flex-col items-start">
-            <p className="eyebrow flex items-center gap-3 text-brass mb-8">
-              <span className="h-px w-8 bg-brass" aria-hidden="true" />
-              <span>{t.hero.monthlyGift}</span>
-            </p>
-
-            <h1 className="font-light text-[2.6rem] leading-[1.02] sm:text-6xl lg:text-[4.5rem] tracking-[-0.03em] text-cream max-w-3xl text-balance">
+    <>
+    <section className="relative min-h-[100svh] overflow-hidden bg-forest text-cream">
+      <img
+        src={HERO_PHOTO.src}
+        alt={HERO_PHOTO.alt[lang]}
+        width={1280}
+        height={720}
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover object-center"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-forest/80 via-forest/15 to-transparent" aria-hidden="true" />
+      <div className="relative flex min-h-[100svh] items-end">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-16 pt-32 md:pb-20">
+          <div className="max-w-3xl">
+            <h1 className="font-light text-[2.75rem] leading-[0.98] sm:text-6xl lg:text-[4.75rem] tracking-[-0.035em] text-cream text-balance">
               {t.hero.titlePre}
               {t.hero.titleHighlight}
               {t.hero.titlePost}
             </h1>
-
-            <p className="mt-6 text-base sm:text-lg text-cream-soft leading-relaxed max-w-xl">{t.hero.lead}</p>
-
-            <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-cream-soft my-8">
-              {t.hero.chips.map((chip, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-brass shrink-0" aria-hidden="true" />
-                  <span>{chip}</span>
-                </li>
+            <p className="mt-5 max-w-xl text-base sm:text-lg text-cream leading-relaxed">{t.hero.lead}</p>
+            <button
+              type="button"
+              onClick={() => {
+                playUiClick('tap');
+                onOpenQuiz();
+              }}
+              className="mt-8 inline-flex items-center gap-2 h-14 px-7 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm"
+            >
+              <span>{lang === 'ru' ? 'Рассчитать' : 'Calculate'}</span>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <dl className="mt-8 grid grid-cols-3 gap-4 max-w-lg">
+              {[
+                { value: t.stats.assemblyCount, label: t.stats.assemblyLabel },
+                { value: lang === 'ru' ? 'Москва и МО' : 'Moscow region', label: lang === 'ru' ? 'география' : 'where we build' },
+                { value: t.stats.warrantyCount, label: t.stats.warrantyLabel },
+              ].map((item) => (
+                <div key={item.label}>
+                  <dt className="font-light text-lg sm:text-xl text-cream leading-none">{item.value}</dt>
+                  <dd className="mt-1 text-[11px] text-cream-soft leading-snug">{item.label}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            <div className="w-full max-w-lg">
+    <section className="bg-paper text-ink dark:bg-forest dark:text-cream">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        <div className="max-w-lg">
+          <p className="eyebrow text-olive dark:text-brass mb-4">{t.hero.monthlyGift}</p>
+            <div className="w-full">
               {formSubmitted ? (
-                <div className="p-5 rounded-[12px] bg-forest-raised border border-cream/15 space-y-3 text-cream-soft">
+                <div className="p-5 rounded-[12px] bg-paper-deep dark:bg-forest-raised border border-ink/10 dark:border-cream/15 space-y-3">
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="w-6 h-6 text-brass shrink-0" aria-hidden="true" />
                     <div className="text-sm">
-                      <p className="font-medium text-cream">{t.hero.quickCallSuccess}</p>
-                      <p className="text-xs text-cream-soft mt-0.5">
+                      <p className="font-medium text-ink dark:text-cream">{t.hero.quickCallSuccess}</p>
+                      <p className="text-xs text-ink-soft dark:text-cream-soft mt-0.5">
                         {lang === 'ru'
                           ? 'Мы закрепили за вами подарки по акции. Можете сразу написать инженеру:'
                           : 'Your promotional gifts are reserved. Message our engineer directly:'}
@@ -218,7 +185,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
                       placeholder={t.hero.quickCallPlaceholder}
                       aria-invalid={Boolean(formError)}
                       aria-describedby={formError ? 'hero-phone-error' : undefined}
-                      className={`flex-1 h-14 px-5 rounded-[12px] bg-cream text-ink placeholder-ink-soft/70 font-medium text-base focus:outline-none focus:ring-2 transition-shadow ${
+                      className={`flex-1 h-14 px-5 rounded-[12px] bg-paper-deep dark:bg-cream text-ink placeholder-ink-soft/70 font-medium text-base focus:outline-none focus:ring-2 ${
                         formError ? 'ring-2 ring-rose-400' : 'focus:ring-brass'
                       }`}
                     />
@@ -233,9 +200,9 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
                     <p
                       id="hero-phone-error"
                       role="alert"
-                      className="text-xs text-rose-300 px-1 font-medium flex items-center gap-1.5"
+                      className="text-xs text-rose-700 dark:text-rose-300 px-1 font-medium flex items-center gap-1.5"
                     >
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{formError}</span>
                     </p>
                   )}
@@ -248,115 +215,14 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
                       setConsent(checked);
                       if (checked) setConsentError('');
                     }}
-                    className="px-1 text-cream-soft"
+                    className="px-1"
                   />
                 </form>
               )}
             </div>
-
-            <div className="mt-10 pt-6 border-t border-cream/15 w-full max-w-lg">
-              <button
-                type="button"
-                onClick={() => {
-                  playUiClick('tap');
-                  onOpenQuiz();
-                }}
-                className="btn-outline inline-flex items-center gap-2 px-5 py-3 rounded-[12px] text-cream hover:border-brass hover:text-brass font-medium text-sm transition-colors group"
-              >
-                <span>{t.hero.quizBtn}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
-          {/* Right column: quiet fade of real finished houses */}
-          <div className="lg:col-span-5 relative">
-            <figure
-              className="relative w-full max-w-[460px] mx-auto lg:ml-auto"
-              aria-roledescription="carousel"
-              aria-label={lang === 'ru' ? 'Фото готовых домов' : 'Photos of finished houses'}
-              onMouseEnter={() => setPaused(true)}
-              onMouseLeave={() => setPaused(false)}
-              onFocusCapture={() => setPaused(true)}
-              onBlurCapture={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
-              }}
-              onTouchStart={(e) => {
-                touchStartX.current = e.changedTouches[0]?.clientX ?? null;
-                setPaused(true);
-              }}
-              onTouchEnd={(e) => {
-                const start = touchStartX.current;
-                touchStartX.current = null;
-                setPaused(false);
-                if (start == null) return;
-                const delta = (e.changedTouches[0]?.clientX ?? start) - start;
-                if (Math.abs(delta) < 40) return;
-                goToSlide(slideIndex + (delta < 0 ? 1 : -1));
-              }}
-            >
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[20px] bg-forest-raised">
-                {HERO_SLIDES.map((slide, index) => {
-                  const active = index === slideIndex;
-                  return (
-                    <img
-                      key={slide.src}
-                      src={slide.src}
-                      alt={slide.alt[lang]}
-                      width={900}
-                      height={1200}
-                      fetchPriority={index === 0 ? 'high' : 'low'}
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
-                      aria-hidden={!active}
-                      className={`absolute inset-0 w-full h-full object-cover object-[50%_45%] transition-opacity duration-700 ease-out ${
-                        active ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    />
-                  );
-                })}
-
-                <div
-                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-[10px] bg-forest/55 px-2 py-1.5"
-                  role="tablist"
-                  aria-label={lang === 'ru' ? 'Выбор фото' : 'Choose photo'}
-                >
-                  {HERO_SLIDES.map((slide, index) => {
-                    const active = index === slideIndex;
-                    return (
-                      <button
-                        key={slide.src}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        aria-label={
-                          lang === 'ru'
-                            ? `Фото ${index + 1} из ${HERO_SLIDES.length}`
-                            : `Photo ${index + 1} of ${HERO_SLIDES.length}`
-                        }
-                        onClick={() => {
-                          playUiClick('tick');
-                          goToSlide(index);
-                        }}
-                        className={`h-1.5 rounded-full transition-all ${
-                          active ? 'w-5 bg-brass' : 'w-1.5 bg-cream/45 hover:bg-cream/75'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <figcaption className="absolute left-4 bottom-4 right-4 sm:right-auto sm:w-auto z-10 flex items-end gap-4 rounded-[12px] bg-paper text-ink px-5 py-4">
-                <span className="font-light text-3xl sm:text-4xl leading-none tabular-nums tracking-[-0.02em]">38 000</span>
-                <span className="text-xs sm:text-sm text-ink-soft leading-snug max-w-[11rem] pb-0.5">
-                  {t.hero.housesBuiltBadge}
-                </span>
-              </figcaption>
-            </figure>
-          </div>
         </div>
       </div>
     </section>
+    </>
   );
 };

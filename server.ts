@@ -6,6 +6,7 @@ import path from 'path';
 import { randomBytes } from 'crypto';
 import { parsePublicLead, sanitizeManagerNotes, sanitizePlainText, validateClientName } from './src/utils/leadPayload.ts';
 import { notifyTelegramNewLead, telegramEnabled } from './server/telegram.ts';
+import { mailEnabled, notifyEmailNewLead } from './server/mail.ts';
 import {
   adminLogin,
   adminPassword,
@@ -77,6 +78,7 @@ export interface ServerLead {
   giftsSelected?: string[];
   quizAnswers?: { [key: string]: string };
   utm?: { [key: string]: string };
+  pathname?: string;
   managerNotes?: string;
 }
 
@@ -162,6 +164,11 @@ async function startServer() {
     telegramEnabled()
       ? '[telegram] new-lead notifications enabled'
       : '[telegram] new-lead notifications disabled (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set or invalid)'
+  );
+  console.info(
+    mailEnabled()
+      ? '[mail] new-lead notifications enabled'
+      : '[mail] new-lead notifications disabled (MAIL_USER / MAIL_PASSWORD not set)'
   );
 
   const app = express();
@@ -257,6 +264,16 @@ async function startServer() {
     }
 
     const lead = parsed.lead;
+    const phoneDigits = lead.phone.replace(/\D/g, '');
+    const duplicateWindowMs = 3 * 60 * 1000;
+    const duplicate = leadsStore.find(
+      (item) => item.phone.replace(/\D/g, '') === phoneDigits && Date.now() - item.createdAtMs < duplicateWindowMs
+    );
+    if (duplicate) {
+      res.status(200).json({ lead: duplicate, duplicate: true });
+      return;
+    }
+
     const nowFormatted = new Date().toLocaleString('ru-RU', {
       dateStyle: 'short',
       timeStyle: 'short',
@@ -290,6 +307,7 @@ async function startServer() {
       giftsSelected: lead.giftsSelected,
       quizAnswers: lead.quizAnswers,
       utm: lead.utm,
+      pathname: lead.pathname,
       managerNotes: '',
     };
 
@@ -308,6 +326,7 @@ async function startServer() {
 
     // Fire-and-forget: Telegram latency or failure must not affect the client response.
     void notifyTelegramNewLead(newLead);
+    void notifyEmailNewLead(newLead);
 
     res.status(201).json({ lead: newLead });
   });

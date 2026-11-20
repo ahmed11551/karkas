@@ -13,7 +13,7 @@ interface MessengerFloatingProps {
   showOnMobile: boolean;
 }
 
-export const MessengerFloating: React.FC<MessengerFloatingProps> = ({ lang, showOnMobile }) => {
+export const MessengerFloating: React.FC<MessengerFloatingProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang].messenger;
   const [isOpen, setIsOpen] = useState(false);
   const panelId = useId();
@@ -31,9 +31,7 @@ export const MessengerFloating: React.FC<MessengerFloatingProps> = ({ lang, show
   return (
     // bottom-24 on mobile keeps the panel clear of the sticky bottom bar.
     <div
-      className={`fixed bottom-24 md:bottom-6 right-4 md:right-5 z-40 flex flex-col items-end gap-2.5 ${
-        showOnMobile ? '' : 'max-md:hidden'
-      }`}
+      className="fixed bottom-6 right-5 z-40 hidden md:flex flex-col items-end gap-2.5"
     >
       <AnimatePresence>
         {isOpen && (

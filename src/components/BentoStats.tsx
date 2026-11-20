@@ -1,12 +1,45 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Lottie, LottieHandle } from 'lottie-react';
+import React from 'react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
-import {
-  blueprintHouseLottie,
-  seasonalHouseLottie,
-  pileShieldLottie,
-} from '../data/lottieAnimations';
+
+/** Construction drawings, one stroke. Not a circled pictogram. */
+function ReasonMark({ kind }: { kind: 'plan' | 'wall' | 'piles' }) {
+  const props = {
+    viewBox: '0 0 48 48',
+    fill: 'none',
+    'aria-hidden': true as const,
+    className: 'w-11 h-11',
+  };
+  if (kind === 'plan') {
+    return (
+      <svg {...props}>
+        <rect x="5.5" y="7.5" width="37" height="33" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M5.5 24.5 H30.5 V40.5" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M22 7.5 V18" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M30.5 40.5 H38" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M38 40.5 A7.5 7.5 0 0 0 30.5 33" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  if (kind === 'wall') {
+    return (
+      <svg {...props}>
+        <rect x="8" y="6" width="32" height="36" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M16 6 V42 M32 6 V42" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M18.5 14 H29.5 M18.5 20 H29.5 M18.5 26 H29.5 M18.5 32 H29.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...props}>
+      <path d="M6 12 H42" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M16 12 V38 M32 12 V38" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M13 18 H19 M13 24 H19 M13 30 H19 M13 36 H19" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M29 18 H35 M29 24 H35 M29 30 H35 M29 36 H35" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M13.5 38 L16 43 L18.5 38 M29.5 38 L32 43 L34.5 38" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="miter" />
+    </svg>
+  );
+}
 
 interface BentoStatsProps {
   lang: Language;
@@ -14,43 +47,6 @@ interface BentoStatsProps {
 
 export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  const lottieRef1 = useRef<LottieHandle>(null);
-  const lottieRef2 = useRef<LottieHandle>(null);
-  const lottieRef3 = useRef<LottieHandle>(null);
-
-  // Sync Lottie playback with scroll via IntersectionObserver (synced with Lenis)
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            // Set a calm, subtle playback speed for continuous luxury feel
-            lottieRef1.current?.setSpeed(0.65);
-            lottieRef2.current?.setSpeed(0.55);
-            lottieRef3.current?.setSpeed(0.65);
-            lottieRef1.current?.play();
-            lottieRef2.current?.play();
-            lottieRef3.current?.play();
-          } else {
-            lottieRef1.current?.pause();
-            lottieRef2.current?.pause();
-            lottieRef3.current?.pause();
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const kpis = [
     { value: t.stats.builtCount, label: t.stats.builtLabel },
@@ -61,7 +57,6 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
 
   return (
     <section
-      ref={sectionRef}
       className="relative z-20 -mt-6 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
     >
       {/* KPI row: editorial hairlines instead of a boxed card */}
@@ -104,28 +99,10 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
         {/* Card 1: Ready Designs (Lottie: Blueprint -> House) */}
-        <div
-          onMouseEnter={() => {
-            lottieRef1.current?.setSpeed(1.1);
-            lottieRef1.current?.seek(0);
-            lottieRef1.current?.play();
-          }}
-          onMouseLeave={() => {
-            lottieRef1.current?.setSpeed(0.65);
-          }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
-        >
+        <div className="flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised">
           <div>
-            <div className="flex items-start justify-between mb-8">
-              <div className="w-16 h-16 rounded-full border border-ink/15 dark:border-cream/15 flex items-center justify-center overflow-hidden">
-                <Lottie
-                  lottieRef={lottieRef1}
-                  src={blueprintHouseLottie}
-                  loop={true}
-                  autoplay={inView}
-                  className="w-14 h-14"
-                />
-              </div>
+            <div className="flex items-start justify-between mb-8 text-brass-ink dark:text-brass-light">
+              <ReasonMark kind="plan" />
               <span className="font-light text-2xl text-olive dark:text-cream-soft">01</span>
             </div>
             <span className="eyebrow text-brass-ink dark:text-brass-light">
@@ -145,28 +122,10 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
         </div>
 
         {/* Card 2: All Season Warmth, the dark card of the trio (Lottie: Snowflake -> Sun) */}
-        <div
-          onMouseEnter={() => {
-            lottieRef2.current?.setSpeed(1.1);
-            lottieRef2.current?.seek(0);
-            lottieRef2.current?.play();
-          }}
-          onMouseLeave={() => {
-            lottieRef2.current?.setSpeed(0.55);
-          }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-cream/10 bg-forest text-cream dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
-        >
+        <div className="flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-cream/10 bg-forest text-cream dark:bg-forest-raised">
           <div>
-            <div className="flex items-start justify-between mb-8">
-              <div className="w-16 h-16 rounded-full border border-cream/20 flex items-center justify-center overflow-hidden">
-                <Lottie
-                  lottieRef={lottieRef2}
-                  src={seasonalHouseLottie}
-                  loop={true}
-                  autoplay={inView}
-                  className="w-14 h-14"
-                />
-              </div>
+            <div className="flex items-start justify-between mb-8 text-brass-light">
+              <ReasonMark kind="wall" />
               <span className="font-light text-2xl text-cream-soft">02</span>
             </div>
             <span className="eyebrow text-brass-light">{t.reasons.cards[1].tag}</span>
@@ -184,28 +143,10 @@ export const BentoStats: React.FC<BentoStatsProps> = ({ lang }) => {
         </div>
 
         {/* Card 3: Screw Pile Foundation (Lottie: Pile Driven + Protection Shield) */}
-        <div
-          onMouseEnter={() => {
-            lottieRef3.current?.setSpeed(1.1);
-            lottieRef3.current?.seek(0);
-            lottieRef3.current?.play();
-          }}
-          onMouseLeave={() => {
-            lottieRef3.current?.setSpeed(0.65);
-          }}
-          className="group flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised transition-transform duration-500 ease-out-soft hover:-translate-y-1"
-        >
+        <div className="flex flex-col justify-between p-7 sm:p-8 rounded-[20px] border border-ink/12 dark:border-cream/10 bg-paper dark:bg-forest-raised">
           <div>
-            <div className="flex items-start justify-between mb-8">
-              <div className="w-16 h-16 rounded-full border border-ink/15 dark:border-cream/15 flex items-center justify-center overflow-hidden">
-                <Lottie
-                  lottieRef={lottieRef3}
-                  src={pileShieldLottie}
-                  loop={true}
-                  autoplay={inView}
-                  className="w-14 h-14"
-                />
-              </div>
+            <div className="flex items-start justify-between mb-8 text-brass-ink dark:text-brass-light">
+              <ReasonMark kind="piles" />
               <span className="font-light text-2xl text-olive dark:text-cream-soft">03</span>
             </div>
             <span className="eyebrow text-brass-ink dark:text-brass-light">

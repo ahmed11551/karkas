@@ -1,5 +1,5 @@
 /**
- * Yandex Metrika counter (optional).
+ * Yandex Metrika counter (optional) plus a small product-event adapter.
  *
  * Enabled only when VITE_YANDEX_METRIKA_ID holds a numeric counter id AND the build is production.
  * Without an id nothing is loaded: no script, no requests, no cookies.
@@ -14,8 +14,18 @@ type YmFn = ((...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
 declare global {
   interface Window {
     ym?: YmFn;
+    dataLayer?: Record<string, unknown>[];
   }
 }
+
+export type AnalyticsEvent =
+  | 'view_project'
+  | 'calc_start'
+  | 'calc_complete'
+  | 'quiz_start'
+  | 'quiz_complete'
+  | 'lead_submit'
+  | 'crm_status_change';
 
 const rawId = (import.meta.env.VITE_YANDEX_METRIKA_ID as string | undefined) ?? '';
 const counterId = /^\d{4,12}$/.test(rawId.trim()) ? Number(rawId.trim()) : null;
@@ -58,4 +68,17 @@ export function reachGoal(target: string): void {
     return;
   }
   window.ym(counterId, 'reachGoal', target);
+}
+
+/** Product event: always available on window, and forwarded to Metrika when the counter is on. */
+export function track(event: AnalyticsEvent, params: Record<string, string | number | boolean | undefined> = {}): void {
+  if (typeof window === 'undefined') return;
+  const detail: Record<string, unknown> = { event };
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') detail[key] = value;
+  }
+  window.dispatchEvent(new CustomEvent('karkas:analytics', { detail }));
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(detail);
+  reachGoal(event);
 }

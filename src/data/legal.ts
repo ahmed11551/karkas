@@ -1,5 +1,4 @@
 import type { Language } from '../types';
-import { COMPANY_CONFIG } from '../config/company';
 
 /**
  * Text of the legal documents shown in LegalDocumentModal (/privacy and /terms).
@@ -154,8 +153,8 @@ export const LEGAL_DOCS: Record<LegalDocType, LegalDocument> = {
         heading: { ru: '8. Ваши права и контакты', en: '8. Your rights and contacts' },
         paragraphs: [
           {
-            ru: 'Вы вправе получить сведения о том, какие данные о вас обрабатываются, потребовать их уточнения, блокировки или удаления, а также отозвать согласие. Запрос направьте на адрес info@karkasnik.ru. Мы ответим в сроки, установленные законом (не позднее 30 дней).',
-            en: 'You have the right to obtain information about the personal data we hold about you, to ask for it to be corrected, blocked or deleted, and to withdraw consent. Send your request to info@karkasnik.ru. We will reply within the time limits set by law (no later than 30 days).',
+            ru: 'Вы вправе получить сведения о том, какие данные о вас обрабатываются, потребовать их уточнения, блокировки или удаления, а также отозвать согласие. Запрос направьте на адрес karkasniiik@yandex.ru. Мы ответим в сроки, установленные законом (не позднее 30 дней).',
+            en: 'You have the right to obtain information about the personal data we hold about you, to ask for it to be corrected, blocked or deleted, and to withdraw consent. Send your request to karkasniiik@yandex.ru. We will reply within the time limits set by law (no later than 30 days).',
           },
         ],
       },
@@ -210,8 +209,8 @@ export const LEGAL_DOCS: Record<LegalDocType, LegalDocument> = {
         paragraphs: [
           {
             // REVIEW: payment scheme and warranty period must match the signed contract template.
-            ru: `Цены указаны за готовый дом под ключ на дату публикации и могут меняться. Для вас действует цена, зафиксированная в договоре. Порядок оплаты по умолчанию: без предоплаты за домокомплект, окончательный расчёт после монтажа на участке и подписания акта приёмки работ. Гарантия на конструкции — ${COMPANY_CONFIG.warrantyMonths} месяцев с даты подписания акта приёмки.`,
-            en: `Prices are for a turnkey house and are valid on the date of publication; they may change. The price fixed in your contract applies to you. Default payment scheme: no prepayment for the house kit, final payment after assembly on the plot and signing of the acceptance certificate. Structural warranty — ${COMPANY_CONFIG.warrantyMonths} months from the date of the acceptance certificate.`,
+            ru: `Цены указаны за готовый дом под ключ на дату публикации и могут меняться. Для вас действует цена, зафиксированная в договоре. Порядок оплаты по умолчанию: без предоплаты за домокомплект, окончательный расчёт после монтажа на участке и подписания акта приёмки работ. Гарантия на конструкции — до 3 лет с даты подписания акта приёмки.`,
+            en: `Prices are for a turnkey house and are valid on the date of publication; they may change. The price fixed in your contract applies to you. Default payment scheme: no prepayment for the house kit, final payment after assembly on the plot and signing of the acceptance certificate. Structural warranty — up to 3 years from the date of the acceptance certificate.`,
           },
         ],
       },
@@ -255,8 +254,8 @@ export const LEGAL_DOCS: Record<LegalDocType, LegalDocument> = {
         heading: { ru: '9. Применимое право и споры', en: '9. Governing law and disputes' },
         paragraphs: [
           {
-            ru: 'Отношения регулируются законодательством Российской Федерации. Претензии направляются Оператору на info@karkasnik.ru и рассматриваются в течение 30 дней. Если соглашение не достигнуто, спор передаётся в суд по месту нахождения Оператора.',
-            en: 'These relations are governed by the law of the Russian Federation. Claims are sent to the Operator at info@karkasnik.ru and are reviewed within 30 days. If no agreement is reached, the dispute is referred to the court at the Operator\'s registered address.',
+            ru: 'Отношения регулируются законодательством Российской Федерации. Претензии направляются Оператору на karkasniiik@yandex.ru и рассматриваются в течение 30 дней. Если соглашение не достигнуто, спор передаётся в суд по месту нахождения Оператора.',
+            en: 'These relations are governed by the law of the Russian Federation. Claims are sent to the Operator at karkasniiik@yandex.ru and are reviewed within 30 days. If no agreement is reached, the dispute is referred to the court at the Operator\'s registered address.',
           },
         ],
       },

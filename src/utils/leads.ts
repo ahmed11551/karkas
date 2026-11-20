@@ -1,5 +1,5 @@
 import { parsePublicLead } from './leadPayload';
-import { reachGoal } from './analytics';
+import { reachGoal, track } from './analytics';
 
 export type LeadStatus = 'new' | 'contacted' | 'negotiation' | 'contract' | 'completed' | 'lost';
 
@@ -51,6 +51,7 @@ export interface StoredLead {
   giftsSelected?: string[];
   quizAnswers?: { [key: number]: string };
   utm?: UtmParams;
+  pathname?: string;
   managerNotes?: string;
 }
 
@@ -357,6 +358,7 @@ export const saveLead = async (
   const parsed = parsePublicLead({
     ...lead,
     utm: lead.utm || getCapturedUtmParams(),
+    pathname: lead.pathname || (typeof window !== 'undefined' ? window.location.pathname : undefined),
     consent: lead.consent,
   });
   if (!parsed.ok) return { ok: false, error: parsed.error };
@@ -374,6 +376,7 @@ export const saveLead = async (
     }
 
     const newLead = data.lead as StoredLead;
+    track('lead_submit', { source: newLead.source, duplicate: Boolean(data.duplicate) });
     try {
       const updated = [newLead, ...getStoredLeads().filter((item) => item.id !== newLead.id)];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

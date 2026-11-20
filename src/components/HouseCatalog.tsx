@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, Check, Maximize2, LayoutGrid, Eye, Image as ImageIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { HouseItem, Language } from '../types';
 import { HOUSES } from '../data/houses';
 import { TRANSLATIONS } from '../data/translations';
 import { HouseSvg } from './HouseSvg';
 import { playUiClick } from '../utils/sound';
+import { track } from '../utils/analytics';
 
 interface HouseCatalogProps {
   lang: Language;
@@ -34,13 +35,13 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   const [budgetFilter, setBudgetFilter] = useState<number>(99999);
   const [showAll, setShowAll] = useState<boolean>(false);
   const [selectedSpecHouse, setSelectedSpecHouse] = useState<HouseItem | null>(null);
-  const [activeViewModes, setActiveViewModes] = useState<{ [id: string]: CardViewMode }>({});
   const [modalViewMode, setModalViewMode] = useState<CardViewMode>('facade');
   const [failedWebpIds, setFailedWebpIds] = useState<{ [id: string]: boolean }>({});
 
   const filteredHouses = HOUSES.filter((h) => h.price <= budgetFilter);
-  const displayedHouses = showAll ? filteredHouses : filteredHouses.slice(0, 6);
-  const hiddenCount = Math.max(0, filteredHouses.length - 6);
+  const priceFiltered = budgetFilter < 99999;
+  const displayedHouses = priceFiltered || showAll ? filteredHouses : filteredHouses.slice(0, 6);
+  const hiddenCount = Math.max(0, filteredHouses.length - displayedHouses.length);
 
   const filterOptions = [
     { value: 99999, label: t.catalog.filters.all },
@@ -56,22 +57,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
   const handleFilterChange = (val: number) => {
     playUiClick('tap');
     setBudgetFilter(val);
-  };
-
-  // Asymmetric Bento Grid span pattern:
-  // Index 0 ("Дачный домик" - Best Seller) is featured wide (lg:col-span-2),
-  // alternating 2:1 / 1:2 / 2:1 rhythm so every 3-column row is 100% filled.
-  const isBentoWide = (idx: number): boolean => {
-    return idx === 0 || idx === 3 || idx === 4 || idx === 8 || idx === 11 || idx === 14;
-  };
-
-  // Overlay chips sit on the card image. Dark variant is used on the forest
-  // card and whenever a photo is shown behind them.
-  const chipClass = (active: boolean, onDark: boolean): string => {
-    if (active) return 'bg-ink text-paper border-ink';
-    return onDark
-      ? 'bg-forest/70 text-cream border-cream/20 hover:bg-forest'
-      : 'bg-paper/90 text-ink border-ink/10 hover:bg-paper';
+    setShowAll(false);
   };
 
   return (
@@ -121,282 +107,79 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
       {/* Bento Grid of Houses with Magnetic Tilt Cards & Optimized WebP Project Images */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
         {displayedHouses.map((house, idx) => {
-          const isFeaturedBestSeller = idx === 0;
-          const isWide = isBentoWide(idx);
           const hasPhoto = !!house.imageWebp && !failedWebpIds[house.id];
-          // Visualisation is the default view when it exists; schema and plan stay as toggles.
-          const currentMode: CardViewMode = activeViewModes[house.id] || (hasPhoto ? 'webp' : 'facade');
-          const onDark = isFeaturedBestSeller || currentMode === 'webp';
           const index = `№ ${String(idx + 1).padStart(2, '0')}`;
 
           return (
             <MagneticBentoCard
               key={house.id}
-              className={`rounded-[20px] overflow-hidden flex flex-col ${
-                isWide ? 'sm:col-span-2 lg:col-span-2 lg:flex-row' : 'col-span-1'
-              } ${
-                isFeaturedBestSeller
-                  ? 'bg-forest text-cream border border-cream/10'
-                  : 'bg-paper dark:bg-forest-raised border border-ink/12 dark:border-cream/10'
-              } group`}
+              className="flex flex-col col-span-1"
             >
-              {/* Architectural Visualizer + Optimized WebP Render Area */}
-              <div
-                className={`relative pt-12 pb-4 px-5 flex flex-col items-center justify-center overflow-hidden ${
-                  isWide ? 'lg:w-1/2 lg:py-8' : 'w-full'
-                } ${
-                  isFeaturedBestSeller
-                    ? 'bg-forest-raised'
-                    : 'bg-paper-deep dark:bg-forest'
-                }`}
-              >
-                {/* Optional WebP Project Image Layer with graceful fallback to HouseSvg */}
-                {house.imageWebp && !failedWebpIds[house.id] && (
-                  <picture
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-500 pointer-events-none ${
-                      currentMode === 'webp' ? 'opacity-100 z-[5]' : 'opacity-0 z-0'
-                    }`}
-                  >
-                    <source srcSet={house.imageWebp} type="image/webp" />
-                    <img
-                      src={house.imageWebp}
-                      alt={`${house.name[lang]} — визуализация каркасного дома ${house.dimensions} (${house.area} м²)`}
-                      width={800}
-                      height={480}
-                      loading="lazy"
-                      decoding="async"
-                      onError={() => {
-                        setFailedWebpIds((prev) => ({ ...prev, [house.id]: true }));
-                        setActiveViewModes((prev) =>
-                          prev[house.id] === 'webp' ? { ...prev, [house.id]: 'facade' } : prev
-                        );
-                      }}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  </picture>
-                )}
-
-                <div className="absolute top-3.5 right-4 flex items-center gap-1.5 z-10">
-                  {/* Facade <-> Plan switch */}
-                  <button
-                    onClick={() => {
-                      playUiClick('tap');
-                      setActiveViewModes((prev) => ({
-                        ...prev,
-                        [house.id]: prev[house.id] === 'plan' ? 'facade' : 'plan',
-                      }));
-                    }}
-                    className={`px-2.5 py-1 rounded-[8px] text-[11px] font-semibold border transition-colors flex items-center gap-1 ${chipClass(
-                      false,
-                      onDark
-                    )}`}
-                    title="Переключить фасад / план"
-                  >
-                    {currentMode === 'plan' ? (
-                      <>
-                        <Eye className="w-3 h-3 text-brass-light" />
-                        <span>{lang === 'ru' ? 'Фасад' : 'Facade'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <LayoutGrid className="w-3 h-3 text-brass-ink dark:text-brass-light" />
-                        <span>{lang === 'ru' ? 'План' : 'Plan'}</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Toggle WebP Photo Render */}
-                  <button
-                    onClick={() => {
-                      playUiClick('tap');
-                      setActiveViewModes((prev) => ({
-                        ...prev,
-                        [house.id]: prev[house.id] === 'webp' ? 'facade' : 'webp',
-                      }));
-                    }}
-                    className={`px-2.5 py-1 rounded-[8px] text-[11px] font-mono font-semibold border transition-colors flex items-center gap-1 ${chipClass(
-                      currentMode === 'webp',
-                      isFeaturedBestSeller
-                    )}`}
-                    title={lang === 'ru' ? 'Визуализация проекта' : 'Project visualisation'}
-                  >
-                    <ImageIcon className="w-3 h-3" />
-                    <span>{lang === 'ru' ? 'Визуализация' : 'Visual'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      playUiClick('tick');
-                      setModalViewMode(house.imageWebp && !failedWebpIds[house.id] ? 'webp' : 'facade');
-                      setSelectedSpecHouse(house);
-                    }}
-                    className={`p-1.5 rounded-[8px] border transition-colors ${chipClass(
-                      false,
-                      onDark
-                    )}`}
-                    title={t.catalog.viewSpecs}
-                    aria-label={t.catalog.viewSpecs}
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div
-                  className={`w-full ${
-                    isWide ? 'max-w-[290px]' : 'max-w-[240px]'
-                  } aspect-[200/120] py-2 transition-opacity duration-500 ${
-                    currentMode === 'webp' ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                  }`}
-                >
-                  <HouseSvg
-                    lang={lang}
-                    styleType={house.style}
-                    isNight={isNightScene}
-                    hasPiles={true}
-                    viewMode={currentMode === 'plan' ? 'plan' : 'facade'}
-                    className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[20px] bg-paper-deep dark:bg-forest">
+                {hasPhoto ? (
+                  <img
+                    src={house.imageWebp}
+                    alt={`${house.name[lang]} — ${house.dimensions}, ${house.area} м²`}
+                    width={800}
+                    height={500}
+                    loading={idx < 3 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    onError={() => setFailedWebpIds((prev) => ({ ...prev, [house.id]: true }))}
+                    className="absolute inset-0 w-full h-full object-cover object-center"
                   />
-                </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <HouseSvg
+                      lang={lang}
+                      styleType={house.style}
+                      isNight={isNightScene}
+                      hasPiles={true}
+                      viewMode="facade"
+                      className="w-full h-full max-w-[240px]"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Card Details Area */}
-              <div className={`p-6 sm:p-7 flex flex-col flex-1 justify-between ${isWide ? 'lg:w-1/2 lg:p-8' : ''}`}>
-                <div>
-                  {/* Highlight label sits in the text column, clear of the image chips */}
-                  {house.highlight && (
-                    <span
-                      className={`eyebrow block mb-2 ${
-                        isFeaturedBestSeller ? 'text-brass-light' : 'text-brass-ink dark:text-brass-light'
-                      }`}
-                    >
-                      {house.highlight[lang]}
-                    </span>
-                  )}
-                  {/* Meta row with the item number */}
-                  <div className="flex items-baseline justify-between gap-3">
-                    <div
-                      className={`flex flex-wrap items-center gap-x-2 text-xs ${
-                        isFeaturedBestSeller ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'
-                      }`}
-                    >
-                      <span>{house.dimensions}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{house.area} м²</span>
-                      <span aria-hidden="true">·</span>
-                      <span>
-                        {house.floors === 1
-                          ? lang === 'ru'
-                            ? '1 этаж'
-                            : '1 story'
-                          : lang === 'ru'
-                            ? '2 этажа'
-                            : '2 stories'}
-                      </span>
-                    </div>
-                    <span
-                      className={`font-mono text-xs tracking-[0.04em] shrink-0 pt-0.5 ${
-                        isFeaturedBestSeller ? 'text-brass-light' : 'text-olive dark:text-cream-soft'
-                      }`}
-                    >
-                      {index}
-                    </span>
-                  </div>
-
-                  <h3
-                    className={`font-light leading-tight mt-3 ${
-                      isWide ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
-                    } ${
-                      isFeaturedBestSeller
-                        ? 'text-cream'
-                        : 'text-ink dark:text-cream group-hover:text-brass-ink dark:group-hover:text-brass-light'
-                    } transition-colors`}
-                  >
-                    {house.name[lang]}
-                  </h3>
-
-                  <p
-                    className={`mt-3 text-sm leading-relaxed ${
-                      isFeaturedBestSeller
-                        ? 'text-cream-soft'
-                        : 'text-ink-soft dark:text-cream-soft line-clamp-2'
-                    }`}
-                  >
-                    {house.description[lang]}
-                  </p>
-
-                  {/* Key feature specs */}
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {house.specs[lang].map((spec, sIdx) => (
-                      <span
-                        key={sIdx}
-                        className={`inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.02em] px-2 py-1 rounded-[6px] border ${
-                          isFeaturedBestSeller
-                            ? 'border-cream/20 text-cream'
-                            : 'border-ink/12 dark:border-cream/12 text-ink dark:text-cream'
-                        }`}
-                      >
-                        <Check
-                          className={`w-2.5 h-2.5 ${
-                            isFeaturedBestSeller ? 'text-brass-light' : 'text-brass-ink dark:text-brass-light'
-                          }`}
-                        />
-                        <span>{spec}</span>
-                      </span>
-                    ))}
-                  </div>
+              <div className="pt-4 flex flex-col flex-1">
+                <div className="flex items-baseline justify-between gap-3 text-xs text-olive dark:text-cream-soft">
+                  <span>
+                    {house.area} м² · {house.dimensions}
+                  </span>
+                  <span className="font-mono">{index}</span>
                 </div>
-
-                {/* Price & Action row */}
-                <div
-                  className={`mt-7 pt-5 border-t flex flex-wrap items-end justify-between gap-x-4 gap-y-4 ${
-                    isFeaturedBestSeller
-                      ? 'border-cream/15'
-                      : 'border-ink/12 dark:border-cream/10'
-                  }`}
-                >
-                  <div>
-                    <span
-                      className={`eyebrow block mb-1 ${
-                        isFeaturedBestSeller ? 'text-cream-soft' : 'text-olive dark:text-cream-soft'
-                      }`}
+                <h3 className="font-light text-2xl leading-tight mt-1 text-ink dark:text-cream">{house.name[lang]}</h3>
+                <p className="mt-2 font-light text-2xl leading-none tabular-nums text-ink dark:text-cream">
+                  <span className="sr-only">{t.catalog.from} </span>
+                  {formatPrice(house.price)} {t.catalog.rub}
+                </p>
+                <div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playUiClick('tap');
+                        onSelectHouse(house);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[12px] bg-brass hover:bg-brass-hover text-ink text-sm font-medium"
                     >
-                      {t.catalog.from}
-                    </span>
-                    <span
-                      className={`font-light whitespace-nowrap ${
-                        isWide ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
-                      } leading-none tabular-nums ${
-                        isFeaturedBestSeller ? 'text-cream' : 'text-ink dark:text-cream'
-                      }`}
+                      {lang === 'ru' ? 'Рассчитать' : 'Calculate'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playUiClick('tick');
+                        track('view_project', { project: house.id, area: house.area });
+                        setModalViewMode(hasPhoto ? 'webp' : 'facade');
+                        setSelectedSpecHouse(house);
+                      }}
+                      className="inline-flex items-center gap-1 px-1 py-2.5 text-sm text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream"
                     >
-                      {formatPrice(house.price)} {t.catalog.rub}
-                    </span>
+                      <span>{lang === 'ru' ? 'Подробнее' : 'Details'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
                   </div>
-
-                  {/* One gold CTA per screen: the featured card. Others use a text link. */}
-                  {isFeaturedBestSeller ? (
-                    <button
-                      onClick={() => {
-                        playUiClick('tap');
-                        onSelectHouse(house);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-5 py-3 rounded-[12px] bg-brass hover:bg-brass-hover text-ink text-sm font-medium transition-colors whitespace-nowrap active:scale-[0.98]"
-                    >
-                      <span>{t.catalog.calculateExact}</span>
-                      <ArrowUpRight className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        playUiClick('tap');
-                        onSelectHouse(house);
-                      }}
-                      className="inline-flex items-center gap-1.5 pb-0.5 text-sm font-semibold whitespace-nowrap text-ink dark:text-cream border-b border-ink/30 dark:border-cream/30 hover:text-brass-ink dark:hover:text-brass-light hover:border-brass-ink dark:hover:border-brass-light transition-colors"
-                    >
-                      <span>{t.catalog.calculateExact}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
                 </div>
               </div>
             </MagneticBentoCard>
@@ -405,7 +188,7 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
       </div>
 
       {/* Show All / Collapse Toggle Button */}
-      {filteredHouses.length > 6 && (
+      {filteredHouses.length > 6 && !priceFiltered && (
         <div className="mt-12 flex flex-col items-center">
           <button
             onClick={() => {

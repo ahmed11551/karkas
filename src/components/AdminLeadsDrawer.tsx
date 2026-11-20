@@ -33,6 +33,7 @@ import {
   normalizeLeadStatus,
 } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
+import { track } from '../utils/analytics';
 
 interface AdminLeadsDrawerProps {
   isOpen: boolean;
@@ -254,6 +255,7 @@ export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
       showToast('err', res.error);
       return;
     }
+    track('crm_status_change', { status });
     showToast('ok', `Статус: ${STATUS_META[status].label}`);
   };
 
@@ -814,7 +816,10 @@ export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
                     </div>
                     <h3 className="text-xl font-light leading-tight">{selectedLead.clientName || 'Имя не указано'}</h3>
                     {renderPhoneLink(selectedLead, 'inline-flex items-center gap-2 text-base font-semibold text-ink')}
-                    <div className="text-[11px] text-olive">Источник: {SOURCE_LABELS[selectedLead.source]}</div>
+                    <div className="text-[11px] text-olive">
+                      Источник: {SOURCE_LABELS[selectedLead.source]}
+                      {selectedLead.pathname ? ` · ${selectedLead.pathname}` : ''}
+                    </div>
                   </div>
 
                   {/* Contact actions */}
@@ -908,16 +913,6 @@ export const AdminLeadsDrawer: React.FC<AdminLeadsDrawerProps> = ({
                           <div>
                             <dt className="text-olive text-[11px]">Расстояние от МКАД</dt>
                             <dd className="font-semibold">{selectedLead.calculatorParams.distanceKm} км</dd>
-                          </div>
-                        )}
-                        {selectedLead.calculatorParams?.mortgageMode && (
-                          <div>
-                            <dt className="text-olive text-[11px]">Ипотека, платёж</dt>
-                            <dd className="font-semibold">
-                              {selectedLead.calculatorParams.monthlyPayment
-                                ? `${selectedLead.calculatorParams.monthlyPayment.toLocaleString('ru-RU')} ₽/мес`
-                                : 'не указан'}
-                            </dd>
                           </div>
                         )}
                       </dl>

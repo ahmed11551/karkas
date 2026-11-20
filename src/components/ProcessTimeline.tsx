@@ -102,15 +102,7 @@ export const ProcessTimeline: React.FC<ProcessTimelineProps> = ({ lang }) => {
               </div>
 
               <div className="mt-8 pt-4 border-t border-ink/12 dark:border-cream/10 flex items-center justify-between gap-3 text-xs text-olive dark:text-cream-soft">
-                <span>
-                  {st.num === 5
-                    ? lang === 'ru'
-                      ? 'Монтаж на участке'
-                      : 'On-site assembly'
-                    : lang === 'ru'
-                      ? 'Гарантия договора'
-                      : 'Contract guarantee'}
-                </span>
+                <span>{lang === 'ru' ? 'По договору' : 'In the contract'}</span>
                 <span
                   aria-hidden="true"
                   className={`w-2 h-2 rounded-full transition-all duration-500 ${

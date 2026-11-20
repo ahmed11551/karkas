@@ -145,6 +145,15 @@ html.lenis body {
   color: var(--color-cream);
 }
 
+/* House number. Brass on paper; cream on the hero photo, where brass disappears into the sky. */
+.logo-num {
+  color: var(--color-brass);
+}
+
+.header-on-hero .logo-num {
+  color: var(--color-cream);
+}
+
 .header-on-hero .hdr-soft {
   color: var(--color-cream-soft);
 }

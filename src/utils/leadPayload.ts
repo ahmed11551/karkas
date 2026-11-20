@@ -28,6 +28,7 @@ export interface SanitizedPublicLead {
   giftsSelected: string[];
   quizAnswers?: Record<string, string>;
   utm?: Record<string, string>;
+  pathname?: string;
 }
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'referrer'] as const;
@@ -89,6 +90,12 @@ export function validateClientName(
     };
   }
   return { ok: true, value };
+}
+
+function sanitizePathname(value: unknown): string | undefined {
+  const text = sanitizePlainText(value, 180);
+  if (!text.startsWith('/') || text.includes('//')) return undefined;
+  return text;
 }
 
 export function parsePublicLead(
@@ -173,6 +180,7 @@ export function parsePublicLead(
       giftsSelected: gifts,
       quizAnswers,
       utm,
+      pathname: sanitizePathname(raw.pathname),
     },
   };
 }

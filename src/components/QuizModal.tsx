@@ -5,6 +5,7 @@ import { QUIZ_QUESTIONS } from '../data/translations';
 import { buildMessengerUrl } from '../config/company';
 import { saveLead, LeadCalculatorParams } from '../utils/leads';
 import { playUiClick } from '../utils/sound';
+import { track } from '../utils/analytics';
 import { formatRussianPhoneInput, validateRussianPhone } from '../utils/phoneValidation';
 import { validateClientName } from '../utils/leadPayload';
 import { ConsentField } from './ConsentField';
@@ -133,6 +134,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
       return;
     }
     playUiClick('success');
+    track('quiz_complete');
     setIsSuccess(true);
   };
 
@@ -342,7 +344,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               </div>
               <div className="flex items-center gap-2.5">
                 <Check className="w-3.5 h-3.5 text-brass-ink shrink-0" />
-                <span>{lang === 'ru' ? 'Бесплатная доставка до 100 км и сборка' : 'Free delivery (100km) & assembly'}</span>
+                <span>{lang === 'ru' ? 'Бесплатная доставка до 500 км и сборка' : 'Free delivery up to 500 km and assembly'}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Check className="w-3.5 h-3.5 text-brass-ink shrink-0" />

@@ -113,8 +113,8 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
           </h2>
           <p className="mt-4 text-sm sm:text-base text-ink-soft dark:text-cream-soft max-w-2xl leading-relaxed">
             {lang === 'ru'
-              ? 'Более 38 000 построенных объектов с 2010 года. Посмотрите недавние сданные дома и реальные отзывы заказчиков.'
-              : 'Over 38,000 houses erected since 2010. Explore recently handed-over plots and verified client impressions.'}
+              ? 'Строим с 2011 года. Ниже — сданные дома и отзывы заказчиков.'
+              : 'Building since 2011. Below are handed-over houses and client reviews.'}
           </p>
         </div>
 
@@ -124,7 +124,7 @@ export const PlotsMap: React.FC<PlotsMapProps> = ({ lang }) => {
             {lang === 'ru' ? 'Сданный объект' : 'Handed over'}
           </span>
           <span aria-hidden="true">·</span>
-          <span>{lang === 'ru' ? 'Доставка до 100 км бесплатно' : 'Free delivery up to 100 km'}</span>
+          <span>{lang === 'ru' ? 'Доставка до 500 км бесплатно' : 'Free delivery up to 500 km'}</span>
         </div>
       </div>
 

@@ -7,13 +7,14 @@ import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
-import { Bell, Lock, ShieldCheck, X, ArrowRight } from 'lucide-react';
+import { Bell, X, ArrowRight } from 'lucide-react';
 import { Language, Theme, HouseItem } from './types';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { HouseCatalog } from './components/HouseCatalog';
 import { ReviewsSection } from './components/ReviewsSection';
 import { GallerySection } from './components/GallerySection';
+import { BuiltProjects } from './components/BuiltProjects';
 import { Footer } from './components/Footer';
 import { StickyMobileBar } from './components/StickyMobileBar';
 import { MessengerFloating } from './components/MessengerFloating';
@@ -22,10 +23,10 @@ import {
   StoredLead,
   LeadCalculatorParams,
   verifyAdminSession,
-  fetchProtectedLeads,
   getCapturedUtmParams,
 } from './utils/leads';
 import { playUiClick } from './utils/sound';
+import { track } from './utils/analytics';
 
 import { LazyMount, scrollToAnchorWhenReady } from './components/LazyMount';
 
@@ -92,9 +93,10 @@ export default function App() {
   const [isNightScene, setIsNightScene] = useState<boolean>(false);
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [isCrmOpen, setIsCrmOpen] = useState<boolean>(false);
+  const crmOpenRef = useRef(false);
+  crmOpenRef.current = isCrmOpen;
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
-  const [newLeadsCount, setNewLeadsCount] = useState<number>(0);
   const [realtimeToastLead, setRealtimeToastLead] = useState<StoredLead | null>(null);
   const [selectedLeadIdForCrm, setSelectedLeadIdForCrm] = useState<string | null>(null);
 
@@ -130,8 +132,8 @@ export default function App() {
     document.documentElement.lang = lang;
     document.title =
       lang === 'ru'
-        ? 'Каркасник — Дачные дома в Москве и МО от 498 000 ₽'
-        : 'Karkasnik — Country Frame Houses in Moscow from 498,000 ₽';
+        ? 'Каркасник — Каркасные дома в Москве и МО от 498 000 ₽'
+        : 'Karkasnik — Frame houses in Moscow from 498,000 ₽';
   }, [lang]);
 
   // 1. Initialize Lenis Smooth Scroll ("Эффект Шелка") synced with IntersectionObserver & Scroll Progress
@@ -209,23 +211,19 @@ export default function App() {
   useEffect(() => {
     getCapturedUtmParams();
 
+    const wantsCrm =
+      window.location.pathname === '/login' ||
+      window.location.hash === '#login' ||
+      window.location.search.includes('login=1');
+
     const checkAuth = async () => {
       const valid = await verifyAdminSession();
       setIsAdminAuthenticated(valid);
-      if (valid) {
-        const res = await fetchProtectedLeads();
-        setNewLeadsCount(res.leads.filter((l) => (l.status || 'new') === 'new').length);
-      }
+      if (!wantsCrm) return;
+      if (valid) setIsCrmOpen(true);
+      else setIsAdminLoginOpen(true);
     };
     checkAuth();
-
-    if (
-      window.location.pathname === '/login' ||
-      window.location.hash === '#login' ||
-      window.location.search.includes('login=1')
-    ) {
-      setIsAdminLoginOpen(true);
-    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key.toLowerCase() === 'l') {
@@ -250,8 +248,7 @@ export default function App() {
   // 3. Real-Time Lead Notifications (SSE + CustomEvent) for Admin
   useEffect(() => {
     const triggerToastForLead = (lead: StoredLead) => {
-      setNewLeadsCount((prev) => prev + 1);
-      if (isAdminAuthenticated) {
+      if (isAdminAuthenticated && crmOpenRef.current) {
         playUiClick('success');
         setRealtimeToastLead(lead);
       }
@@ -273,9 +270,11 @@ export default function App() {
         eventSource.addEventListener('new_lead', (ev: MessageEvent) => {
           try {
             const incomingLead: StoredLead = JSON.parse(ev.data);
-            setRealtimeToastLead((current) =>
-              current?.id === incomingLead.id ? current : incomingLead
-            );
+            if (crmOpenRef.current) {
+              setRealtimeToastLead((current) =>
+                current?.id === incomingLead.id ? current : incomingLead
+              );
+            }
             window.dispatchEvent(new CustomEvent('leads_updated'));
           } catch {
             // ignore parse error
@@ -291,6 +290,10 @@ export default function App() {
       eventSource?.close();
     };
   }, [isAdminAuthenticated]);
+
+  useEffect(() => {
+    if (!isCrmOpen) setRealtimeToastLead(null);
+  }, [isCrmOpen]);
 
   // Sync dark class on root html
   useEffect(() => {
@@ -329,6 +332,7 @@ export default function App() {
     setPrefilledCalcParams(calcParams);
     setPrefilledHouseTitle(houseTitle);
     setIsQuizOpen(true);
+    track('quiz_start', { project: houseTitle });
   };
 
   const handleSelectHouse = (house: HouseItem) => {
@@ -366,7 +370,7 @@ export default function App() {
 
       {/* Real-Time Admin Toast Notification */}
       <AnimatePresence>
-        {isAdminAuthenticated && realtimeToastLead && (
+        {isAdminAuthenticated && isCrmOpen && realtimeToastLead && (
           <motion.div
             key={realtimeToastLead.id}
             initial={{ opacity: 0, y: -24, scale: 0.95 }}
@@ -456,12 +460,6 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenQuiz={() => handleOpenQuiz()}
-        onOpenCrm={() => {
-          setSelectedLeadIdForCrm(null);
-          setIsCrmOpen(true);
-        }}
-        isAdminAuthenticated={isAdminAuthenticated}
-        newLeadsCount={newLeadsCount}
         isScrolled={isScrolled}
       />
 
@@ -499,6 +497,12 @@ export default function App() {
         <LazyMount anchorId="reviews" minHeight="800px">
           <motion.div {...sectionMotionProps}>
             <ReviewsSection lang={lang} />
+          </motion.div>
+        </LazyMount>
+
+        <LazyMount anchorId="built" minHeight="720px">
+          <motion.div {...sectionMotionProps}>
+            <BuiltProjects lang={lang} />
           </motion.div>
         </LazyMount>
 
@@ -586,40 +590,7 @@ export default function App() {
       </motion.div>
 
       {/* Footer Credentials, Policy Links & /login Staff Trigger */}
-      <Footer
-        lang={lang}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onOpenAdminLogin={() => setIsAdminLoginOpen(true)}
-        onOpenCrm={() => setIsCrmOpen(true)}
-      />
-
-      {/* Bottom-Left Quick Utility Dock: /login Staff Access */}
-      <div className="fixed bottom-3 left-4 z-40 hidden xl:flex items-center gap-2">
-        {!isAdminAuthenticated ? (
-          <button
-            onClick={() => {
-              playUiClick('tap');
-              setIsAdminLoginOpen(true);
-            }}
-            className="px-3 py-1.5 rounded-[12px] bg-[#183B30]/90 text-[#FCBD1C] border border-[#FCBD1C]/40 text-[11px] font-mono hover:scale-105 transition-all   flex items-center gap-1.5 opacity-80 hover:opacity-100"
-            title="Авторизация администратора (/login)"
-          >
-            <Lock className="w-3 h-3" />
-            <span>/login (CRM)</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              playUiClick('tap');
-              setIsCrmOpen(true);
-            }}
-            className="px-3 py-1.5 rounded-[12px] bg-[#FCBD1C] text-ink font-semibold text-[11px] font-mono hover:scale-105 transition-all  flex items-center gap-1.5"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>CRM Активна ({newLeadsCount})</span>
-          </button>
-        )}
-      </div>
+      <Footer lang={lang} />
 
       {/* Mobile Sticky Quick Action Bar */}
       <StickyMobileBar
@@ -648,10 +619,8 @@ export default function App() {
           <AdminLoginModal
             isOpen={isAdminLoginOpen}
             onClose={() => setIsAdminLoginOpen(false)}
-            onSuccess={async () => {
+            onSuccess={() => {
               setIsAdminAuthenticated(true);
-              const res = await fetchProtectedLeads();
-              setNewLeadsCount(res.leads.filter((l) => (l.status || 'new') === 'new').length);
               setIsCrmOpen(true);
             }}
           />

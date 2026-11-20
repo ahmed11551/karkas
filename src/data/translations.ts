@@ -4,7 +4,7 @@ import { COMPANY_CONFIG } from '../config/company';
 export const TRANSLATIONS = {
   ru: {
     brandName: COMPANY_CONFIG.brandName.ru,
-    brandTagline: 'Дачные дома в Москве и МО',
+    brandTagline: 'Каркасные дома в Москве и МО',
     phone: COMPANY_CONFIG.phoneDisplay,
     phoneSchedule: COMPANY_CONFIG.scheduleShort.ru,
     nav: {
@@ -17,15 +17,15 @@ export const TRANSLATIONS = {
       faq: 'Вопросы',
     },
     hero: {
-      titlePre: 'Дачный дом в Москве и области ',
+      titlePre: 'Каркасный дом в Москве и области ',
       titleHighlight: 'от 498 000 ₽',
       titlePost: ' за всё',
-      lead: 'Сами делаем, привозим и собираем каркасные дома. Бесплатно доставим в пределах 100 км, платите после установки.',
+      lead: 'Сами делаем, привозим и собираем каркасные дома, бытовки и хозблоки. Бесплатная доставка до 500 км, оплата после сдачи.',
       chips: [
-        'Сборка за 1–3 дня',
-        'Скидка 50% на свайный фундамент',
-        'Гарантия 12 месяцев',
-        'Оплата после установки',
+        'Своё производство с 2011 года',
+        'Больше 10 моделей домов, бытовок и хозблоков',
+        'Гарантия до 3 лет',
+        'Строим без предоплаты',
       ],
       quickCallPlaceholder: '+7 (___) ___-__-__',
       quickCallBtn: 'Перезвоните мне',
@@ -35,16 +35,16 @@ export const TRANSLATIONS = {
       monthlyGift: 'Подарок месяца: кровля из металлочерепицы.',
       toggleNight: 'Показать вечером',
       toggleDay: 'Показать днём',
-      housesBuiltBadge: 'домов построено с 2010 года',
+      housesBuiltBadge: 'лет строим дома с 2011 года',
     },
     stats: {
-      builtCount: '38 000',
-      builtLabel: 'домов построено с 2010 года',
+      builtCount: '13+',
+      builtLabel: 'лет строим в Москве и МО',
       projectsCount: '50+',
       projectsLabel: 'готовых проектов',
       assemblyCount: '1–3 дня',
       assemblyLabel: 'доставка и сборка',
-      warrantyCount: '12 мес.',
+      warrantyCount: 'до 3 лет',
       warrantyLabel: 'гарантии на дом',
     },
     reasons: {
@@ -70,7 +70,7 @@ export const TRANSLATIONS = {
     },
     catalog: {
       title: 'Выберите проект, цену уточним под вас',
-      subtitle: 'Цены указаны за готовый дом под ключ. Оплата строго после установки и приёмки работ.',
+      subtitle: 'Цены указаны за готовый дом под ключ. Также строим бытовки и хозблоки: больше 10 моделей, доставка от следующего дня. Оплата после сдачи.',
       filters: {
         all: 'Все проекты',
         under700: 'До 700 тыс. ₽',
@@ -143,7 +143,7 @@ export const TRANSLATIONS = {
       breakdownBase: 'Дом',
       withVerandaText: 'с верандой',
       paymentAfterText: 'оплата после установки.',
-      giftRoofText: 'Металлочерепица в подарок, доставка и сборка до 100 км бесплатно.',
+      giftRoofText: 'Металлочерепица в подарок, доставка и сборка до 500 км бесплатно.',
       saveTextWithPiles: 'Выгода по акции: −90 000 ₽ на фундаменте, плюс кровля, доставка и сборка в подарок.',
       saveTextWithoutPiles: 'Добавьте сваи со скидкой 50%, и цена станет выгоднее, а кровля, доставка и сборка всё равно в подарок.',
       modeCash: 'Стоимость дома',
@@ -155,38 +155,38 @@ export const TRANSLATIONS = {
       rateNotice: 'Ставка от 6% по льготным программам. Одобрение за 1 день.',
     },
     stepsSection: {
-      title: 'Как мы строим вместе',
-      subtitle: 'Прозрачный процесс от первой заявки до вручения ключей за 6 простых шагов',
+      title: 'Как мы работаем',
+      subtitle: 'Шесть шагов от проекта до оплаты после сдачи объекта',
       steps: [
         {
           num: 1,
-          title: 'Оставляете заявку',
-          desc: 'Задаём несколько вопросов и подбираем варианты, даже если вы ещё не знаете, какой дом хотите.',
+          title: 'Согласование',
+          desc: 'Выбираем и обсуждаем проект, считаем комплектацию и итоговую стоимость.',
         },
         {
           num: 2,
-          title: 'Выбираем проект',
-          desc: 'Подбираем по стилю, площади и бюджету. Готовый дом можно получить уже через несколько недель.',
+          title: 'Договор',
+          desc: 'Фиксируем условия и выбираем дату строительства. Без предоплаты за дом.',
         },
         {
           num: 3,
-          title: 'Согласовываем детали',
-          desc: 'Кровля, комнаты, фундамент и другие характеристики, чтобы дом подошёл именно вам.',
+          title: 'Доставка',
+          desc: 'Привозим материалы на участок. Бесплатно в пределах 500 км.',
         },
         {
           num: 4,
-          title: 'Считаем стоимость и подписываем договор',
-          desc: 'В расчёт входят дом, доставка и сборка. До 100 км доставка бесплатная.',
+          title: 'Строительство',
+          desc: 'Возводим объект от фундамента до чистовой отделки под ключ.',
         },
         {
           num: 5,
-          title: 'Привозим и собираем за 1–3 дня',
-          desc: 'Вы смотрите, как растёт дом, а в конце вместе проверяем качество и геометрию.',
+          title: 'Сдача',
+          desc: 'Завершаем работы и подписываем акт приёма-сдачи.',
         },
         {
           num: 6,
-          title: 'Остаёмся на связи',
-          desc: 'Отвечаем на вопросы и помогаем после сдачи. К нам часто приходят соседи наших клиентов.',
+          title: 'Оплата',
+          desc: 'Итоговый расчёт только после сдачи объекта.',
         },
       ],
     },
@@ -196,14 +196,14 @@ export const TRANSLATIONS = {
       cards: [
         {
           title: 'Производство',
-          text: 'Своё, с 2010 года. Построено 38 000 домов по всей Московской области.',
-          kpi: '38 000+',
-          kpiLabel: 'реализованных проектов',
+          text: 'Своё производство с 2011 года. Строим дома, бытовки и хозблоки в Москве, МО и других регионах.',
+          kpi: 'с 2011',
+          kpiLabel: 'года на рынке',
         },
         {
           title: 'Транспорт',
-          text: 'Собственная служба доставки манипуляторами и еврофурами по Москве и МО.',
-          kpi: '100 км',
+          text: 'Собственная доставка по Москве, Московской области и дальше.',
+          kpi: '500 км',
           kpiLabel: 'бесплатной доставки',
         },
         {
@@ -227,7 +227,7 @@ export const TRANSLATIONS = {
         {
           badge: '0 ₽',
           title: 'Доставка и сборка',
-          desc: 'До 100 км от МКАД, быстрая сборка за 1–3 дня.',
+          desc: 'До 500 км бесплатно, сборка на участке.',
           alt: false,
         },
         {
@@ -259,7 +259,7 @@ export const TRANSLATIONS = {
         },
         {
           q: 'Как далеко вы возите бесплатно?',
-          a: 'Доставка и сборка бесплатны в пределах 100 км от нашего производства/МКАД. Если ваш участок дальше, стоимость дополнительного километража уточним в индивидуальном расчёте.',
+          a: 'Доставка бесплатна в пределах 500 км. Если участок дальше, стоимость дополнительного километража посчитаем отдельно.',
         },
         {
           q: 'Можно ли жить в доме зимой?',
@@ -267,7 +267,7 @@ export const TRANSLATIONS = {
         },
         {
           q: 'Какая гарантия?',
-          a: '12 месяцев официальной гарантии по договору на конструктив и целостность кровли. При любых вопросах сервисная бригада оперативно выезжает на участок.',
+          a: 'Гарантия до 3 лет по договору. Условия фиксируем до начала работ.',
         },
       ],
     },
@@ -301,7 +301,7 @@ export const TRANSLATIONS = {
   },
   en: {
     brandName: COMPANY_CONFIG.brandName.en,
-    brandTagline: 'Frame Country Houses in Moscow & Region',
+    brandTagline: 'Frame houses in Moscow & Region',
     phone: COMPANY_CONFIG.phoneDisplay,
     phoneSchedule: COMPANY_CONFIG.scheduleShort.en,
     nav: {
@@ -314,15 +314,15 @@ export const TRANSLATIONS = {
       faq: 'FAQ',
     },
     hero: {
-      titlePre: 'Country Frame Houses in Moscow & Region ',
+      titlePre: 'A frame house in Moscow and the region ',
       titleHighlight: 'from 498,000 ₽',
       titlePost: ' All-Inclusive',
-      lead: 'We manufacture, deliver, and assemble Scandinavian-grade frame houses ourselves. Free delivery within 100 km, payment strictly upon completed installation.',
+      lead: 'We build, deliver, and assemble frame houses, site cabins, and outbuildings ourselves. Free delivery up to 500 km, payment after handover.',
       chips: [
-        '1–3 day on-site assembly',
-        '50% off screw-pile foundation',
-        '12-month comprehensive warranty',
-        'Pay after installation',
+        'Own production since 2011',
+        '10+ house, cabin, and outbuilding models',
+        'Warranty up to 3 years',
+        'No prepayment',
       ],
       quickCallPlaceholder: '+7 (___) ___-__-__',
       quickCallBtn: 'Call Me Back',
@@ -332,16 +332,16 @@ export const TRANSLATIONS = {
       monthlyGift: 'Monthly gift: Premium metal tile roofing included.',
       toggleNight: 'View at Night',
       toggleDay: 'View in Daylight',
-      housesBuiltBadge: 'houses built since 2010',
+      housesBuiltBadge: 'years building houses since 2011',
     },
     stats: {
-      builtCount: '38,000',
-      builtLabel: 'houses built since 2010',
+      builtCount: '13+',
+      builtLabel: 'years in Moscow and the region',
       projectsCount: '50+',
       projectsLabel: 'ready-to-build designs',
       assemblyCount: '1–3 days',
       assemblyLabel: 'delivery & turnkey build',
-      warrantyCount: '12 mos.',
+      warrantyCount: 'up to 3 yrs',
       warrantyLabel: 'structural warranty',
     },
     reasons: {
@@ -367,7 +367,7 @@ export const TRANSLATIONS = {
     },
     catalog: {
       title: 'Select a model, customized to your plot',
-      subtitle: 'All prices shown for turnkey completed houses. Payment strictly upon handover and inspection.',
+      subtitle: 'Turnkey house prices. We also build site cabins and outbuildings: 10+ models, delivery from the next day. Payment after handover.',
       filters: {
         all: 'All Models',
         under700: 'Under 700k ₽',
@@ -440,7 +440,7 @@ export const TRANSLATIONS = {
       breakdownBase: 'House',
       withVerandaText: 'with veranda',
       paymentAfterText: 'payment strictly upon handover.',
-      giftRoofText: 'Free metal tile roof, free delivery and assembly up to 100 km included.',
+      giftRoofText: 'Metal tile roof included, free delivery and assembly up to 500 km.',
       saveTextWithPiles: 'Promotion savings: −90,000 ₽ on foundation, plus free metal roof, delivery, and assembly.',
       saveTextWithoutPiles: 'Add 50% discounted screw-piles for the best savings value, with free roof and assembly preserved.',
       modeCash: 'Cash / Turnkey',
@@ -452,38 +452,38 @@ export const TRANSLATIONS = {
       rateNotice: 'Subsidized rates from 6%. Single-day bank pre-approval.',
     },
     stepsSection: {
-      title: 'How We Build Together',
-      subtitle: 'A transparent journey from initial inquiry to receiving your keys in 6 smooth steps',
+      title: 'How we work',
+      subtitle: 'Six steps from the project to payment after handover',
       steps: [
         {
           num: 1,
-          title: 'Submit Inquiry',
-          desc: 'We ask a few questions and propose options, even if you are not sure which house fits best.',
+          title: 'Agreement',
+          desc: 'We choose the project and calculate the specification and final price.',
         },
         {
           num: 2,
-          title: 'Select Design',
-          desc: 'Choose by style, floor space, and budget. Your home can be ready in just a few weeks.',
+          title: 'Contract',
+          desc: 'We fix the terms and pick the build date. No prepayment for the house.',
         },
         {
           num: 3,
-          title: 'Finalize Specifications',
-          desc: 'Roofing, room layouts, and foundation are tuned to your land and lifestyle requirements.',
+          title: 'Delivery',
+          desc: 'Materials arrive on the plot. Free within 500 km.',
         },
         {
           num: 4,
-          title: 'Fixed Quote & Contract',
-          desc: 'Covers house kit, delivery, and assembly. Delivery is completely free within 100 km.',
+          title: 'Construction',
+          desc: 'We build from the foundation through turnkey finishing.',
         },
         {
           num: 5,
-          title: 'Delivery & 1–3 Day Assembly',
-          desc: 'Watch your home rise swiftly, followed by a joint quality and geometry walkthrough.',
+          title: 'Handover',
+          desc: 'Work is finished and the acceptance certificate is signed.',
         },
         {
           num: 6,
-          title: 'Ongoing Support',
-          desc: 'We remain available for maintenance questions. Our clients often refer their neighbors to us.',
+          title: 'Payment',
+          desc: 'The final payment is made only after handover.',
         },
       ],
     },
@@ -493,14 +493,14 @@ export const TRANSLATIONS = {
       cards: [
         {
           title: 'Manufacturing',
-          text: 'Active since 2010. Over 38,000 custom houses completed across the Moscow region.',
-          kpi: '38,000+',
-          kpiLabel: 'completed homes',
+          text: 'Own production since 2011. Houses, site cabins, and outbuildings in Moscow, the region, and beyond.',
+          kpi: 'since 2011',
+          kpiLabel: 'on the market',
         },
         {
           title: 'Fleet & Logistics',
-          text: 'Dedicated crane trucks and transport trailers across Moscow and surrounding territory.',
-          kpi: '100 km',
+          text: 'Our own delivery across Moscow, the Moscow region, and further.',
+          kpi: '500 km',
           kpiLabel: 'free delivery radius',
         },
         {
@@ -524,7 +524,7 @@ export const TRANSLATIONS = {
         {
           badge: '0 ₽',
           title: 'Free Delivery & Assembly',
-          desc: 'Free transport up to 100 km and turnkey assembly in 1–3 days.',
+          desc: 'Free up to 500 km, assembly on the plot.',
           alt: false,
         },
         {
@@ -556,7 +556,7 @@ export const TRANSLATIONS = {
         },
         {
           q: 'How far is delivery free?',
-          a: 'Delivery and assembly are free within 100 km from our hub/MKAD. For further distances, minor transport mileage is calculated transparently.',
+          a: 'Delivery is free within 500 km. Beyond that, extra mileage is quoted separately.',
         },
         {
           q: 'Can the house be occupied in winter?',
@@ -564,13 +564,13 @@ export const TRANSLATIONS = {
         },
         {
           q: 'What warranty is provided?',
-          a: 'A 12-month formal structural and roofing warranty specified in your contract. Our service technicians promptly visit if any adjustment is needed.',
+          a: 'Warranty up to 3 years, written into the contract before work starts.',
         },
       ],
     },
     ctaBanner: {
       title: 'Lock In Three Promotional Gifts',
-      text: 'Metal tile roofing at no charge, free delivery and assembly up to 100 km, and 50% discount on screw-piles. We will call you for brief details and message your calculation within 15 minutes.',
+      text: 'Metal tile roofing included, free delivery and assembly up to 500 km, and 50% off screw piles. We call back and send the calculation in a messenger.',
       btn: 'Calculate Turnkey Price',
       disclaimer: 'Offer subject to monthly factory manufacturing allocation slots.',
     },

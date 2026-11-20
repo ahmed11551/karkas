@@ -12,7 +12,6 @@ interface EstimateDocumentModalProps {
   distanceKm: number;
   totalPrice: number;
   deliveryExtraCost: number;
-  monthlyPayment: number;
   lang: Language;
   onLockPrice: () => void;
 }
@@ -24,7 +23,6 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
   distanceKm,
   totalPrice,
   deliveryExtraCost,
-  monthlyPayment,
   lang,
   onLockPrice,
 }) => {
@@ -121,8 +119,8 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
               <p className="text-xs text-olive mt-2">
                 {COMPANY_CONFIG.legalName[lang]} · {COMPANY_CONFIG.regDetails[lang]} ·{' '}
                 {tx(
-                  `Собственное производство с ${COMPANY_CONFIG.foundedYear} года (${COMPANY_CONFIG.builtHousesCount} домов)`,
-                  `In-house production since ${COMPANY_CONFIG.foundedYear} (${COMPANY_CONFIG.builtHousesCount} houses built)`
+                  `Собственное производство с ${COMPANY_CONFIG.foundedYear} года, опыт ${COMPANY_CONFIG.builtHousesCount} лет`,
+                  `In-house production since ${COMPANY_CONFIG.foundedYear}, ${COMPANY_CONFIG.builtHousesCount} years`
                 )}
               </p>
               <p className="text-xs text-olive">
@@ -137,8 +135,8 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
               </span>
               <p className="text-xs text-olive mt-2">
                 {tx(
-                  `Гарантия по договору: ${COMPANY_CONFIG.warrantyMonths} месяцев`,
-                  `Contract warranty: ${COMPANY_CONFIG.warrantyMonths} months`
+                  'Гарантия по договору: до 3 лет',
+                  'Contract warranty: up to 3 years'
                 )}
               </p>
             </div>
@@ -287,12 +285,6 @@ export const EstimateDocumentModal: React.FC<EstimateDocumentModalProps> = ({
                 {tx(
                   'Итоговая стоимость под ключ без скрытых доплат (включая НДС и монтаж):',
                   'Turnkey total with no hidden extras (incl. VAT and assembly):'
-                )}
-              </p>
-              <p className="text-xs text-cream-soft/70">
-                {tx(
-                  `Доступна льготная ипотека от 6% (≈ ${monthlyPayment.toLocaleString('ru-RU')} ₽ / мес.)`,
-                  `Preferential mortgage from 6% available (≈ ${monthlyPayment.toLocaleString('ru-RU')} ₽ / month)`
                 )}
               </p>
             </div>
