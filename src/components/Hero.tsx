@@ -94,17 +94,22 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenQuiz }) => {
               {t.hero.titlePost}
             </h1>
             <p className="mt-5 max-w-xl text-base sm:text-lg text-cream leading-relaxed">{t.hero.lead}</p>
-            <button
-              type="button"
-              onClick={() => {
-                playUiClick('tap');
-                onOpenQuiz();
-              }}
-              className="mt-8 inline-flex items-center gap-2 h-14 px-7 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm"
-            >
-              <span>{lang === 'ru' ? 'Рассчитать' : 'Calculate'}</span>
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
-            </button>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  playUiClick('tap');
+                  onOpenQuiz();
+                }}
+                className="inline-flex items-center gap-2 h-14 px-7 rounded-[12px] bg-brass hover:bg-brass-hover text-ink font-medium text-sm"
+              >
+                <span>{lang === 'ru' ? 'Рассчитать' : 'Calculate'}</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <a href="/proekty/" className="text-sm text-cream underline underline-offset-4">
+                {lang === 'ru' ? 'Смотреть проекты' : 'See projects'}
+              </a>
+            </div>
             <dl className="mt-8 grid grid-cols-3 gap-4 max-w-lg">
               {[
                 { value: t.stats.assemblyCount, label: t.stats.assemblyLabel },

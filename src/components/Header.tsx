@@ -29,13 +29,16 @@ export const Header: React.FC<HeaderProps> = ({
   const headerRef = useRef<HTMLElement>(null);
   const solid = isScrolled || menuOpen;
 
+  const onHome = window.location.pathname === '/';
+  const sectionHref = (hash: string) => (onHome ? hash : `/${hash}`);
   const sections = [
-    { href: '#catalog', label: t.nav.projects },
-    { href: '#calculator', label: t.nav.calculator },
-    { href: '#materials', label: t.nav.materials },
-    { href: '#steps', label: t.nav.steps },
-    { href: '#gifts', label: t.nav.gifts },
-    { href: '#faq', label: t.nav.faq },
+    { href: '/proekty/', label: t.nav.projects },
+    { href: sectionHref('#calculator'), label: t.nav.calculator },
+    { href: sectionHref('#materials'), label: t.nav.materials },
+    { href: sectionHref('#steps'), label: t.nav.steps },
+    { href: sectionHref('#gifts'), label: t.nav.gifts },
+    { href: sectionHref('#faq'), label: t.nav.faq },
+    { href: '/kontakty/', label: lang === 'ru' ? 'Контакты' : 'Contacts' },
   ];
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-2 md:gap-8">
           {/* Zone 1: Brand Wordmark (Single element) */}
           <a
-            href="#"
+            href="/"
             className="hdr-ink text-[17px] sm:text-[1.35rem] md:text-[1.5rem] leading-none text-neutral-900 dark:text-neutral-50 hover:opacity-80 transition-opacity whitespace-nowrap shrink-0"
           >
             <Logo name={t.brandName} compact />
@@ -88,40 +91,46 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Zone 2: Navigation Links (Single-line, 4-5 items) */}
           <nav className="hdr-soft hidden lg:flex items-center gap-7 text-sm font-medium text-neutral-700 dark:text-neutral-300">
             <a
-              href="#catalog"
+              href="/proekty/"
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.projects}
             </a>
             <a
-              href="#calculator"
+              href={sectionHref('#calculator')}
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.calculator}
             </a>
             <a
-              href="#materials"
+              href={sectionHref('#materials')}
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.materials}
             </a>
             <a
-              href="#steps"
+              href={sectionHref('#steps')}
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.steps}
             </a>
             <a
-              href="#gifts"
+              href={sectionHref('#gifts')}
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.gifts}
             </a>
             <a
-              href="#faq"
+              href={sectionHref('#faq')}
               className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
             >
               {t.nav.faq}
+            </a>
+            <a
+              href="/kontakty/"
+              className="hover:text-pine dark:hover:text-brass-light transition-colors whitespace-nowrap shrink-0"
+            >
+              {lang === 'ru' ? 'Контакты' : 'Contacts'}
             </a>
           </nav>
 

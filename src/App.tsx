@@ -29,6 +29,11 @@ import { playUiClick } from './utils/sound';
 import { track } from './utils/analytics';
 
 import { LazyMount, scrollToAnchorWhenReady } from './components/LazyMount';
+import { CatalogPage } from './pages/CatalogPage';
+import { ContactsPage } from './pages/ContactsPage';
+import { LegalPage } from './pages/LegalPage';
+import { ProjectPage } from './pages/ProjectPage';
+import { SITE_ORIGIN, canonicalUrl, houseForPage, matchPublicPage } from './site/publicSite';
 
 // Below-the-fold sections: code is split and loaded only when the section nears the viewport
 // (see LazyMount). Heavy sections keep their own chunks; the first load stays small.
@@ -111,29 +116,38 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const lenisRef = useRef<Lenis | null>(null);
 
-  // Dynamic SEO Canonical & OpenGraph URL Resolution
+  // Canonical host comes from the release config, not from the address bar.
   useEffect(() => {
-    const origin = window.location.origin;
-    const currentUrl = origin + window.location.pathname;
-    const ogImageAbs = `${origin}/og-cover.jpg`;
-
+    const path = window.location.pathname;
+    const matched = matchPublicPage(path);
     const canonicalEl = document.getElementById('canonical-url') as HTMLLinkElement | null;
-    if (canonicalEl) canonicalEl.href = currentUrl;
-
     const ogUrlEl = document.getElementById('og-url') as HTMLMetaElement | null;
-    if (ogUrlEl) ogUrlEl.content = currentUrl;
-
     const ogImgEl = document.getElementById('og-image') as HTMLMetaElement | null;
-    if (ogImgEl) ogImgEl.content = ogImageAbs;
-
     const twImgEl = document.getElementById('twitter-image') as HTMLMetaElement | null;
+    const robots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    const ogImageAbs = `${SITE_ORIGIN}/og-cover.jpg`;
+    if (ogImgEl) ogImgEl.content = ogImageAbs;
     if (twImgEl) twImgEl.content = ogImageAbs;
-
     document.documentElement.lang = lang;
-    document.title =
-      lang === 'ru'
-        ? 'Каркасник — Каркасные дома в Москве и МО от 498 000 ₽'
-        : 'Karkasnik — Frame houses in Moscow from 498,000 ₽';
+
+    if (path === '/login') {
+      if (robots) robots.content = 'noindex, nofollow';
+      document.title = lang === 'ru' ? 'Вход в CRM — Каркасник' : 'CRM sign in — Karkasnik';
+      return;
+    }
+
+    if (matched) {
+      const url = canonicalUrl(matched.path);
+      if (canonicalEl) canonicalEl.href = url;
+      if (ogUrlEl) ogUrlEl.content = url;
+      if (robots) {
+        robots.content = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+      }
+      document.title =
+        matched.kind === 'home' && lang === 'en'
+          ? 'Karkasnik — Frame houses in Moscow from 498,000 ₽'
+          : matched.title;
+    }
   }, [lang]);
 
   // 1. Initialize Lenis Smooth Scroll ("Эффект Шелка") synced with IntersectionObserver & Scroll Progress
@@ -347,6 +361,10 @@ export default function App() {
     setIsQuizOpen(true);
   };
 
+  const route = matchPublicPage(window.location.pathname);
+  const documentHouse = route?.kind === 'project' ? houseForPage(route) : null;
+  const isDocument = route != null && route.kind !== 'home';
+
   return (
     <div id="main-content" className="min-h-screen bg-paper dark:bg-forest text-ink dark:text-cream transition-colors duration-300 font-sans selection:bg-brass/30 selection:text-pine relative">
       <a
@@ -460,9 +478,18 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenQuiz={() => handleOpenQuiz()}
-        isScrolled={isScrolled}
+        isScrolled={isDocument || isScrolled}
       />
 
+      {route?.kind === 'catalog' && <CatalogPage lang={lang} />}
+      {documentHouse && (
+        <ProjectPage lang={lang} house={documentHouse} onCalculate={handleSelectHouse} />
+      )}
+      {route?.kind === 'contacts' && <ContactsPage lang={lang} />}
+      {route?.kind === 'legal' && route.legalDoc && <LegalPage lang={lang} docType={route.legalDoc} />}
+
+      {!isDocument && (
+      <>
       {/* Hero Section with Parallax SVG Architectural Scene */}
       <Hero
         lang={lang}
@@ -588,6 +615,8 @@ export default function App() {
           </motion.div>
         </LazyMount>
       </motion.div>
+      </>
+      )}
 
       {/* Footer Credentials, Policy Links & /login Staff Trigger */}
       <Footer lang={lang} />

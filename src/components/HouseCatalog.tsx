@@ -6,6 +6,7 @@ import { TRANSLATIONS } from '../data/translations';
 import { HouseSvg } from './HouseSvg';
 import { playUiClick } from '../utils/sound';
 import { track } from '../utils/analytics';
+import { publishedProjectPath } from '../site/publicSite';
 
 interface HouseCatalogProps {
   lang: Language;
@@ -166,19 +167,30 @@ export const HouseCatalog: React.FC<HouseCatalogProps> = ({
                     >
                       {lang === 'ru' ? 'Рассчитать' : 'Calculate'}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playUiClick('tick');
-                        track('view_project', { project: house.id, area: house.area });
-                        setModalViewMode(hasPhoto ? 'webp' : 'facade');
-                        setSelectedSpecHouse(house);
-                      }}
-                      className="inline-flex items-center gap-1 px-1 py-2.5 text-sm text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream"
-                    >
-                      <span>{lang === 'ru' ? 'Подробнее' : 'Details'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
+                    {publishedProjectPath(house.id) ? (
+                      <a
+                        href={publishedProjectPath(house.id) || '/proekty/'}
+                        onClick={() => track('view_project', { project: house.id, area: house.area })}
+                        className="inline-flex items-center gap-1 px-1 py-2.5 text-sm text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream"
+                      >
+                        <span>{lang === 'ru' ? 'Подробнее' : 'Details'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playUiClick('tick');
+                          track('view_project', { project: house.id, area: house.area });
+                          setModalViewMode(hasPhoto ? 'webp' : 'facade');
+                          setSelectedSpecHouse(house);
+                        }}
+                        className="inline-flex items-center gap-1 px-1 py-2.5 text-sm text-ink-soft dark:text-cream-soft hover:text-ink dark:hover:text-cream"
+                      >
+                        <span>{lang === 'ru' ? 'Подробнее' : 'Details'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

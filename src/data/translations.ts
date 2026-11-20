@@ -19,7 +19,7 @@ export const TRANSLATIONS = {
     hero: {
       titlePre: 'Каркасный дом в Москве и области ',
       titleHighlight: 'от 498 000 ₽',
-      titlePost: ' за всё',
+      titlePost: '',
       lead: 'Сами делаем, привозим и собираем каркасные дома, бытовки и хозблоки. Бесплатная доставка до 500 км, оплата после сдачи.',
       chips: [
         'Своё производство с 2011 года',
@@ -29,7 +29,7 @@ export const TRANSLATIONS = {
       ],
       quickCallPlaceholder: '+7 (___) ___-__-__',
       quickCallBtn: 'Перезвоните мне',
-      quickCallSuccess: 'Заявка принята! Перезвоним в течение 10 минут.',
+      quickCallSuccess: 'Заявка принята. Перезвоним в рабочее время.',
       quickCallError: 'Введите номер полностью, например +7 900 123-45-67',
       quizBtn: 'Рассчитать цену по квизу',
       monthlyGift: 'Подарок месяца: кровля из металлочерепицы.',
@@ -316,7 +316,7 @@ export const TRANSLATIONS = {
     hero: {
       titlePre: 'A frame house in Moscow and the region ',
       titleHighlight: 'from 498,000 ₽',
-      titlePost: ' All-Inclusive',
+      titlePost: '',
       lead: 'We build, deliver, and assemble frame houses, site cabins, and outbuildings ourselves. Free delivery up to 500 km, payment after handover.',
       chips: [
         'Own production since 2011',
@@ -326,7 +326,7 @@ export const TRANSLATIONS = {
       ],
       quickCallPlaceholder: '+7 (___) ___-__-__',
       quickCallBtn: 'Call Me Back',
-      quickCallSuccess: 'Request accepted! We will call you within 10 minutes.',
+      quickCallSuccess: 'Request accepted. We will call during working hours.',
       quickCallError: 'Please enter a valid phone number, e.g. +7 900 123-45-67',
       quizBtn: 'Calculate Price via Quiz',
       monthlyGift: 'Monthly gift: Premium metal tile roofing included.',

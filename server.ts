@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import { parsePublicLead, sanitizeManagerNotes, sanitizePlainText, validateClientName } from './src/utils/leadPayload.ts';
 import { notifyTelegramNewLead, telegramEnabled } from './server/telegram.ts';
 import { mailEnabled, notifyEmailNewLead } from './server/mail.ts';
+import { registerPublicDocuments } from './server/documents.ts';
 import {
   adminLogin,
   adminPassword,
@@ -106,33 +107,59 @@ function ensureLeadsFile(): ServerLead[] {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(LEADS_FILE)) {
-      fs.writeFileSync(LEADS_FILE, JSON.stringify(INITIAL_LEADS, null, 2), 'utf-8');
+      if (!saveLeadsToDisk(INITIAL_LEADS)) {
+        leadsReadable = false;
+        return [];
+      }
       return INITIAL_LEADS;
     }
     const raw = fs.readFileSync(LEADS_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.map((item: ServerLead) => ({
-        ...item,
-        status: normalizeStatus(item.status),
-      }));
+    if (!Array.isArray(parsed)) {
+      leadsReadable = false;
+      console.error('[leads] leads file is not a list. It will not be overwritten.');
+      return [];
     }
-    return INITIAL_LEADS;
+    return parsed.map((item: ServerLead) => ({
+      ...item,
+      status: normalizeStatus(item.status),
+    }));
   } catch {
-    return INITIAL_LEADS;
+    leadsReadable = false;
+    console.error('[leads] failed to read leads file. It will not be overwritten.');
+    return [];
   }
 }
 
-function saveLeadsToDisk(leads: ServerLead[]) {
+let leadsReadable = true;
+
+function saveLeadsToDisk(leads: ServerLead[]): boolean {
+  const temporary = `${LEADS_FILE}.tmp`;
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf-8');
+    fs.writeFileSync(temporary, JSON.stringify(leads, null, 2), 'utf-8');
+    fs.renameSync(temporary, LEADS_FILE);
+    return true;
   } catch {
-    // Keep the request successful, but make data loss visible in platform logs (no personal data here).
     console.error('[leads] failed to write leads file. Check DATA_DIR and that the volume is writable.');
+    try {
+      fs.unlinkSync(temporary);
+    } catch {
+      // The temporary file may not exist.
+    }
+    return false;
   }
+}
+
+function commitLeads(next: ServerLead[]): boolean {
+  if (!leadsReadable) return false;
+  const previous = leadsStore;
+  leadsStore = next;
+  if (saveLeadsToDisk(next)) return true;
+  leadsStore = previous;
+  return false;
 }
 
 let leadsStore: ServerLead[] = ensureLeadsFile();
@@ -249,6 +276,10 @@ async function startServer() {
 
   // 4. Protected GET /api/leads (Returns 403 Forbidden without admin_token)
   app.get('/api/leads', requireAdminAuth, (_req: Request, res: Response) => {
+    if (!leadsReadable) {
+      res.status(503).json({ error: 'Файл заявок не прочитан.', code: 'STORE_UNAVAILABLE' });
+      return;
+    }
     res.status(200).json({
       leads: leadsStore,
       total: leadsStore.length,
@@ -269,6 +300,14 @@ async function startServer() {
     const duplicate = leadsStore.find(
       (item) => item.phone.replace(/\D/g, '') === phoneDigits && Date.now() - item.createdAtMs < duplicateWindowMs
     );
+    if (!leadsReadable) {
+      res.status(503).json({
+        error: 'Заявку сейчас нельзя сохранить. Позвоните нам.',
+        code: 'STORE_UNAVAILABLE',
+      });
+      return;
+    }
+
     if (duplicate) {
       res.status(200).json({ lead: duplicate, duplicate: true });
       return;
@@ -311,8 +350,13 @@ async function startServer() {
       managerNotes: '',
     };
 
-    leadsStore = [newLead, ...leadsStore];
-    saveLeadsToDisk(leadsStore);
+    if (!commitLeads([newLead, ...leadsStore])) {
+      res.status(503).json({
+        error: 'Не удалось сохранить заявку. Позвоните нам или отправьте ещё раз.',
+        code: 'STORE_WRITE_FAILED',
+      });
+      return;
+    }
 
     // Broadcast immediately via SSE to all logged-in admins
     const payload = JSON.stringify(newLead);
@@ -390,8 +434,12 @@ async function startServer() {
       }
     }
 
-    leadsStore[idx] = updated;
-    saveLeadsToDisk(leadsStore);
+    const nextLeads = leadsStore.slice();
+    nextLeads[idx] = updated;
+    if (!commitLeads(nextLeads)) {
+      res.status(503).json({ error: 'Не удалось сохранить изменения.', code: 'STORE_WRITE_FAILED' });
+      return;
+    }
 
     res.status(200).json({ lead: updated });
   });
@@ -403,36 +451,49 @@ async function startServer() {
       res.status(400).json({ error: 'Некорректный идентификатор заявки.', code: 'INVALID_ID' });
       return;
     }
-    const before = leadsStore.length;
-    leadsStore = leadsStore.filter((l) => l.id !== id);
-    if (leadsStore.length === before) {
+    const nextLeads = leadsStore.filter((l) => l.id !== id);
+    if (nextLeads.length === leadsStore.length) {
       res.status(404).json({ error: 'Лид не найден', code: 'NOT_FOUND' });
       return;
     }
-    saveLeadsToDisk(leadsStore);
+    if (!commitLeads(nextLeads)) {
+      res.status(503).json({ error: 'Не удалось удалить заявку.', code: 'STORE_WRITE_FAILED' });
+      return;
+    }
     res.status(200).json({ success: true, total: leadsStore.length });
   });
 
   app.use('/api', apiErrorHandler);
 
-  // Vite middleware in development, static files in production
+  // Vite middleware in development, static files in production.
+  // Public documents are registered first: known pages, then a real 404.
+  // An unknown address must not return the homepage.
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
+    registerPublicDocuments(app, {
+      templatePath: path.join(process.cwd(), 'index.html'),
+      transform: (url, html) => vite.transformIndexHtml(url, html),
+    });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    // Express 4 syntax: '*' (not '*all', which is Express 5). Without this, deep links such as /login 404.
+    registerPublicDocuments(app, {
+      templatePath: path.join(distPath, 'index.html'),
+    });
     app.get('*', (req: Request, res: Response) => {
-      // Missing static files must 404, not return index.html (stale hashed bundles after a deploy).
       if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || req.path.startsWith('/icons/')) {
         res.status(404).json({ error: 'Маршрут не найден.', code: 'NOT_FOUND' });
         return;
       }
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (req.path === '/' || req.path === '/login') {
+        res.sendFile(path.join(distPath, 'index.html'));
+        return;
+      }
+      res.status(404).type('html').send('Not found');
     });
   }
 

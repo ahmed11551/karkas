@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Mail } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 import { COMPANY_CONFIG } from '../config/company';
-import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
-import { playUiClick } from '../utils/sound';
 import { Logo } from './Logo';
 
 interface FooterProps {
@@ -13,19 +11,6 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
-  const [activeLegalDoc, setActiveLegalDoc] = useState<LegalDocType | null>(null);
-
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path === '/privacy') setActiveLegalDoc('privacy');
-    else if (path === '/terms') setActiveLegalDoc('terms');
-  }, []);
-
-  const handleOpenLegalDoc = (e: React.MouseEvent<HTMLAnchorElement>, doc: LegalDocType) => {
-    e.preventDefault();
-    playUiClick('tap');
-    setActiveLegalDoc(doc);
-  };
 
   const labelClass = 'eyebrow block mb-4 text-olive dark:text-cream-soft';
   const linkClass =
@@ -38,7 +23,7 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
           {/* Col 1: Brand & Registration */}
           <div>
             <a
-              href="#"
+              href="/"
               className="text-[1.7rem] text-ink dark:text-cream mb-4"
             >
               <Logo name={t.brandName} />
@@ -70,18 +55,21 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
               <Mail className="w-3.5 h-3.5 text-brass-ink dark:text-brass-light" />
               <span>{COMPANY_CONFIG.email}</span>
             </a>
+            <a href="/kontakty/" className={`${linkClass} mt-3 inline-block`}>
+              {lang === 'ru' ? 'Все контакты' : 'All contacts'}
+            </a>
           </div>
 
           <div>
             <span className={labelClass}>{lang === 'ru' ? 'Документы' : 'Documents'}</span>
             <ul className="space-y-2.5">
               <li>
-                <a href="/privacy" onClick={(e) => handleOpenLegalDoc(e, 'privacy')} className={linkClass}>
+                <a href="/privacy" className={linkClass}>
                   {t.footer.privacy}
                 </a>
               </li>
               <li>
-                <a href="/terms" onClick={(e) => handleOpenLegalDoc(e, 'terms')} className={linkClass}>
+                <a href="/terms" className={linkClass}>
                   {t.footer.terms}
                 </a>
               </li>
@@ -96,14 +84,6 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
           <p>{lang === 'ru' ? 'Сделано с бескомпромиссным качеством' : 'Engineered with Scandinavian precision'}</p>
         </div>
       </div>
-
-      <LegalDocumentModal
-        isOpen={activeLegalDoc !== null}
-        docType={activeLegalDoc || 'privacy'}
-        lang={lang}
-        onClose={() => setActiveLegalDoc(null)}
-        onSwitchDoc={(doc) => setActiveLegalDoc(doc)}
-      />
     </footer>
   );
 };
